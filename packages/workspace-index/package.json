@@ -1,0 +1,20 @@
+{
+  "name": "@abnt/workspace-index",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": { "development": "./src/index.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "dependencies": {
+    "@abnt/document-model": "workspace:*",
+    "@abnt/markdown": "workspace:*",
+    "@abnt/workspace-core": "workspace:*",
+    "better-sqlite3": "^12.11.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0"
+  }
+}

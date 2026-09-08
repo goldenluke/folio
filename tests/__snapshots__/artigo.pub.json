@@ -1,0 +1,465 @@
+{
+  "schema": "publication-ast",
+  "version": 1,
+  "title": "Arquitetura de Software para Sistemas Distribuídos",
+  "language": "pt-BR",
+  "page": {
+    "size": "A4",
+    "margin": {
+      "top": "3cm",
+      "right": "2cm",
+      "bottom": "2cm",
+      "left": "3cm"
+    },
+    "pageNumber": "top-right"
+  },
+  "styles": {
+    "body": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "12pt",
+      "lineHeight": 1.5,
+      "textAlign": "justify",
+      "textIndent": "1.25cm",
+      "marginTop": "0",
+      "marginBottom": "0"
+    },
+    "heading-1": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "12pt",
+      "fontWeight": "bold",
+      "textTransform": "uppercase",
+      "lineHeight": 1.5,
+      "textAlign": "left",
+      "marginTop": "1.5em",
+      "marginBottom": "0.5em"
+    },
+    "heading-2": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "12pt",
+      "fontWeight": "bold",
+      "lineHeight": 1.5,
+      "textAlign": "left",
+      "marginTop": "1.2em",
+      "marginBottom": "0.4em"
+    },
+    "heading-3": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "12pt",
+      "fontWeight": "normal",
+      "lineHeight": 1.5,
+      "textAlign": "left",
+      "marginTop": "1em",
+      "marginBottom": "0.3em"
+    },
+    "doc-title": {
+      "marginBottom": "2em"
+    },
+    "doc-title-line": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "14pt",
+      "fontWeight": "bold",
+      "textAlign": "center",
+      "textTransform": "uppercase",
+      "lineHeight": 1.5
+    },
+    "doc-authors": {
+      "marginBottom": "2em"
+    },
+    "doc-authors-line": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "12pt",
+      "textAlign": "right",
+      "lineHeight": 1.5
+    },
+    "abstract": {
+      "marginBottom": "1em"
+    },
+    "abstract-line": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "12pt",
+      "lineHeight": 1,
+      "textAlign": "justify",
+      "textIndent": "0"
+    },
+    "keywords": {
+      "marginBottom": "2em"
+    },
+    "keywords-line": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "12pt",
+      "lineHeight": 1,
+      "textIndent": "0"
+    },
+    "quote-long": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "10pt",
+      "lineHeight": 1,
+      "marginLeft": "4cm",
+      "textAlign": "justify",
+      "textIndent": "0",
+      "marginTop": "1em",
+      "marginBottom": "1em"
+    },
+    "list": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "12pt",
+      "lineHeight": 1.5,
+      "marginBottom": "1em"
+    },
+    "list-item": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "12pt",
+      "lineHeight": 1.5,
+      "textIndent": "0"
+    },
+    "figure": {
+      "textAlign": "center",
+      "marginTop": "1em",
+      "marginBottom": "1em"
+    },
+    "table": {
+      "marginTop": "1em",
+      "marginBottom": "1em"
+    },
+    "code": {
+      "fontFamily": "\"Courier New\", Courier, monospace",
+      "fontSize": "10pt",
+      "lineHeight": 1.2,
+      "whiteSpace": "pre-wrap",
+      "textIndent": "0",
+      "marginTop": "0.5em",
+      "marginBottom": "0.5em"
+    },
+    "equation": {
+      "textAlign": "center",
+      "marginTop": "1em",
+      "marginBottom": "1em",
+      "textIndent": "0"
+    },
+    "separator": {
+      "marginTop": "1em",
+      "marginBottom": "1em"
+    },
+    "caption": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "10pt",
+      "lineHeight": 1,
+      "textAlign": "center",
+      "textIndent": "0",
+      "marginBottom": "0.3em"
+    },
+    "source": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "10pt",
+      "lineHeight": 1,
+      "textAlign": "center",
+      "textIndent": "0",
+      "marginTop": "0.3em"
+    },
+    "note": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "10pt",
+      "lineHeight": 1,
+      "textAlign": "justify",
+      "textIndent": "0"
+    },
+    "reference": {
+      "fontFamily": "\"Times New Roman\", Times, serif",
+      "fontSize": "12pt",
+      "lineHeight": 1,
+      "textAlign": "left",
+      "textIndent": "0",
+      "marginBottom": "1em"
+    }
+  },
+  "children": [
+    {
+      "type": "front-matter",
+      "role": "doc:title",
+      "style": "doc-title",
+      "children": [
+        {
+          "type": "paragraph",
+          "style": "doc-title-line",
+          "children": [
+            {
+              "type": "text",
+              "value": "Arquitetura de Software para Sistemas Distribuídos"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "front-matter",
+      "role": "doc:authors",
+      "style": "doc-authors",
+      "children": [
+        {
+          "type": "paragraph",
+          "style": "doc-authors-line",
+          "children": [
+            {
+              "type": "text",
+              "value": "João da Silva — Universidade Federal do Exemplo"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "style": "doc-authors-line",
+          "children": [
+            {
+              "type": "text",
+              "value": "Maria Souza — Universidade Federal do Exemplo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "front-matter",
+      "role": "doc:abstract",
+      "style": "abstract",
+      "label": "Resumo",
+      "children": [
+        {
+          "type": "paragraph",
+          "style": "abstract-line",
+          "children": [
+            {
+              "type": "text",
+              "value": "Este artigo apresenta uma análise de decisões arquiteturais recorrentes em sistemas distribuídos, com atenção a consistência, particionamento e tolerância a falhas. Discute-se o impacto dessas decisões sobre a manutenibilidade de sistemas de larga escala, a partir de casos observados na literatura e na prática industrial."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "front-matter",
+      "role": "doc:keywords",
+      "style": "keywords",
+      "label": "Palavras-chave",
+      "children": [
+        {
+          "type": "paragraph",
+          "style": "keywords-line",
+          "children": [
+            {
+              "type": "text",
+              "value": "arquitetura de software. sistemas distribuídos. escalabilidade."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 1,
+      "style": "heading-1",
+      "anchor": "n17",
+      "number": "1",
+      "children": [
+        {
+          "type": "text",
+          "value": "Introdução"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "style": "body",
+      "children": [
+        {
+          "type": "text",
+          "value": "Sistemas distribuídos apresentam desafios que não existem em sistemas de nó\núnico. A necessidade de coordenar estado entre máquinas introduz modos de\nfalha parciais, nos quais parte do sistema permanece disponível enquanto outra\nparte se torna inacessível."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "style": "body",
+      "children": [
+        {
+          "type": "text",
+          "value": "Este trabalho examina como decisões tomadas no início do projeto arquitetural\nrestringem o espaço de soluções disponível mais adiante, frequentemente de\nmaneira irreversível."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "style": "heading-2",
+      "anchor": "n9",
+      "number": "1.1",
+      "children": [
+        {
+          "type": "text",
+          "value": "Motivação"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "style": "body",
+      "children": [
+        {
+          "type": "text",
+          "value": "A literatura de arquitetura frequentemente trata consistência e disponibilidade\ncomo um par de opções entre as quais se escolhe uma. Na prática, a escolha é\nfeita por operação, e não por sistema."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "style": "heading-2",
+      "anchor": "n16",
+      "number": "1.2",
+      "children": [
+        {
+          "type": "text",
+          "value": "Objetivos"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "style": "body",
+      "children": [
+        {
+          "type": "text",
+          "value": "Delimitar critérios objetivos para essa escolha, e demonstrar que "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "value": "a decisão\narquitetural mais cara de reverter"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": " é a que define a fronteira transacional."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 1,
+      "style": "heading-1",
+      "anchor": "n29",
+      "number": "2",
+      "children": [
+        {
+          "type": "text",
+          "value": "Metodologia"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "style": "body",
+      "children": [
+        {
+          "type": "text",
+          "value": "A análise combina revisão da literatura com estudo de três sistemas em\nprodução, observados ao longo de dezoito meses."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "style": "heading-2",
+      "anchor": "n24",
+      "number": "2.1",
+      "children": [
+        {
+          "type": "text",
+          "value": "Coleta de dados"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "style": "body",
+      "children": [
+        {
+          "type": "text",
+          "value": "Foram coletadas métricas de latência, taxa de erro e tempo de recuperação após\nincidente, agregadas por semana."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "style": "heading-2",
+      "anchor": "n28",
+      "number": "2.2",
+      "children": [
+        {
+          "type": "text",
+          "value": "Limitações"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "style": "body",
+      "children": [
+        {
+          "type": "text",
+          "value": "O recorte industrial restringe a generalização dos resultados: os três sistemas\nobservados pertencem ao mesmo domínio de aplicação."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 1,
+      "style": "heading-1",
+      "anchor": "n33",
+      "number": "3",
+      "children": [
+        {
+          "type": "text",
+          "value": "Resultados"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "style": "body",
+      "children": [
+        {
+          "type": "text",
+          "value": "Os sistemas que definiram fronteiras transacionais estreitas apresentaram tempo\nde recuperação significativamente menor, ao custo de maior complexidade no\ncódigo de aplicação."
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 1,
+      "style": "heading-1",
+      "anchor": "n37",
+      "number": "4",
+      "children": [
+        {
+          "type": "text",
+          "value": "Conclusão"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "style": "body",
+      "children": [
+        {
+          "type": "text",
+          "value": "A fronteira transacional é o compromisso arquitetural determinante. Movê-la\ndepois exige reescrever a camada de persistência e a lógica de aplicação\nsimultaneamente, o que raramente é viável em sistemas em produção."
+        }
+      ]
+    }
+  ],
+  "notes": []
+}

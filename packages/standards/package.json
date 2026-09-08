@@ -1,0 +1,17 @@
+{
+  "name": "@abnt/standards",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": { "development": "./src/index.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "dependencies": {
+    "@abnt/bibliography": "workspace:*",
+    "@abnt/document-model": "workspace:*",
+    "@abnt/publication": "workspace:^",
+    "@abnt/semantics": "workspace:*"
+  }
+}

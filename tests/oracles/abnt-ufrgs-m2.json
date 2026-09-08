@@ -1,0 +1,21 @@
+{
+  "oracle": {
+    "style": "associacao-brasileira-de-normas-tecnicas-ufrgs.csl",
+    "url": "https://github.com/citation-style-language/styles/blob/b9b0e0639d1b4643808245b97eb60f596f8abcc7/associacao-brasileira-de-normas-tecnicas-ufrgs.csl",
+    "commit": "b9b0e0639d1b4643808245b97eb60f596f8abcc7",
+    "processor": "pandoc 3.1.11 --citeproc",
+    "checkedAt": "2026-09-07"
+  },
+  "notes": [
+    "O oráculo é usado somente durante desenvolvimento e não é distribuído nem carregado em runtime.",
+    "As saídas abaixo mantêm o organizador do capítulo, usam as abreviações v./n. e corrigem a pontuação anômala do item eletrônico observada no estilo-oráculo."
+  ],
+  "references": {
+    "book": "SILVA, João. Arquitetura de sistemas distribuídos. 2. ed. São Paulo: Atlas, 2024.",
+    "chapter": "COSTA, Marina. Consistência sob particionamento. In: PEREIRA, Lucas (org.). Fundamentos de computação distribuída. Rio de Janeiro: Ciência Moderna, 2021. p. 45–68.",
+    "article-journal": "OLIVEIRA, Renata; SOUZA, Paulo. Replicação adaptativa em nuvens híbridas. Revista Brasileira de Computação, Porto Alegre, v. 12, n. 2, p. 15–34, 2023.",
+    "paper-conference": "SANTOS, Bruno. Observabilidade em sistemas assíncronos. In: SIMPÓSIO BRASILEIRO DE SISTEMAS DISTRIBUÍDOS, 2022, Recife. Anais do Simpósio Brasileiro de Sistemas Distribuídos. Recife: SBC, 2022. p. 101–112.",
+    "thesis": "LIMA, Camila. Modelos de consistência para bancos distribuídos. 2020. Dissertação (Mestrado em Ciência da Computação) - Universidade Federal de Pernambuco, Recife, 2020.",
+    "webpage": "INSTITUTO BRASILEIRO DE GEOGRAFIA E ESTATÍSTICA. Indicadores de acesso à internet no Brasil. 2025. Disponível em: https://example.org/indicadores-internet. Acesso em: 7 set. 2026."
+  }
+}

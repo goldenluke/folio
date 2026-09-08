@@ -1,0 +1,27 @@
+{
+  "name": "@abnt/cli",
+  "version": "0.1.0-dev.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "folio": "./dist/bin.js"
+  },
+  "exports": {
+    ".": { "development": "./src/index.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "dependencies": {
+    "@abnt/bibliography": "workspace:*",
+    "@abnt/compiler": "workspace:*",
+    "@abnt/document-model": "workspace:*",
+    "@abnt/markdown": "workspace:*",
+    "@abnt/plugin-host": "workspace:*",
+    "@abnt/publication": "workspace:*",
+    "@abnt/renderer-docx": "workspace:*",
+    "@abnt/renderer-html": "workspace:*",
+    "@abnt/renderer-pdf": "workspace:*",
+    "@abnt/semantics": "workspace:*",
+    "commander": "^15.0.0"
+  }
+}

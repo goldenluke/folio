@@ -1,0 +1,30 @@
+{
+  "schema": "abnt-workspace-state",
+  "version": 1,
+  "workspaceId": "workspace_f7c0c1eb-328c-45af-8ae1-287d7539cd16",
+  "files": {
+    "file_283ffc29-c0ec-4c6a-b5e9-241de182a587": {
+      "id": "file_283ffc29-c0ec-4c6a-b5e9-241de182a587",
+      "documentId": "document_0374e736-80bd-4d80-8e18-14e0831986d4",
+      "path": "artigo.md",
+      "revision": 1,
+      "contentHash": "sha256:2d16c6da33ef9236fc707ca00d47452083386e05adba9c6e1d606175452f90ed",
+      "mediaType": "text/markdown"
+    },
+    "file_b77757b2-2071-4a54-8821-7fcd5e6a3112": {
+      "id": "file_b77757b2-2071-4a54-8821-7fcd5e6a3112",
+      "documentId": "document_c0067927-7dde-46ae-9a57-d58b5b693925",
+      "path": "README.md",
+      "revision": 1,
+      "contentHash": "sha256:19085ab798905f0e7f0c2798add2604fb7704b697b2384f45fdbe37643033f31",
+      "mediaType": "text/markdown"
+    },
+    "file_5d721c85-c0da-4df0-a960-a3ec595e0f51": {
+      "id": "file_5d721c85-c0da-4df0-a960-a3ec595e0f51",
+      "path": "referencias.bib",
+      "revision": 1,
+      "contentHash": "sha256:1881b3b3f90ef5493adc2c62cc5cd44131ab5d62c3a032bfbbb13d018b010604",
+      "mediaType": "application/x-bibtex"
+    }
+  }
+}

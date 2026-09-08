@@ -1,0 +1,298 @@
+@import "tailwindcss";
+@source "./**/*.{ts,tsx}";
+
+/*
+ * Tema claro do Folio
+ *
+ * O renderer ainda possui classes Tailwind legadas de quando o shell era
+ * escuro. Este arquivo é a autoridade visual: tokens, componentes e a ponte
+ * de compatibilidade ficam aqui, em vez de cada feature decidir suas cores.
+ */
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  background: #f8fafc;
+  color: #172033;
+
+  --folio-canvas: #f8fafc;
+  --folio-surface: #ffffff;
+  --folio-subtle: #f4f7fb;
+  --folio-muted: #eef2f7;
+  --folio-border: #dfe7f1;
+  --folio-border-strong: #cbd5e1;
+  --folio-text: #172033;
+  --folio-text-muted: #64748b;
+  --folio-accent: #4f46e5;
+  --folio-accent-hover: #4338ca;
+  --folio-accent-soft: #eef2ff;
+  --folio-danger-soft: #fef2f2;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100vh;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% -10%, rgb(224 231 255 / 0.75), transparent 32rem),
+    radial-gradient(circle at -12% 82%, rgb(224 242 254 / 0.6), transparent 28rem),
+    var(--folio-canvas);
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+button,
+input,
+select,
+textarea { font: inherit; }
+
+button {
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+button:disabled { cursor: default; }
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #c7d2fe;
+  color: #312e81;
+}
+
+/* Scrollbars claras e discretas. */
+* { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px; background: #cbd5e1; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+
+@layer components {
+  .folio-shell { background: transparent; color: var(--folio-text); }
+
+  .folio-sidebar {
+    background: rgb(255 255 255 / 0.86);
+    border-color: var(--folio-border);
+    box-shadow: 16px 0 40px rgb(15 23 42 / 0.035);
+  }
+
+  .folio-contextbar {
+    background: rgb(255 255 255 / 0.78);
+    border-color: var(--folio-border);
+    backdrop-filter: blur(16px);
+  }
+
+  .folio-panel {
+    background: rgb(255 255 255 / 0.86);
+    border-color: var(--folio-border);
+    box-shadow: -16px 0 40px rgb(15 23 42 / 0.03);
+  }
+
+  .folio-control {
+    border: 1px solid var(--folio-border);
+    background: var(--folio-surface);
+    color: #334155;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  }
+
+  .folio-control:hover {
+    border-color: #c7d2fe;
+    background: #f8faff;
+    color: #3730a3;
+  }
+
+  .folio-primary {
+    background: var(--folio-accent);
+    color: #fff;
+    box-shadow: 0 8px 20px rgb(79 70 229 / 0.2);
+  }
+
+  .folio-primary:hover { background: var(--folio-accent-hover); }
+
+  .folio-tab-active {
+    background: var(--folio-surface);
+    color: #312e81;
+    box-shadow: 0 -1px 0 #fff, 0 1px 3px rgb(15 23 42 / 0.07);
+  }
+}
+
+/*
+ * Ponte global para as utilidades do shell antigo. Mantê-la no tema, com alta
+ * especificidade, garante que painéis e diálogos adicionados anteriormente
+ * respeitem o modo claro sem depender de uma ordem frágil de classes JSX.
+ */
+#root .bg-slate-950 { background-color: #f8fafc !important; }
+#root .bg-slate-900 { background-color: #fbfdff !important; }
+#root .bg-slate-800 { background-color: #f4f7fb !important; }
+#root .bg-slate-700 { background-color: #eef2f7 !important; }
+#root .bg-slate-600 { background-color: #e2e8f0 !important; }
+
+#root .text-slate-100,
+#root .text-slate-200,
+#root .text-slate-300 { color: #1e293b !important; }
+#root .text-slate-400,
+#root .text-slate-500 { color: #64748b !important; }
+#root .text-slate-600 { color: #475569 !important; }
+#root .text-slate-700 { color: #334155 !important; }
+#root .text-slate-800,
+#root .text-slate-900 { color: #172033 !important; }
+
+#root .border-slate-600,
+#root .border-slate-700,
+#root .border-slate-800,
+#root .border-slate-900 { border-color: var(--folio-border) !important; }
+
+#root .hover\:bg-slate-600:hover,
+#root .hover\:bg-slate-700:hover,
+#root .hover\:bg-slate-800:hover,
+#root .hover\:bg-slate-900:hover {
+  background-color: var(--folio-accent-soft) !important;
+  color: #3730a3 !important;
+}
+
+#root .hover\:text-slate-100:hover,
+#root .hover\:text-white:hover { color: #312e81 !important; }
+
+#root button.bg-slate-700 {
+  border-radius: 0.55rem;
+  background: var(--folio-accent-soft) !important;
+  color: #3730a3 !important;
+}
+#root button.bg-slate-700:hover { background: #e0e7ff !important; }
+
+#root .bg-cyan-950,
+#root .bg-cyan-900 { background-color: #eefbff !important; }
+#root button.bg-cyan-700,
+#root button.bg-cyan-800 {
+  border-radius: 0.55rem;
+  background: var(--folio-accent) !important;
+  color: #fff !important;
+}
+#root button.bg-cyan-700:hover,
+#root button.bg-cyan-800:hover { background: var(--folio-accent-hover) !important; color: #fff !important; }
+
+#root .bg-amber-950 { background-color: #fffbeb !important; }
+#root .bg-red-950 { background-color: #fef2f2 !important; }
+#root button.bg-red-800 { background-color: #fee2e2 !important; color: #b91c1c !important; }
+#root button.bg-red-800:hover { background-color: #fecaca !important; }
+
+/* Todos os modais partilham a mesma camada de superfície clara. */
+#root > main > div.fixed {
+  background: rgb(15 23 42 / 0.25) !important;
+  backdrop-filter: blur(5px);
+}
+
+/* O menu de reticências é flutuante, não um modal: não recebe overlay. */
+#root > main > div.folio-actions-menu {
+  border-color: #e7edf5 !important;
+  background: rgb(255 255 255 / 0.99) !important;
+  color: var(--folio-text);
+  box-shadow: 0 10px 24px rgb(15 23 42 / 0.09) !important;
+  backdrop-filter: none;
+}
+
+#root > main > div.folio-actions-menu button:hover {
+  background: #f5f7ff !important;
+  color: #3730a3 !important;
+}
+
+#root > main > div.fixed > section {
+  border-color: var(--folio-border) !important;
+  background: rgb(255 255 255 / 0.98) !important;
+  color: var(--folio-text);
+  border-radius: 1rem !important;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 0.18) !important;
+}
+
+#root > main > div.fixed > section input,
+#root > main > div.fixed > section select,
+#root > main > div.fixed > section textarea {
+  border: 1px solid var(--folio-border);
+  background: #fff;
+  color: var(--folio-text);
+}
+
+/* Fechar tem alvo confortável sem tornar o glifo visualmente dominante. */
+#root button[aria-label^="Fechar"] {
+  display: inline-grid;
+  min-width: 2rem;
+  min-height: 2rem;
+  place-items: center;
+  border-radius: 0.5rem;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+#root button[aria-label^="Fechar"]:hover {
+  background: var(--folio-danger-soft);
+  color: #b91c1c;
+}
+
+/* CodeMirror cria sua própria marcação; por isso a aparência do editor vive
+   aqui, não em classes do JSX. */
+.editor-pane .cm-editor {
+  min-width: 0;
+  height: 100%;
+  min-height: 100%;
+  background: #fff;
+  color: var(--folio-text);
+  font-size: 15px;
+  outline: none;
+}
+
+.editor-pane .cm-scroller {
+  height: 100%;
+  min-height: 0;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+/* F36: camada de texto sobre o canvas do PDF.js continua selecionável. */
+.folio-pdf-text-layer { z-index: 2; }
+.folio-pdf-text-layer .folio-pdf-highlight {
+  background: rgb(250 204 21 / 0.42);
+  box-shadow: 0 0 0 1px rgb(234 179 8 / 0.2);
+}
+
+.editor-pane {
+  height: 100%;
+  min-height: 0;
+}
+
+.editor-pane .cm-gutters {
+  border-right: 1px solid #eef2f7;
+  background: #fbfdff;
+  color: #94a3b8;
+}
+
+.editor-pane .cm-activeLine,
+.editor-pane .cm-activeLineGutter { background: #f8faff; }
+
+.editor-pane .cm-selectionBackground,
+.editor-pane ::selection { background: #dbeafe !important; }
+
+.abnt-editor-hover {
+  max-width: 24rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--folio-border);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #334155;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 0.12);
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}

@@ -1,0 +1,780 @@
+{
+  "schema": "document-ast",
+  "version": 1,
+  "documentId": "artigo.md",
+  "document": {
+    "id": "n38",
+    "type": "document",
+    "metadata": {
+      "title": [
+        {
+          "id": "meta-title",
+          "type": "text",
+          "value": "Arquitetura de Software para Sistemas Distribuídos"
+        }
+      ],
+      "contributors": [
+        {
+          "role": "author",
+          "name": {
+            "family": [
+              "Silva"
+            ],
+            "given": [
+              "João",
+              "da"
+            ]
+          },
+          "affiliation": "Universidade Federal do Exemplo",
+          "email": "joao@example.edu.br"
+        },
+        {
+          "role": "author",
+          "name": {
+            "family": [
+              "Souza"
+            ],
+            "given": [
+              "Maria"
+            ]
+          },
+          "affiliation": "Universidade Federal do Exemplo"
+        }
+      ],
+      "keywords": [
+        "arquitetura de software",
+        "sistemas distribuídos",
+        "escalabilidade"
+      ],
+      "languages": [
+        "pt-BR"
+      ],
+      "abstract": [
+        {
+          "id": "meta-abstract",
+          "type": "paragraph",
+          "children": [
+            {
+              "id": "meta-abstract-text",
+              "type": "text",
+              "value": "Este artigo apresenta uma análise de decisões arquiteturais recorrentes em sistemas distribuídos, com atenção a consistência, particionamento e tolerância a falhas. Discute-se o impacto dessas decisões sobre a manutenibilidade de sistemas de larga escala, a partir de casos observados na literatura e na prática industrial."
+            }
+          ]
+        }
+      ]
+    },
+    "children": [
+      {
+        "id": "n17",
+        "type": "section",
+        "depth": 1,
+        "title": [
+          {
+            "id": "n1",
+            "type": "text",
+            "value": "Introdução",
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 709,
+                "line": 25,
+                "column": 3
+              },
+              "end": {
+                "offset": 719,
+                "line": 25,
+                "column": 13
+              }
+            }
+          }
+        ],
+        "children": [
+          {
+            "id": "n2",
+            "type": "paragraph",
+            "children": [
+              {
+                "id": "n3",
+                "type": "text",
+                "value": "Sistemas distribuídos apresentam desafios que não existem em sistemas de nó\núnico. A necessidade de coordenar estado entre máquinas introduz modos de\nfalha parciais, nos quais parte do sistema permanece disponível enquanto outra\nparte se torna inacessível.",
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 721,
+                    "line": 27,
+                    "column": 1
+                  },
+                  "end": {
+                    "offset": 977,
+                    "line": 30,
+                    "column": 28
+                  }
+                }
+              }
+            ],
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 721,
+                "line": 27,
+                "column": 1
+              },
+              "end": {
+                "offset": 977,
+                "line": 30,
+                "column": 28
+              }
+            }
+          },
+          {
+            "id": "n4",
+            "type": "paragraph",
+            "children": [
+              {
+                "id": "n5",
+                "type": "text",
+                "value": "Este trabalho examina como decisões tomadas no início do projeto arquitetural\nrestringem o espaço de soluções disponível mais adiante, frequentemente de\nmaneira irreversível.",
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 979,
+                    "line": 32,
+                    "column": 1
+                  },
+                  "end": {
+                    "offset": 1153,
+                    "line": 34,
+                    "column": 22
+                  }
+                }
+              }
+            ],
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 979,
+                "line": 32,
+                "column": 1
+              },
+              "end": {
+                "offset": 1153,
+                "line": 34,
+                "column": 22
+              }
+            }
+          },
+          {
+            "id": "n9",
+            "type": "section",
+            "depth": 2,
+            "title": [
+              {
+                "id": "n6",
+                "type": "text",
+                "value": "Motivação",
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 1158,
+                    "line": 36,
+                    "column": 4
+                  },
+                  "end": {
+                    "offset": 1167,
+                    "line": 36,
+                    "column": 13
+                  }
+                }
+              }
+            ],
+            "children": [
+              {
+                "id": "n7",
+                "type": "paragraph",
+                "children": [
+                  {
+                    "id": "n8",
+                    "type": "text",
+                    "value": "A literatura de arquitetura frequentemente trata consistência e disponibilidade\ncomo um par de opções entre as quais se escolhe uma. Na prática, a escolha é\nfeita por operação, e não por sistema.",
+                    "source": {
+                      "documentId": "artigo.md",
+                      "start": {
+                        "offset": 1169,
+                        "line": 38,
+                        "column": 1
+                      },
+                      "end": {
+                        "offset": 1364,
+                        "line": 40,
+                        "column": 39
+                      }
+                    }
+                  }
+                ],
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 1169,
+                    "line": 38,
+                    "column": 1
+                  },
+                  "end": {
+                    "offset": 1364,
+                    "line": 40,
+                    "column": 39
+                  }
+                }
+              }
+            ],
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 1155,
+                "line": 36,
+                "column": 1
+              },
+              "end": {
+                "offset": 1167,
+                "line": 36,
+                "column": 13
+              }
+            }
+          },
+          {
+            "id": "n16",
+            "type": "section",
+            "depth": 2,
+            "title": [
+              {
+                "id": "n10",
+                "type": "text",
+                "value": "Objetivos",
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 1369,
+                    "line": 42,
+                    "column": 4
+                  },
+                  "end": {
+                    "offset": 1378,
+                    "line": 42,
+                    "column": 13
+                  }
+                }
+              }
+            ],
+            "children": [
+              {
+                "id": "n11",
+                "type": "paragraph",
+                "children": [
+                  {
+                    "id": "n12",
+                    "type": "text",
+                    "value": "Delimitar critérios objetivos para essa escolha, e demonstrar que ",
+                    "source": {
+                      "documentId": "artigo.md",
+                      "start": {
+                        "offset": 1380,
+                        "line": 44,
+                        "column": 1
+                      },
+                      "end": {
+                        "offset": 1446,
+                        "line": 44,
+                        "column": 67
+                      }
+                    }
+                  },
+                  {
+                    "id": "n13",
+                    "type": "strong",
+                    "children": [
+                      {
+                        "id": "n14",
+                        "type": "text",
+                        "value": "a decisão\narquitetural mais cara de reverter",
+                        "source": {
+                          "documentId": "artigo.md",
+                          "start": {
+                            "offset": 1448,
+                            "line": 44,
+                            "column": 69
+                          },
+                          "end": {
+                            "offset": 1492,
+                            "line": 45,
+                            "column": 35
+                          }
+                        }
+                      }
+                    ],
+                    "source": {
+                      "documentId": "artigo.md",
+                      "start": {
+                        "offset": 1446,
+                        "line": 44,
+                        "column": 67
+                      },
+                      "end": {
+                        "offset": 1494,
+                        "line": 45,
+                        "column": 37
+                      }
+                    }
+                  },
+                  {
+                    "id": "n15",
+                    "type": "text",
+                    "value": " é a que define a fronteira transacional.",
+                    "source": {
+                      "documentId": "artigo.md",
+                      "start": {
+                        "offset": 1494,
+                        "line": 45,
+                        "column": 37
+                      },
+                      "end": {
+                        "offset": 1535,
+                        "line": 45,
+                        "column": 78
+                      }
+                    }
+                  }
+                ],
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 1380,
+                    "line": 44,
+                    "column": 1
+                  },
+                  "end": {
+                    "offset": 1535,
+                    "line": 45,
+                    "column": 78
+                  }
+                }
+              }
+            ],
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 1366,
+                "line": 42,
+                "column": 1
+              },
+              "end": {
+                "offset": 1378,
+                "line": 42,
+                "column": 13
+              }
+            }
+          }
+        ],
+        "source": {
+          "documentId": "artigo.md",
+          "start": {
+            "offset": 707,
+            "line": 25,
+            "column": 1
+          },
+          "end": {
+            "offset": 719,
+            "line": 25,
+            "column": 13
+          }
+        }
+      },
+      {
+        "id": "n29",
+        "type": "section",
+        "depth": 1,
+        "title": [
+          {
+            "id": "n18",
+            "type": "text",
+            "value": "Metodologia",
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 1539,
+                "line": 47,
+                "column": 3
+              },
+              "end": {
+                "offset": 1550,
+                "line": 47,
+                "column": 14
+              }
+            }
+          }
+        ],
+        "children": [
+          {
+            "id": "n19",
+            "type": "paragraph",
+            "children": [
+              {
+                "id": "n20",
+                "type": "text",
+                "value": "A análise combina revisão da literatura com estudo de três sistemas em\nprodução, observados ao longo de dezoito meses.",
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 1552,
+                    "line": 49,
+                    "column": 1
+                  },
+                  "end": {
+                    "offset": 1670,
+                    "line": 50,
+                    "column": 48
+                  }
+                }
+              }
+            ],
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 1552,
+                "line": 49,
+                "column": 1
+              },
+              "end": {
+                "offset": 1670,
+                "line": 50,
+                "column": 48
+              }
+            }
+          },
+          {
+            "id": "n24",
+            "type": "section",
+            "depth": 2,
+            "title": [
+              {
+                "id": "n21",
+                "type": "text",
+                "value": "Coleta de dados",
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 1675,
+                    "line": 52,
+                    "column": 4
+                  },
+                  "end": {
+                    "offset": 1690,
+                    "line": 52,
+                    "column": 19
+                  }
+                }
+              }
+            ],
+            "children": [
+              {
+                "id": "n22",
+                "type": "paragraph",
+                "children": [
+                  {
+                    "id": "n23",
+                    "type": "text",
+                    "value": "Foram coletadas métricas de latência, taxa de erro e tempo de recuperação após\nincidente, agregadas por semana.",
+                    "source": {
+                      "documentId": "artigo.md",
+                      "start": {
+                        "offset": 1692,
+                        "line": 54,
+                        "column": 1
+                      },
+                      "end": {
+                        "offset": 1803,
+                        "line": 55,
+                        "column": 33
+                      }
+                    }
+                  }
+                ],
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 1692,
+                    "line": 54,
+                    "column": 1
+                  },
+                  "end": {
+                    "offset": 1803,
+                    "line": 55,
+                    "column": 33
+                  }
+                }
+              }
+            ],
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 1672,
+                "line": 52,
+                "column": 1
+              },
+              "end": {
+                "offset": 1690,
+                "line": 52,
+                "column": 19
+              }
+            }
+          },
+          {
+            "id": "n28",
+            "type": "section",
+            "depth": 2,
+            "title": [
+              {
+                "id": "n25",
+                "type": "text",
+                "value": "Limitações",
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 1808,
+                    "line": 57,
+                    "column": 4
+                  },
+                  "end": {
+                    "offset": 1818,
+                    "line": 57,
+                    "column": 14
+                  }
+                }
+              }
+            ],
+            "children": [
+              {
+                "id": "n26",
+                "type": "paragraph",
+                "children": [
+                  {
+                    "id": "n27",
+                    "type": "text",
+                    "value": "O recorte industrial restringe a generalização dos resultados: os três sistemas\nobservados pertencem ao mesmo domínio de aplicação.",
+                    "source": {
+                      "documentId": "artigo.md",
+                      "start": {
+                        "offset": 1820,
+                        "line": 59,
+                        "column": 1
+                      },
+                      "end": {
+                        "offset": 1951,
+                        "line": 60,
+                        "column": 52
+                      }
+                    }
+                  }
+                ],
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 1820,
+                    "line": 59,
+                    "column": 1
+                  },
+                  "end": {
+                    "offset": 1951,
+                    "line": 60,
+                    "column": 52
+                  }
+                }
+              }
+            ],
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 1805,
+                "line": 57,
+                "column": 1
+              },
+              "end": {
+                "offset": 1818,
+                "line": 57,
+                "column": 14
+              }
+            }
+          }
+        ],
+        "source": {
+          "documentId": "artigo.md",
+          "start": {
+            "offset": 1537,
+            "line": 47,
+            "column": 1
+          },
+          "end": {
+            "offset": 1550,
+            "line": 47,
+            "column": 14
+          }
+        }
+      },
+      {
+        "id": "n33",
+        "type": "section",
+        "depth": 1,
+        "title": [
+          {
+            "id": "n30",
+            "type": "text",
+            "value": "Resultados",
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 1955,
+                "line": 62,
+                "column": 3
+              },
+              "end": {
+                "offset": 1965,
+                "line": 62,
+                "column": 13
+              }
+            }
+          }
+        ],
+        "children": [
+          {
+            "id": "n31",
+            "type": "paragraph",
+            "children": [
+              {
+                "id": "n32",
+                "type": "text",
+                "value": "Os sistemas que definiram fronteiras transacionais estreitas apresentaram tempo\nde recuperação significativamente menor, ao custo de maior complexidade no\ncódigo de aplicação.",
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 1967,
+                    "line": 64,
+                    "column": 1
+                  },
+                  "end": {
+                    "offset": 2142,
+                    "line": 66,
+                    "column": 21
+                  }
+                }
+              }
+            ],
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 1967,
+                "line": 64,
+                "column": 1
+              },
+              "end": {
+                "offset": 2142,
+                "line": 66,
+                "column": 21
+              }
+            }
+          }
+        ],
+        "source": {
+          "documentId": "artigo.md",
+          "start": {
+            "offset": 1953,
+            "line": 62,
+            "column": 1
+          },
+          "end": {
+            "offset": 1965,
+            "line": 62,
+            "column": 13
+          }
+        }
+      },
+      {
+        "id": "n37",
+        "type": "section",
+        "depth": 1,
+        "title": [
+          {
+            "id": "n34",
+            "type": "text",
+            "value": "Conclusão",
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 2146,
+                "line": 68,
+                "column": 3
+              },
+              "end": {
+                "offset": 2155,
+                "line": 68,
+                "column": 12
+              }
+            }
+          }
+        ],
+        "children": [
+          {
+            "id": "n35",
+            "type": "paragraph",
+            "children": [
+              {
+                "id": "n36",
+                "type": "text",
+                "value": "A fronteira transacional é o compromisso arquitetural determinante. Movê-la\ndepois exige reescrever a camada de persistência e a lógica de aplicação\nsimultaneamente, o que raramente é viável em sistemas em produção.",
+                "source": {
+                  "documentId": "artigo.md",
+                  "start": {
+                    "offset": 2157,
+                    "line": 70,
+                    "column": 1
+                  },
+                  "end": {
+                    "offset": 2372,
+                    "line": 72,
+                    "column": 67
+                  }
+                }
+              }
+            ],
+            "source": {
+              "documentId": "artigo.md",
+              "start": {
+                "offset": 2157,
+                "line": 70,
+                "column": 1
+              },
+              "end": {
+                "offset": 2372,
+                "line": 72,
+                "column": 67
+              }
+            }
+          }
+        ],
+        "source": {
+          "documentId": "artigo.md",
+          "start": {
+            "offset": 2144,
+            "line": 68,
+            "column": 1
+          },
+          "end": {
+            "offset": 2155,
+            "line": 68,
+            "column": 12
+          }
+        }
+      }
+    ]
+  },
+  "references": {},
+  "resources": {},
+  "notes": {}
+}

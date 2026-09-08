@@ -1,0 +1,16 @@
+{
+  "name": "@abnt/plugin-host",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": { "development": "./src/index.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "dependencies": {
+    "@abnt/document-model": "workspace:*",
+    "@abnt/plugin-api": "workspace:*",
+    "@abnt/protocol": "workspace:*"
+  }
+}

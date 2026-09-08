@@ -1,0 +1,26 @@
+node_modules/
+dist/
+apps/**/dist/
+apps/**/.native-cache/
+apps/**/.package/
+apps/**/release/
+packages/**/dist/
+*.tsbuildinfo
+.DS_Store
+
+# Saída de compilação dos fixtures
+fixtures/**/dist/
+
+# Renderizações temporárias usadas apenas na inspeção visual local
+tmp/
+
+# Baselines de regressão visual rejeitados (ver M4)
+**/__visual__/*.actual.png
+**/__visual__/*.diff.png
+
+# Configuração local do Claude Code (permissões por usuário, não compartilhada)
+.claude/settings.local.json
+
+# Dump de código gerado localmente para colar em chat (tudo.py); não é fonte
+codigo_completo.txt
+output/

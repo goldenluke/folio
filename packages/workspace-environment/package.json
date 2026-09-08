@@ -1,0 +1,21 @@
+{
+  "name": "@abnt/workspace-environment",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": { "development": "./src/index.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "dependencies": {
+    "@abnt/bibliography": "workspace:*",
+    "@abnt/document-model": "workspace:*",
+    "@abnt/language-service": "workspace:*",
+    "@abnt/markdown": "workspace:*",
+    "@abnt/protocol": "workspace:*",
+    "@abnt/source-composition": "workspace:*",
+    "@abnt/workspace-core": "workspace:*",
+    "@abnt/workspace-sessions": "workspace:*"
+  }
+}

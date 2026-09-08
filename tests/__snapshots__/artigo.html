@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Arquitetura de Software para Sistemas Distribuídos</title>
+<style>
+@page {
+  size: A4;
+  margin: 3cm 2cm 2cm 3cm;
+  @top-right {
+    content: counter(page);
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    vertical-align: bottom;
+    padding-bottom: 0.5cm;
+  }
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+p {
+  margin: 0;
+  orphans: 2;
+  widows: 2;
+}
+
+.front-matter-label {
+  font-weight: bold;
+}
+
+.publication-toc-title {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: bold;
+  margin: 0 0 1.5em;
+}
+
+.publication-toc-entry {
+  display: flex;
+  gap: 0.5em;
+  margin-bottom: 0.35em;
+}
+
+.publication-toc-entry a {
+  color: inherit;
+  text-decoration: none;
+  flex: 1;
+  display: flex;
+}
+
+.publication-toc-entry a::after {
+  content: target-counter(attr(href), page);
+  margin-left: auto;
+  padding-left: 0.75em;
+}
+
+/* Título de seção não deve ficar sozinho no fim da página. */
+h1, h2, h3, h4, h5, h6 {
+  break-after: avoid;
+  break-inside: avoid;
+  margin: 0;
+}
+
+blockquote, figure, table, pre {
+  margin: 0;
+}
+
+/* Figura e tabela não devem ser partidas entre páginas. */
+figure, .s-table {
+  break-inside: avoid;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Cabeçalho de tabela se repete quando ela atravessa páginas — o Paged.js
+   respeita thead, o Chromium sozinho não. */
+thead {
+  display: table-header-group;
+}
+
+th, td {
+  padding: 0.2em 0.4em;
+  vertical-align: top;
+}
+
+/* Tabela ABNT: fechada só em cima e embaixo, sem grade lateral. */
+table, th, td {
+  border: none;
+}
+thead tr:last-child th {
+  border-bottom: 0.5pt solid #000;
+}
+thead tr:first-child th {
+  border-top: 0.5pt solid #000;
+}
+tbody tr:last-child td {
+  border-bottom: 0.5pt solid #000;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.note-mark a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.quote-source {
+  text-align: right;
+  font-size: 10pt;
+}
+
+/* Notas de rodapé.
+   O elemento é emitido inline, no ponto da chamada; o Paged.js o move para a
+   área de rodapé da página em que esse ponto caiu e gera a chamada e o
+   marcador. Daí o float abaixo, em vez de posicionamento nosso. */
+.footnote {
+  float: footnote;
+  footnote-display: block;
+}
+
+/* Marcador gerado pelo Paged.js: numeração contínua no documento. */
+::footnote-call {
+  vertical-align: super;
+  font-size: 0.7em;
+  line-height: 0;
+}
+
+::footnote-marker {
+  vertical-align: super;
+  font-size: 0.7em;
+}
+
+/* Filete separando o rodapé do corpo, como manda a apresentação gráfica. */
+.pagedjs_footnote_area > div {
+  border-top: 0.5pt solid #000;
+  padding-top: 0.2em;
+}
+
+.endnote {
+  margin-bottom: 0.4em;
+}
+
+ol, ul {
+  margin: 0;
+  padding-left: 2em;
+}
+
+.s-body {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  text-align: justify;
+  margin-top: 0;
+  margin-bottom: 0;
+  text-indent: 1.25cm;
+}
+
+.s-heading-1 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  font-weight: bold;
+  text-align: left;
+  text-transform: uppercase;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.s-heading-2 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 1.2em;
+  margin-bottom: 0.4em;
+}
+
+.s-heading-3 {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  font-weight: normal;
+  text-align: left;
+  margin-top: 1em;
+  margin-bottom: 0.3em;
+}
+
+.s-doc-title {
+  margin-bottom: 2em;
+}
+
+.s-doc-title-line {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 14pt;
+  line-height: 1.5;
+  font-weight: bold;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.s-doc-authors {
+  margin-bottom: 2em;
+}
+
+.s-doc-authors-line {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.s-abstract {
+  margin-bottom: 1em;
+}
+
+.s-abstract-line {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  line-height: 1;
+  text-align: justify;
+  text-indent: 0;
+}
+
+.s-keywords {
+  margin-bottom: 2em;
+}
+
+.s-keywords-line {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  line-height: 1;
+  text-indent: 0;
+}
+
+.s-quote-long {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 10pt;
+  line-height: 1;
+  text-align: justify;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 4cm;
+  text-indent: 0;
+}
+
+.s-list {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  margin-bottom: 1em;
+}
+
+.s-list-item {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  text-indent: 0;
+}
+
+.s-figure {
+  text-align: center;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.s-table {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.s-code {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 10pt;
+  line-height: 1.2;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  text-indent: 0;
+  white-space: pre-wrap;
+}
+
+.s-equation {
+  text-align: center;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  text-indent: 0;
+}
+
+.s-separator {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.s-caption {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 10pt;
+  line-height: 1;
+  text-align: center;
+  margin-bottom: 0.3em;
+  text-indent: 0;
+}
+
+.s-source {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 10pt;
+  line-height: 1;
+  text-align: center;
+  margin-top: 0.3em;
+  text-indent: 0;
+}
+
+.s-note {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 10pt;
+  line-height: 1;
+  text-align: justify;
+  text-indent: 0;
+}
+
+.s-reference {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  line-height: 1;
+  text-align: left;
+  margin-bottom: 1em;
+  text-indent: 0;
+}
+</style>
+</head>
+<body>
+<section class="front-matter s-doc-title" data-role="doc:title">
+<p class="s-doc-title-line">Arquitetura de Software para Sistemas Distribuídos</p>
+</section>
+<section class="front-matter s-doc-authors" data-role="doc:authors">
+<p class="s-doc-authors-line">João da Silva — Universidade Federal do Exemplo</p>
+<p class="s-doc-authors-line">Maria Souza — Universidade Federal do Exemplo</p>
+</section>
+<section class="front-matter s-abstract" data-role="doc:abstract">
+<p class="s-abstract-line"><span class="front-matter-label">Resumo: </span>Este artigo apresenta uma análise de decisões arquiteturais recorrentes em sistemas distribuídos, com atenção a consistência, particionamento e tolerância a falhas. Discute-se o impacto dessas decisões sobre a manutenibilidade de sistemas de larga escala, a partir de casos observados na literatura e na prática industrial.</p>
+</section>
+<section class="front-matter s-keywords" data-role="doc:keywords">
+<p class="s-keywords-line"><span class="front-matter-label">Palavras-chave: </span>arquitetura de software. sistemas distribuídos. escalabilidade.</p>
+</section>
+<h1 id="n17" class="s-heading-1">1 Introdução</h1>
+<p class="s-body">Sistemas distribuídos apresentam desafios que não existem em sistemas de nó
+único. A necessidade de coordenar estado entre máquinas introduz modos de
+falha parciais, nos quais parte do sistema permanece disponível enquanto outra
+parte se torna inacessível.</p>
+<p class="s-body">Este trabalho examina como decisões tomadas no início do projeto arquitetural
+restringem o espaço de soluções disponível mais adiante, frequentemente de
+maneira irreversível.</p>
+<h2 id="n9" class="s-heading-2">1.1 Motivação</h2>
+<p class="s-body">A literatura de arquitetura frequentemente trata consistência e disponibilidade
+como um par de opções entre as quais se escolhe uma. Na prática, a escolha é
+feita por operação, e não por sistema.</p>
+<h2 id="n16" class="s-heading-2">1.2 Objetivos</h2>
+<p class="s-body">Delimitar critérios objetivos para essa escolha, e demonstrar que <strong>a decisão
+arquitetural mais cara de reverter</strong> é a que define a fronteira transacional.</p>
+<h1 id="n29" class="s-heading-1">2 Metodologia</h1>
+<p class="s-body">A análise combina revisão da literatura com estudo de três sistemas em
+produção, observados ao longo de dezoito meses.</p>
+<h2 id="n24" class="s-heading-2">2.1 Coleta de dados</h2>
+<p class="s-body">Foram coletadas métricas de latência, taxa de erro e tempo de recuperação após
+incidente, agregadas por semana.</p>
+<h2 id="n28" class="s-heading-2">2.2 Limitações</h2>
+<p class="s-body">O recorte industrial restringe a generalização dos resultados: os três sistemas
+observados pertencem ao mesmo domínio de aplicação.</p>
+<h1 id="n33" class="s-heading-1">3 Resultados</h1>
+<p class="s-body">Os sistemas que definiram fronteiras transacionais estreitas apresentaram tempo
+de recuperação significativamente menor, ao custo de maior complexidade no
+código de aplicação.</p>
+<h1 id="n37" class="s-heading-1">4 Conclusão</h1>
+<p class="s-body">A fronteira transacional é o compromisso arquitetural determinante. Movê-la
+depois exige reescrever a camada de persistência e a lógica de aplicação
+simultaneamente, o que raramente é viável em sistemas em produção.</p>
+</body>
+</html>
