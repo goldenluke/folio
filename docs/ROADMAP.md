@@ -1046,6 +1046,28 @@ na superfície do produto. Diff estrutural da fonte composta inteira (`index.md`
 com capítulos) também ficou fora: exigiria rodar a composição dentro do fluxo
 de histórico, que hoje só compara texto já em mãos.
 
+### Onda P — query language e descoberta avançada ✅
+
+- [x] **F71 — Boolean Query AST**: `OR`, `NOT`, parênteses e `AND` explícito
+      ou implícito são parser/planner do `language-service`, sobre os mesmos
+      predicados estruturados e projeções FTS5/SQLite do F4.
+- [x] **F72 — Search View dedicada**: superfície acadêmica para consulta,
+      filtros, contagem, documento, seção e snippet; Quick Open permanece
+      simples.
+- [x] **F73 — Section-level search**: hit textual recebe o heading do outline
+      indexado que o contém; o renderer só consome o DTO.
+- [x] **F74 — Smart unlinked mentions**: normalização de diacríticos, limites
+      de palavra, títulos de documento/seção e títulos/autores bibliográficos;
+      documento sugere link e bibliografia sugere citação, sempre com
+      confirmação do usuário. Aliases aguardam formato autoral explícito.
+- [x] **F75 — Search actions**: abrir, abrir ao lado, adicionar à collection,
+      criar busca salva e copiar link são Commands — não callbacks especiais
+      da Search View.
+
+Ver ADR 0056. A busca não ganhou uma fonte de verdade nova: índice segue
+descartável, arquivos seguem autoria e buscas/collections seguem estado
+operacional local.
+
 Release operations (packaging, installers, signing, update e observabilidade).
 Nada disso deve alterar o núcleo semântico; é essa propriedade que o M4 existe
 para verificar.

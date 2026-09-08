@@ -307,6 +307,8 @@ export interface WorkspaceSearchResultDto {
   readonly title: string;
   readonly snippet: string;
   readonly score: number;
+  /** F73: projeção do heading indexado que contém o resultado, não Markdown parseado no renderer. */
+  readonly section?: { readonly title: string; readonly range: { readonly start: number; readonly end: number } };
 }
 
 export interface WorkspaceBacklinksRequest {
@@ -808,7 +810,23 @@ export interface LanguageUnlinkedMentionsRequest {
   readonly expectedRevision: number;
 }
 
-export interface LanguageUnlinkedMentionDto {
+export type LanguageUnlinkedMentionDto =
+  | {
+    readonly kind: 'document';
+    readonly range: LanguageRangeDto;
+    readonly targetFileId: string;
+    readonly targetPath: string;
+    readonly text: string;
+  }
+  | {
+    readonly kind: 'reference';
+    readonly range: LanguageRangeDto;
+    readonly referenceId: string;
+    readonly text: string;
+  };
+
+/** @deprecated Use LanguageUnlinkedMentionDto discriminado por kind. */
+export interface LegacyLanguageUnlinkedMentionDto {
   readonly range: LanguageRangeDto;
   readonly targetFileId: string;
   readonly targetPath: string;

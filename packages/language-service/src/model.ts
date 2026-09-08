@@ -50,7 +50,24 @@ export interface LanguageCrossReferenceTarget {
  * opt-in (F32/"Backlinks 2.0"), nunca uma edição automática. `text` preserva a
  * grafia exata encontrada no documento (pode diferir do título em maiúsculas).
  */
-export interface LanguageUnlinkedMention {
+export type LanguageUnlinkedMention =
+  | {
+    readonly kind: 'document';
+    readonly range: LanguageRange;
+    readonly targetFileId: WorkspaceFileId;
+    readonly targetPath: WorkspacePath;
+    readonly text: string;
+  }
+  | {
+    /** F74: título/autoria bibliográfica sugere uma citação, não um link de arquivo. */
+    readonly kind: 'reference';
+    readonly range: LanguageRange;
+    readonly referenceId: string;
+    readonly text: string;
+  };
+
+/** @deprecated Use o discriminante `kind` de LanguageUnlinkedMention. */
+export interface LegacyLanguageUnlinkedMention {
   readonly range: LanguageRange;
   readonly targetFileId: WorkspaceFileId;
   readonly targetPath: WorkspacePath;
@@ -128,6 +145,8 @@ export interface LanguageReference {
 export interface LanguageReferenceCatalog {
   search(query: string, limit: number): Promise<readonly LanguageReference[]>;
   find(referenceId: string): Promise<LanguageReference | undefined>;
+  /** Catálogos que conseguem enumerar entradas habilitam F74 sem I/O no renderer. */
+  all?(): Promise<readonly LanguageReference[]>;
 }
 
 /**

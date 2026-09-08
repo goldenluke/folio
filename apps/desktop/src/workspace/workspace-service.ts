@@ -465,6 +465,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
         title: result.title,
         snippet: result.snippet,
         score: result.score,
+        ...(result.section === undefined ? {} : { section: result.section }),
       }));
     });
   }
@@ -1160,12 +1161,9 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
 
   async unlinkedMentions(request: import('@abnt/protocol').LanguageUnlinkedMentionsRequest): Promise<ProtocolResult<readonly import('@abnt/protocol').LanguageUnlinkedMentionDto[]>> {
     return this.#languageQuery(request, async (fileId) =>
-      (await this.#requireLanguage().unlinkedMentions(fileId)).map((mention) => ({
-        range: mention.range,
-        targetFileId: String(mention.targetFileId),
-        targetPath: String(mention.targetPath),
-        text: mention.text,
-      })),
+      (await this.#requireLanguage().unlinkedMentions(fileId)).map((mention) => mention.kind === 'document'
+        ? { kind: 'document' as const, range: mention.range, text: mention.text, targetFileId: String(mention.targetFileId), targetPath: String(mention.targetPath) }
+        : { kind: 'reference' as const, range: mention.range, text: mention.text, referenceId: mention.referenceId }),
     );
   }
 
@@ -1318,6 +1316,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       async find(id) {
         return references.find((reference) => reference.id === id);
       },
+      async all() { return references; },
     };
   }
 
@@ -1327,7 +1326,16 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
     bibliography: NonNullable<import('@abnt/editor-core').EditorSnapshot['bibliography']>,
     files: readonly WorkspaceFile[],
   ): LanguageReference {
-    const value = entry as { readonly title?: unknown };
+    const value = entry as { readonly title?: unknown; readonly author?: unknown };
+    const authors = Array.isArray(value.author)
+      ? value.author.flatMap((author) => {
+          if (typeof author !== 'object' || author === null) return [];
+          const person = author as { readonly literal?: unknown; readonly family?: unknown; readonly given?: unknown };
+          if (typeof person.literal === 'string' && person.literal.trim() !== '') return [person.literal];
+          const name = [person.given, person.family].filter((part): part is string => typeof part === 'string' && part.trim() !== '').join(' ');
+          return name === '' ? [] : [name];
+        })
+      : [];
     const provenance = bibliography.provenanceByReference[id]?.[0];
     const source = bibliography.sources.find((candidate) => candidate.id === provenance?.sourceId);
     const sourceFile = source?.resolvedUri === undefined
@@ -1336,6 +1344,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
     return {
       id,
       ...(typeof value.title === 'string' ? { title: value.title } : {}),
+      ...(authors.length === 0 ? {} : { authors }),
       ...(sourceFile === undefined
         ? {}
         : { definition: { fileId: sourceFile.id, path: sourceFile.path, range: { start: 0, end: 0 } } }),

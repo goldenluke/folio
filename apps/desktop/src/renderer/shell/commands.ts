@@ -22,6 +22,15 @@ export interface CommandContext {
     readonly text: string;
     readonly targetPath: string;
   };
+  /** F72/F75: resultado explicitamente selecionado na Search View. */
+  readonly targetSearchResult?: {
+    readonly fileId: string;
+    readonly path: string;
+    readonly title: string;
+    readonly section?: { readonly title: string; readonly range: { readonly start: number; readonly end: number } };
+  };
+  /** Consulta explícita para salvar/copiar; não depende do estado de um componente. */
+  readonly targetSearchQuery?: string;
 }
 
 export interface Command {

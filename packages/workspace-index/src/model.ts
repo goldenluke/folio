@@ -133,6 +133,11 @@ export interface WorkspaceSearchResult {
   readonly title: string;
   readonly snippet: string;
   readonly score: number;
+  /** F73: seção do outline que contém o hit textual, quando ele é determinável. */
+  readonly section?: {
+    readonly title: string;
+    readonly range: { readonly start: number; readonly end: number };
+  };
 }
 
 /**

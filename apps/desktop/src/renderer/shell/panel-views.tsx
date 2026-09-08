@@ -97,7 +97,7 @@ export const outlinePanel: PanelDefinition = {
 export const backlinksPanel: PanelDefinition = {
   id: 'backlinks',
   title: 'Backlinks',
-  render({ view, openDocument, linkifyMention }): JSX.Element {
+  render({ view, openDocument, linkifyMention, insertCitation }): JSX.Element {
     const fileId = view?.fileId;
     const revision = view?.snapshot.session.revision;
     const [backlinks, setBacklinks] = useState<readonly WorkspaceBacklinkDto[] | undefined>(undefined);
@@ -178,19 +178,19 @@ export const backlinksPanel: PanelDefinition = {
               <ul className="mt-2 list-none m-0 p-0 grid gap-2">
                 {mentions.map((mention, index) => (
                   <li
-                    key={`${mention.targetFileId}-${mention.range.start}-${index}`}
+                    key={`${mention.kind}:${mention.kind === 'document' ? mention.targetFileId : mention.referenceId}:${mention.range.start}-${index}`}
                     className="grid gap-1 border-l-[3px] border-slate-300 pl-2.5 text-sm text-slate-700"
                   >
-                    <div className="truncate">"{mention.text}" → {mention.targetPath}</div>
-                    <button
+                    <div className="truncate">"{mention.text}" → {mention.kind === 'document' ? mention.targetPath : `@${mention.referenceId}`}</div>
+                    {mention.kind === 'document' ? <button
                       type="button"
                       className="w-fit rounded-lg bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
-                      onClick={() =>
-                        linkifyMention({ range: mention.range, text: mention.text, targetPath: mention.targetPath })
-                      }
-                    >
-                      Transformar em link
-                    </button>
+                      onClick={() => linkifyMention({ range: mention.range, text: mention.text, targetPath: mention.targetPath })}
+                    >Transformar em link</button> : <button
+                      type="button"
+                      className="w-fit rounded-lg bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                      onClick={() => insertCitation(mention.referenceId)}
+                    >Inserir citação</button>}
                   </li>
                 ))}
               </ul>

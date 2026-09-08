@@ -276,12 +276,9 @@ export function createRemoteLanguageService(
       if (expectedRevision === undefined) return [];
       const result = await api.language.unlinkedMentions({ fileId: String(fileId), expectedRevision });
       return result.ok
-        ? result.value.map((mention) => ({
-            range: mention.range,
-            targetFileId: asWorkspaceFileId(mention.targetFileId),
-            targetPath: asWorkspacePath(mention.targetPath),
-            text: mention.text,
-          }))
+        ? result.value.map((mention) => mention.kind === 'document'
+          ? { kind: 'document' as const, range: mention.range, targetFileId: asWorkspaceFileId(mention.targetFileId), targetPath: asWorkspacePath(mention.targetPath), text: mention.text }
+          : { kind: 'reference' as const, range: mention.range, referenceId: mention.referenceId, text: mention.text })
         : [];
     },
     async writingStatistics(fileId) {

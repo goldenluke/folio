@@ -639,6 +639,7 @@ export const workspaceSearchResultDtoSchema = z.object({
   title: z.string(),
   snippet: z.string(),
   score: z.number(),
+  section: z.object({ title: z.string(), range: z.object({ start: nonNegativeInteger, end: nonNegativeInteger }) }).optional(),
 }) as z.ZodType<WorkspaceSearchResultDto>;
 export const workspaceSearchResponseSchema = z.array(workspaceSearchResultDtoSchema) as z.ZodType<
   readonly WorkspaceSearchResultDto[]
@@ -882,12 +883,10 @@ export const languageCrossReferenceTargetDtoSchema = z.object({ identifier: nonE
 export const languageCrossReferenceTargetsResponseSchema = z.array(languageCrossReferenceTargetDtoSchema) as z.ZodType<readonly import('./model.js').LanguageCrossReferenceTargetDto[]>;
 
 export const languageUnlinkedMentionsRequestSchema = z.object({ fileId: nonEmptyString, expectedRevision: nonNegativeInteger }) as z.ZodType<import('./model.js').LanguageUnlinkedMentionsRequest>;
-export const languageUnlinkedMentionDtoSchema = z.object({
-  range: languageRangeSchema,
-  targetFileId: nonEmptyString,
-  targetPath: nonEmptyString,
-  text: z.string(),
-}) as z.ZodType<import('./model.js').LanguageUnlinkedMentionDto>;
+export const languageUnlinkedMentionDtoSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('document'), range: languageRangeSchema, targetFileId: nonEmptyString, targetPath: nonEmptyString, text: z.string() }),
+  z.object({ kind: z.literal('reference'), range: languageRangeSchema, referenceId: nonEmptyString, text: z.string() }),
+]) as z.ZodType<import('./model.js').LanguageUnlinkedMentionDto>;
 export const languageUnlinkedMentionsResponseSchema = z.array(languageUnlinkedMentionDtoSchema) as z.ZodType<
   readonly import('./model.js').LanguageUnlinkedMentionDto[]
 >;

@@ -126,6 +126,22 @@ const citationAt = (ast: DocumentAst, offset: number): CitationNode | undefined 
   })[0];
 };
 
+const DIACRITICS = /[\u0300-\u036f]/gu;
+
+/**
+ * F74: casa "metodologia" com "Metodología" sem tocar offset — decompor e
+ * remover marca combinante mantém o comprimento igual ao original para
+ * acentuação latina comum (cada caractere acentuado vira base + 1 marca, que
+ * some), então a posição no texto original continua válida.
+ */
+const normalizedForMatching = (value: string): string => value.normalize('NFKD').replace(DIACRITICS, '').toLocaleLowerCase();
+
+const isWordChar = (char: string | undefined): boolean => char !== undefined && /[\p{L}\p{N}]/u.test(char);
+
+/** F74: "metodologia" não deve casar dentro de "metodologias" nem "ametodologia". */
+const hasWordBoundary = (content: string, start: number, end: number): boolean =>
+  !isWordChar(content[start - 1]) && !isWordChar(content[end]);
+
 const linkAt = (ast: DocumentAst, offset: number): LinkNode | undefined => {
   const matches = [...percorrer(ast)].filter(
     (node): node is LinkNode => node.type === 'link' && contains(node.source, offset),
@@ -478,6 +494,19 @@ export class WorkspaceLanguageService implements LanguageService {
    * desse span já está "linkada" por definição. Puramente uma sugestão: nunca
    * edita o documento sozinho.
    */
+  /**
+   * F74: melhora a heurística de F32 com três tipos de candidatos:
+   * - normalização de diacríticos + word boundary, pra "metodologia" não
+   *   deixar de casar com "Metodología" nem casar por acidente dentro de
+   *   "metodologias" ou "ametodologia";
+   * - pool de candidatos cresce de título de documento pra também título de
+   *   SEÇÃO de outro documento (`headings()` vault-wide) — ainda resolve pro
+   *   arquivo que contém a seção, mesma forma de link.
+   * - títulos e autores da bibliografia efetiva da sessão, sugerindo citação
+   *   (não um link inventado) quando o catálogo consegue enumerá-los.
+   * Aliases continuam deliberadamente fora: o vault ainda não tem um modelo
+   * autoral para declará-los, então inferi-los de strings seria fingir certeza.
+   */
   async unlinkedMentions(fileId: WorkspaceFileId): Promise<readonly LanguageUnlinkedMention[]> {
     const document = await this.#document(fileId);
     const excluded: Array<{ readonly start: number; readonly end: number }> = [];
@@ -490,29 +519,62 @@ export class WorkspaceLanguageService implements LanguageService {
       excluded.some((range) => start < range.end && end > range.start);
 
     const MIN_TITLE_LENGTH = 4;
-    const titles = this.#index
+    const documentTitleCandidates = this.#index
       .documentTitles()
-      .filter((entry) => entry.fileId !== fileId && entry.title.trim().length >= MIN_TITLE_LENGTH);
+      .filter((entry) => entry.fileId !== fileId && entry.title.trim().length >= MIN_TITLE_LENGTH)
+      .map((entry) => ({ title: entry.title, fileId: entry.fileId, path: entry.path }));
+    const sectionTitleCandidates = this.#index
+      .headings()
+      .filter((entry) => entry.fileId !== fileId && entry.title.trim().length >= MIN_TITLE_LENGTH)
+      .map((entry) => ({ title: entry.title, fileId: entry.fileId, path: entry.path }));
+    // Título de documento primeiro: se os dois casarem no mesmo trecho
+    // (comum — a seção de nível 1 costuma repetir o título), a sugestão
+    // aponta pro documento, não pra uma seção específica dele.
+    const candidates = [...documentTitleCandidates, ...sectionTitleCandidates];
+
     const content = document.content;
-    const lowerContent = content.toLocaleLowerCase();
+    const normalized = normalizedForMatching(content);
     const mentions: LanguageUnlinkedMention[] = [];
-    for (const title of titles) {
-      const needle = title.title.toLocaleLowerCase();
-      let start = lowerContent.indexOf(needle);
+    const claimed: Array<{ readonly start: number; readonly end: number }> = [];
+    for (const candidate of candidates) {
+      const needle = normalizedForMatching(candidate.title);
+      if (needle === undefined || normalized === undefined) continue;
+      let start = normalized.indexOf(needle);
       while (start !== -1) {
         const end = start + needle.length;
-        if (!isExcluded(start, end)) {
+        const alreadyClaimed = claimed.some((range) => start < range.end && end > range.start);
+        if (!isExcluded(start, end) && !alreadyClaimed && hasWordBoundary(content, start, end)) {
+          claimed.push({ start, end });
           mentions.push({
+            kind: 'document',
             range: { start, end },
-            targetFileId: title.fileId,
-            targetPath: title.path,
+            targetFileId: candidate.fileId,
+            targetPath: candidate.path,
             text: content.slice(start, end),
           });
         }
-        start = lowerContent.indexOf(needle, start + 1);
+        start = normalized.indexOf(needle, start + 1);
       }
     }
-    return mentions;
+    const catalog = await this.#catalog(fileId);
+    const references = await catalog?.all?.() ?? [];
+    for (const reference of references) {
+      for (const phrase of [reference.title, ...(reference.authors ?? [])]) {
+        if (phrase === undefined || phrase.trim().length < MIN_TITLE_LENGTH) continue;
+        const needle = normalizedForMatching(phrase);
+        let start = normalized.indexOf(needle);
+        while (start !== -1) {
+          const end = start + needle.length;
+          const alreadyClaimed = claimed.some((range) => start < range.end && end > range.start);
+          if (!isExcluded(start, end) && !alreadyClaimed && hasWordBoundary(content, start, end)) {
+            claimed.push({ start, end });
+            mentions.push({ kind: 'reference', range: { start, end }, referenceId: reference.id, text: content.slice(start, end) });
+          }
+          start = normalized.indexOf(needle, start + 1);
+        }
+      }
+    }
+    return mentions.sort((a, b) => a.range.start - b.range.start || a.kind.localeCompare(b.kind));
   }
 
   async writingStatistics(fileId: WorkspaceFileId): Promise<LanguageWritingStatistics> {

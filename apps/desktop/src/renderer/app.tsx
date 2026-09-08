@@ -459,6 +459,64 @@ function PaletteDialog({
   );
 }
 
+/**
+ * F72/F73 — superfície acadêmica dedicada, distinta do Quick Open. Ela só
+ * recebe DTOs de busca já calculados pelo Workspace Service; filtros, seções
+ * e snippets nunca são reconstruídos a partir de Markdown no renderer.
+ */
+function SearchViewDialog({
+  query,
+  results,
+  commandRegistry,
+  commandContext,
+  onQueryChange,
+  onClose,
+}: {
+  readonly query: string;
+  readonly results: readonly WorkspaceSearchResultDto[];
+  readonly commandRegistry: ReturnType<typeof createCommandRegistry>;
+  readonly commandContext: ReturnType<typeof commandContextForPalette>;
+  readonly onQueryChange: (query: string) => void;
+  readonly onClose: () => void;
+}): JSX.Element {
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => { input.current?.focus(); }, []);
+  const groups = useMemo(() => {
+    const grouped = new Map<string, WorkspaceSearchResultDto[]>();
+    for (const result of results) {
+      const label = result.section?.title ?? 'Documento';
+      const current = grouped.get(label) ?? [];
+      current.push(result);
+      grouped.set(label, current);
+    }
+    return [...grouped.entries()];
+  }, [results]);
+  const contextFor = (result: WorkspaceSearchResultDto) => ({
+    ...commandContext,
+    targetSearchResult: {
+      fileId: result.fileId,
+      path: result.path,
+      title: result.title,
+      ...(result.section === undefined ? {} : { section: result.section }),
+    },
+  });
+  const run = (id: string, result?: WorkspaceSearchResultDto): void => {
+    void commandRegistry.execute(id, result === undefined
+      ? { ...commandContext, targetSearchQuery: query }
+      : contextFor(result));
+  };
+  const appendFilter = (filter: string): void => onQueryChange(`${query.trim()}${query.trim() === '' ? '' : ' '}${filter}`);
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/75 p-5" role="presentation" onMouseDown={onClose}>
+      <section role="dialog" aria-modal="true" aria-labelledby="search-view-title" className="mx-auto grid h-full max-h-[52rem] w-full max-w-5xl grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+        <header className="flex items-start gap-4 border-b border-slate-200 px-5 py-4"><div><h2 id="search-view-title" className="text-lg font-bold text-slate-900">Busca acadêmica</h2><p className="text-sm text-slate-500">Operadores, seções e ações sobre a mesma projeção do vault.</p></div><button type="button" aria-label="Fechar busca" className="folio-control ml-auto grid h-8 w-8 place-items-center rounded-lg text-lg" onClick={onClose}>×</button></header>
+        <div className="border-b border-slate-200 px-5 py-3"><div className="flex gap-2"><input ref={input} value={query} type="search" onChange={(event) => onQueryChange(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') onClose(); }} placeholder={'tag:metodologia OR tag:qualitativa · has:citation NOT has:figure'} aria-label="Consulta acadêmica" className="folio-input min-w-0 flex-1 rounded-lg px-3 py-2 text-sm" /><button type="button" className="folio-primary rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-40" disabled={query.trim() === ''} onClick={() => run('search.createSaved')}>Salvar busca</button></div><div className="mt-2 flex flex-wrap items-center gap-2 text-xs"><span className="font-semibold text-slate-500">Filtros:</span>{['tag:metodologia', 'has:citation', 'NOT has:figure', 'year:2024', '(author:"Silva" OR author:"Souza")'].map((filter) => <button key={filter} type="button" onClick={() => appendFilter(filter)} className="rounded-full bg-indigo-50 px-2.5 py-1 font-medium text-indigo-700 hover:bg-indigo-100">{filter}</button>)}<span className="ml-auto text-slate-500">{results.length} resultado(s)</span></div></div>
+        <div className="min-h-0 overflow-auto p-5">{query.trim() === '' ? <p className="rounded-lg bg-slate-50 p-5 text-sm text-slate-500">Digite texto livre ou combine filtros com <code>OR</code>, <code>NOT</code> e parênteses.</p> : results.length === 0 ? <p className="rounded-lg bg-slate-50 p-5 text-sm text-slate-500">Nenhum documento corresponde à consulta.</p> : <div className="grid gap-5">{groups.map(([section, entries]) => <section key={section}><h3 className="border-b border-slate-100 pb-1 text-xs font-bold uppercase tracking-[0.13em] text-slate-500">{section}</h3><ul className="mt-2 grid gap-2">{entries.map((result) => <li key={`${result.fileId}:${result.section?.range.start ?? 0}`} className="rounded-lg border border-slate-200 p-3"><div className="flex min-w-0 items-start gap-3"><button type="button" className="min-w-0 flex-1 text-left" onClick={() => run('search.open', result)}><strong className="block truncate text-sm text-slate-800">{result.title}</strong><span className="block truncate font-mono text-xs text-slate-500">{result.path}{result.section === undefined ? '' : ` · ${result.section.title}`}</span><span className="mt-1 block text-sm text-slate-600">{result.snippet === '' ? 'Correspondência estrutural.' : renderSnippet(result.snippet)}</span></button><div className="flex shrink-0 flex-wrap justify-end gap-1"><button type="button" className="folio-control rounded px-2 py-1 text-xs" title="Abrir" onClick={() => run('search.open', result)}>Abrir</button><button type="button" disabled={!commandRegistry.isEnabled('search.openSide', contextFor(result))} className="folio-control rounded px-2 py-1 text-xs disabled:opacity-40" title="Abrir ao lado" onClick={() => run('search.openSide', result)}>Ao lado</button><button type="button" className="folio-control rounded px-2 py-1 text-xs" onClick={() => run('search.addToCollection', result)}>Collection</button><button type="button" className="folio-control rounded px-2 py-1 text-xs" onClick={() => run('search.copyLink', result)}>Copiar link</button></div></div></li>)}</ul></section>)}</div>}</div>
+      </section>
+    </div>
+  );
+}
+
 function SplitEditorDialog({ files, onClose, onOpen }: {
   readonly files: readonly WorkspaceFileDto[];
   readonly onClose: () => void;
@@ -873,6 +931,7 @@ export function App(): JSX.Element {
   const [activePanelId, setActivePanelId] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<readonly WorkspaceSearchResultDto[]>([]);
+  const [searchViewOpen, setSearchViewOpen] = useState(false);
   const [openingVault, setOpeningVault] = useState(false);
   const [splitPreview, setSplitPreview] = useState(false);
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
@@ -908,11 +967,15 @@ export function App(): JSX.Element {
   const controllerSubscriptions = useRef(new Map<ViewId, () => void>()).current;
   /** Última revisão de preview pedida por fileId — resposta atrasada de uma revisão antiga é descartada. */
   const previewRequestedRevision = useRef(new Map<string, number>()).current;
+  /** F72: uma resposta de busca de consulta anterior nunca substitui a atual. */
+  const searchRequest = useRef(0);
   /** O command registry é registrado uma vez; o ref evita capturar um toggle antigo. */
   const splitPreviewEnabled = useRef(false);
   const lastVaultRestoreAttempted = useRef(false);
   const navigationHistory = useRef<readonly { readonly fileId: string; readonly path: string; readonly selection?: { readonly anchor: number; readonly head: number } }[]>([]);
   const navigationIndex = useRef(-1);
+  const knowledgeWorkspaceRef = useRef<KnowledgeWorkspaceState>(knowledgeWorkspace);
+  knowledgeWorkspaceRef.current = knowledgeWorkspace;
 
   const activeView = views.find((view) => view.id === activeId);
   const paletteContext = commandContextForPalette(activeView);
@@ -998,12 +1061,14 @@ export function App(): JSX.Element {
   useEffect(() => {
     const query = searchQuery.trim();
     if (query === '') {
+      searchRequest.current += 1;
       setSearchResults([]);
       return undefined;
     }
+    const request = (searchRequest.current += 1);
     const timer = setTimeout(() => {
       void window.academic.workspace.search({ query }).then((result) => {
-        if (result.ok) setSearchResults(result.value);
+        if (request === searchRequest.current && result.ok) setSearchResults(result.value);
       });
     }, 200);
     return () => clearTimeout(timer);
@@ -1093,13 +1158,13 @@ export function App(): JSX.Element {
    * histórico local próprios), mas ambos apontam para a mesma sessão remota
    * identificada por fileId. View nunca vira uma segunda autoridade do texto.
    */
-  const openDocumentInSplit = async (fileId: string, path: string): Promise<void> => {
+  const openDocumentInSplit = async (fileId: string, path: string): Promise<EditorController | undefined> => {
     const primary = viewsModel.active();
-    if (primary?.type !== 'editor') return;
+    if (primary?.type !== 'editor') return undefined;
     const result = await window.academic.editor.open({ fileId });
     if (!result.ok) {
       setMessage(result.error.message);
-      return;
+      return undefined;
     }
     const controller = new RemoteEditorController({ api: window.academic, snapshot: result.value, onError: setMessage });
     const viewId = viewsModel.openEditor({ fileId, path, controller, snapshot: controller.snapshot(), duplicate: true });
@@ -1108,6 +1173,7 @@ export function App(): JSX.Element {
     setSplitPreviewMode(false);
     setEditorSplit({ primaryId: primary.id, secondaryId: viewId });
     setMessage(`${primary.path} | ${path}`);
+    return controller;
   };
 
   const navigateToLocation = async (location: LanguageLocation): Promise<void> => {
@@ -1116,6 +1182,14 @@ export function App(): JSX.Element {
     controller.dispatch({ selection: { anchor: location.range.start, head: location.range.end } });
     rememberNavigation({ fileId: String(location.fileId), path: String(location.path), selection: { anchor: location.range.start, head: location.range.end } });
     setReferenceLocations(undefined);
+  };
+
+  const navigateToSearchResult = async (result: NonNullable<import('./shell/commands.js').CommandContext['targetSearchResult']>): Promise<void> => {
+    const controller = await openDocument(result.fileId, result.path, { remember: false });
+    if (controller === undefined) return;
+    const range = result.section?.range;
+    if (range !== undefined) controller.dispatch({ selection: { anchor: range.start, head: range.end } });
+    rememberNavigation({ fileId: result.fileId, path: result.path, ...(range === undefined ? {} : { selection: { anchor: range.start, head: range.end } }) });
   };
 
   const navigateHistory = async (direction: -1 | 1): Promise<void> => {
@@ -1232,6 +1306,84 @@ export function App(): JSX.Element {
         title: 'Abrir Knowledge Workspace',
         isEnabled: () => workspaceId !== undefined,
         run() { setKnowledgeWorkspaceOpen(true); },
+      }),
+      commandRegistry.register({
+        id: 'search.openView',
+        title: 'Abrir busca acadêmica',
+        isEnabled: () => workspaceId !== undefined,
+        run() { setSearchViewOpen(true); },
+      }),
+      commandRegistry.register({
+        id: 'search.open',
+        title: 'Abrir resultado da busca',
+        isEnabled: (context) => context.targetSearchResult !== undefined,
+        async run(context) {
+          if (context.targetSearchResult === undefined) return;
+          await navigateToSearchResult(context.targetSearchResult);
+          setSearchViewOpen(false);
+        },
+      }),
+      commandRegistry.register({
+        id: 'search.openSide',
+        title: 'Abrir resultado da busca ao lado',
+        isEnabled: (context) => context.targetSearchResult !== undefined && viewsModel.active()?.type === 'editor',
+        async run(context) {
+          if (context.targetSearchResult === undefined) return;
+          const controller = await openDocumentInSplit(context.targetSearchResult.fileId, context.targetSearchResult.path);
+          const range = context.targetSearchResult.section?.range;
+          if (controller !== undefined && range !== undefined) controller.dispatch({ selection: { anchor: range.start, head: range.end } });
+        },
+      }),
+      commandRegistry.register({
+        id: 'search.addToCollection',
+        title: 'Adicionar resultado da busca à collection',
+        isEnabled: (context) => context.targetSearchResult !== undefined && knowledgeWorkspaceRef.current.collections.length > 0,
+        run(context) {
+          if (context.targetSearchResult === undefined) return;
+          const collections = knowledgeWorkspaceRef.current.collections;
+          const choices = collections.map((collection, index) => `${index + 1}. ${collection.name}`).join('\n');
+          const selection = window.prompt(`Adicionar a qual collection?\n${choices}`, collections[0]?.name ?? '');
+          if (selection === null) return;
+          const normalized = selection.trim();
+          const collection = collections.find((item, index) => item.name === normalized || String(index + 1) === normalized || item.id === normalized);
+          if (collection === undefined) { setMessage('Collection não encontrada.'); return; }
+          setKnowledgeWorkspace((current) => ({
+            ...current,
+            collections: current.collections.map((item) => item.id !== collection.id || item.fileIds.includes(context.targetSearchResult!.fileId)
+              ? item
+              : { ...item, fileIds: [...item.fileIds, context.targetSearchResult!.fileId] }),
+          }));
+          setMessage(`${context.targetSearchResult.path} adicionada a ${collection.name}.`);
+        },
+      }),
+      commandRegistry.register({
+        id: 'search.createSaved',
+        title: 'Salvar consulta acadêmica',
+        isEnabled: (context) => context.targetSearchQuery?.trim() !== '',
+        run(context) {
+          const query = context.targetSearchQuery?.trim();
+          if (query === undefined || query === '') return;
+          const name = window.prompt('Nome da busca salva:', query);
+          if (name === null || name.trim() === '') return;
+          setKnowledgeWorkspace((current) => ({ ...current, searches: [...current.searches, { id: crypto.randomUUID(), name: name.trim(), query }] }));
+          setMessage(`Busca "${name.trim()}" salva.`);
+        },
+      }),
+      commandRegistry.register({
+        id: 'search.copyLink',
+        title: 'Copiar link do resultado da busca',
+        isEnabled: (context) => context.targetSearchResult !== undefined,
+        async run(context) {
+          const result = context.targetSearchResult;
+          if (result === undefined) return;
+          const link = result.section === undefined ? `[[${result.path}]]` : `[[${result.path}#${result.section.title}]]`;
+          try {
+            await navigator.clipboard.writeText(link);
+            setMessage('Link copiado.');
+          } catch {
+            setMessage('Não foi possível copiar o link.');
+          }
+        },
       }),
       commandRegistry.register({
         id: 'research.open',
@@ -1595,6 +1747,7 @@ export function App(): JSX.Element {
           ['mod+w', 'document.closeActiveTab'],
           ['mod+p', 'palette.quickOpen'],
           ['mod+shift+p', 'palette.commands'],
+          ['mod+shift+f', 'search.openView'],
           ['mod+shift+c', 'citation.openPicker'],
           ['mod+shift+i', 'figure.insert'],
           ['mod+shift+n', 'application.newWindow'],
@@ -1652,6 +1805,9 @@ export function App(): JSX.Element {
           aria-label="Buscar no vault"
           className="mb-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 shadow-sm focus:border-indigo-400 focus:bg-white focus:outline-none"
         />
+        <button type="button" disabled={workspaceId === undefined} className="folio-control mb-4 w-full rounded-xl px-3 py-2 text-left text-xs font-semibold disabled:opacity-40" onClick={() => void commandRegistry.execute('search.openView', paletteContext)}>
+          Busca acadêmica avançada
+        </button>
         {searchQuery.trim() !== '' ? (
           <ul aria-label="Resultados da busca" className="m-0 grid list-none gap-1 overflow-auto p-0">
             {searchResults.length === 0 ? (
@@ -1865,6 +2021,14 @@ export function App(): JSX.Element {
           onOpen={(file) => { setSplitEditorPicker(false); void openDocumentInSplit(file.fileId, file.path); }}
         />
       )}
+      {searchViewOpen && <SearchViewDialog
+        query={searchQuery}
+        results={searchResults}
+        commandRegistry={commandRegistry}
+        commandContext={paletteContext}
+        onQueryChange={setSearchQuery}
+        onClose={() => setSearchViewOpen(false)}
+      />}
       {citationEditor !== undefined && activeEditorView !== undefined && (
         <CitationDialog
           fileId={activeEditorView.fileId}
