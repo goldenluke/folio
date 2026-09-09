@@ -753,6 +753,26 @@ export interface DesktopExportRequest {
   readonly format: ExportFormat;
 }
 
+/** F95: Main salva texto fornecido por uma contribuição declarada de plugin. */
+export interface DesktopPluginExportRequest {
+  readonly fileId: string;
+  readonly expectedRevision: number;
+  readonly pluginId: string;
+  readonly exportId: string;
+}
+export interface WorkspacePluginExportRequest {
+  readonly fileId: string;
+  readonly expectedRevision: number;
+  readonly pluginId: string;
+  readonly exportId: string;
+}
+export interface WorkspacePluginExportDto {
+  readonly title: string;
+  readonly extension: string;
+  readonly mimeType: string;
+  readonly content: string;
+}
+
 /**
  * Resultado de uma exportação concluída pelo Main: caminho escolhido pelo
  * usuário no diálogo nativo de salvar. Não faz parte de `DesktopWorkspaceService`
@@ -913,6 +933,7 @@ export interface DesktopWorkspaceService {
   setPluginEnabled(request: WorkspacePluginSetEnabledRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspacePluginDto[]>>;
   reloadPlugins(signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspacePluginDto[]>>;
   runPluginCommand(request: WorkspacePluginCommandRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspacePluginCommandResultDto>>;
+  exportWithPlugin(request: WorkspacePluginExportRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspacePluginExportDto>>;
   backlinks(request: WorkspaceBacklinksRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceBacklinkDto[]>>;
   references(request: WorkspaceReferencesRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceReferenceDto[]>>;
   graph(request: WorkspaceGraphRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceGraphDto>>;
@@ -984,6 +1005,7 @@ export type WorkspaceMethod =
   | 'workspace/plugin-set-enabled'
   | 'workspace/plugins-reload'
   | 'workspace/plugin-command'
+  | 'workspace/plugin-export'
   | 'workspace/backlinks'
   | 'workspace/references'
   | 'workspace/graph'

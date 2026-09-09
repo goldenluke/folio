@@ -1111,6 +1111,27 @@ Ver ADR 0057.
 
 Ver ADR 0058.
 
+### Onda S — plataforma de plugins de produto ✅
+
+- [x] **F90 — Plugin discovery local**: `.academic/plugins/<plugin>/plugin.json`
+      é descoberto no Workspace Service; manifesto, versão de API e entry são
+      validados antes de qualquer execução.
+- [x] **F91 — Desktop plugin integration**: desktop lista, habilita,
+      desabilita e recarrega plugins; falhas ficam visíveis e não derrubam o
+      workspace. Estado de habilitação é operacional por vault.
+- [x] **F92 — Plugin commands**: contribuições declarativas entram no único
+      Command Registry; plugins nunca registram atalhos no DOM.
+- [x] **F93 — Plugin views**: views são descritores restritos (`title` e
+      texto), não componentes React arbitrários no renderer.
+- [x] **F94 — Plugin language contributions**: primeira capability de
+      linguagem é diagnóstico read-only sobre `ResolvedDocumentDto`
+      revisionado; falhas viram `PLUGIN-FALHA` de aviso.
+- [x] **F95 — Plugin export contributions**: plugin recebe Publication AST e
+      retorna conteúdo textual; Main abre o diálogo nativo e salva o destino.
+      Plugin não altera silenciosamente a Document AST.
+
+Ver ADR 0059.
+
 Release operations (packaging, installers, signing, update e observabilidade).
 Nada disso deve alterar o núcleo semântico; é essa propriedade que o M4 existe
 para verificar.

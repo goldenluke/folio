@@ -103,6 +103,8 @@ import {
   type WorkspacePluginSetEnabledRequest,
   type WorkspacePluginCommandRequest,
   type WorkspacePluginCommandResultDto,
+  type WorkspacePluginExportRequest,
+  type WorkspacePluginExportDto,
 } from '@abnt/protocol';
 import { renderizarHtml } from '@abnt/renderer-html';
 import type { PublicationBlock, PublicationDocument } from '@abnt/publication';
@@ -537,6 +539,22 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
   async setPluginEnabled(request: WorkspacePluginSetEnabledRequest): Promise<ProtocolResult<readonly WorkspacePluginDto[]>> { return this.#run(async () => this.#requirePlugins().setEnabled(request.id, request.enabled)); }
   async reloadPlugins(): Promise<ProtocolResult<readonly WorkspacePluginDto[]>> { return this.#run(async () => this.#requirePlugins().reload()); }
   async runPluginCommand(request: WorkspacePluginCommandRequest): Promise<ProtocolResult<WorkspacePluginCommandResultDto>> { return this.#run(async () => this.#requirePlugins().command(request.pluginId, request.commandId, { ...(request.activeFileId === undefined ? {} : { activeFileId: request.activeFileId }), ...(request.activeRevision === undefined ? {} : { activeRevision: request.activeRevision }) })); }
+  async exportWithPlugin(request: WorkspacePluginExportRequest): Promise<ProtocolResult<WorkspacePluginExportDto>> {
+    return this.#run(async () => {
+      const fileId = asWorkspaceFileId(request.fileId);
+      const controller = this.#requireEditors().controller(fileId);
+      if (controller === undefined) throw new WorkspaceFileNotFoundError(fileId);
+      const before = controller.snapshot();
+      if (before.session.revision !== request.expectedRevision || before.preview === undefined || before.preview.revision !== request.expectedRevision) throw new WorkspaceConflictError(fileId, request.expectedRevision, before.session.revision);
+      const descriptor = this.#requirePlugins().list().find((plugin) => plugin.id === request.pluginId)?.exports.find((output) => output.id === request.exportId);
+      if (descriptor === undefined) throw new Error('Contribuição de exportação não encontrada ou não habilitada.');
+      const publication = await this.#publicationWithResolvedResources(before.preview.publication, fileId);
+      const result = await this.#requirePlugins().export(request.pluginId, request.exportId, publication);
+      const after = controller.snapshot();
+      if (after.session.revision !== request.expectedRevision || after.preview?.revision !== request.expectedRevision) throw new WorkspaceConflictError(fileId, request.expectedRevision, after.session.revision);
+      return { title: before.preview.publication.title, extension: descriptor.extension, mimeType: descriptor.mimeType, content: result.content };
+    });
+  }
 
   /**
    * Formata com o mesmo motor ABNT do compilador (`@abnt/bibliography`) — não

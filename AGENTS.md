@@ -7,7 +7,7 @@ semântico genérico. Produto comercial. 100% TypeScript.
 produto/host (F66–F70); UI do desktop para elas — Problems clicável
 cross-file, diff estrutural na tela — ainda não; Ondas P concluída (F71–F75) e
 Q concluída em F76/F77/F79–F82 (F78 opcional adiado); Onda R concluída
-(F83–F89)** — artigo ABNT, segundo profile `web-article`,
+(F83–F89); Onda S concluída (F90–F95)** — artigo ABNT, segundo profile `web-article`,
 TCC com elementos pré/pós-textuais, regressão visual PDF/PNG, compiler
 headless, vault local-first, índice SQLite/FTS5 descartável, shell desktop
 Electron multiprocesso, shell de produto (command registry, tabs, painéis),

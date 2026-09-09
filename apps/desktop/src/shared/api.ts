@@ -2,6 +2,7 @@ import {
   protocolError,
   validarDesktopEventDto,
   validarDesktopExportRequest,
+  validarDesktopPluginExportRequest,
   validarDto,
   validarEditorCloseRequest,
   validarEditorDispatchRequest,
@@ -104,6 +105,7 @@ import {
   emptyResponseSchema,
   type DesktopEventDto,
   type DesktopExportRequest,
+  type DesktopPluginExportRequest,
   type DtoSchema,
   type EditorCloseRequest,
   type EditorDispatchRequest,
@@ -214,6 +216,7 @@ export const DESKTOP_CHANNELS = {
   previewEditor: 'abnt:editor:preview',
   resolveEditorConflict: 'abnt:editor:resolve-conflict',
   exportDocument: 'abnt:editor:export',
+  exportPlugin: 'abnt:editor:export-plugin',
   importAsset: 'abnt:editor:import-asset',
   importAssetData: 'abnt:editor:import-asset-data',
   createDocument: 'abnt:workspace:create-document',
@@ -338,6 +341,7 @@ export interface AcademicDesktopApi {
     resolveConflict(request: EditorResolveConflictRequest): Promise<ProtocolResult<EditorSnapshotDto>>;
     /** Mostra o diálogo nativo de salvar; `CANCELLED` se o usuário desistir. */
     export(request: DesktopExportRequest): Promise<ProtocolResult<EditorExportResultDto>>;
+    exportPlugin(request: DesktopPluginExportRequest): Promise<ProtocolResult<EditorExportResultDto>>;
     /** Abre o seletor nativo, copia o recurso para o vault e devolve URI relativa. */
     importAsset(request: EditorImportAssetRequest): Promise<ProtocolResult<WorkspaceAssetDto>>;
     importAssetData(request: WorkspaceImportAssetRequest): Promise<ProtocolResult<WorkspaceAssetDto>>;
@@ -551,6 +555,10 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
       export: async (request) => {
         const checked = validarDesktopExportRequest(request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.exportDocument, checked.value, editorExportResultDtoSchema) : checked;
+      },
+      exportPlugin: async (request) => {
+        const checked = validarDesktopPluginExportRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.exportPlugin, checked.value, editorExportResultDtoSchema) : checked;
       },
       importAsset: async (request) => {
         const checked = validarEditorImportAssetRequest(request);

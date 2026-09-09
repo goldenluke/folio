@@ -37,6 +37,9 @@ import {
   type WorkspacePluginSetEnabledRequest,
   type WorkspacePluginCommandRequest,
   type WorkspacePluginCommandResultDto,
+  type DesktopPluginExportRequest,
+  type WorkspacePluginExportRequest,
+  type WorkspacePluginExportDto,
   type WorkspaceProblemDto,
   type WorkspaceGraphRequest,
   type WorkspaceGraphDto,
@@ -535,6 +538,7 @@ const requestEnvelopeSchema = z.object({
     'workspace/plugin-set-enabled',
     'workspace/plugins-reload',
     'workspace/plugin-command',
+    'workspace/plugin-export',
     'workspace/backlinks',
     'workspace/references',
     'workspace/graph',
@@ -653,6 +657,9 @@ export const workspacePluginsResponseSchema = z.array(workspacePluginDtoSchema) 
 export const workspacePluginSetEnabledRequestSchema = z.object({ id: nonEmptyString, enabled: z.boolean() }) as z.ZodType<WorkspacePluginSetEnabledRequest>;
 export const workspacePluginCommandRequestSchema = z.object({ pluginId: nonEmptyString, commandId: nonEmptyString, activeFileId: nonEmptyString.optional(), activeRevision: nonNegativeInteger.optional() }) as z.ZodType<WorkspacePluginCommandRequest>;
 export const workspacePluginCommandResponseSchema = z.object({ kind: z.enum(['notice', 'open-view']), message: z.string().optional(), viewId: nonEmptyString.optional() }) as z.ZodType<WorkspacePluginCommandResultDto>;
+export const desktopPluginExportRequestSchema = z.object({ fileId: nonEmptyString, expectedRevision: nonNegativeInteger, pluginId: nonEmptyString, exportId: nonEmptyString }) as z.ZodType<DesktopPluginExportRequest>;
+export const workspacePluginExportRequestSchema = desktopPluginExportRequestSchema as z.ZodType<WorkspacePluginExportRequest>;
+export const workspacePluginExportResponseSchema = z.object({ title: z.string(), extension: nonEmptyString, mimeType: nonEmptyString, content: z.string() }) as z.ZodType<WorkspacePluginExportDto>;
 export const workspaceProblemDtoSchema = z.object({
   fileId: nonEmptyString,
   path: nonEmptyString,
@@ -1150,6 +1157,7 @@ export const validarWorkspaceProblemsRequest = (value: unknown): ProtocolResult<
   validarDto(workspaceProblemsRequestSchema, value);
 export const validarWorkspacePluginSetEnabledRequest = (value: unknown): ProtocolResult<WorkspacePluginSetEnabledRequest> => validarDto(workspacePluginSetEnabledRequestSchema, value);
 export const validarWorkspacePluginCommandRequest = (value: unknown): ProtocolResult<WorkspacePluginCommandRequest> => validarDto(workspacePluginCommandRequestSchema, value);
+export const validarDesktopPluginExportRequest = (value: unknown): ProtocolResult<DesktopPluginExportRequest> => validarDto(desktopPluginExportRequestSchema, value);
 
 export const validarWorkspaceBacklinksRequest = (value: unknown): ProtocolResult<WorkspaceBacklinksRequest> =>
   validarDto(workspaceBacklinksRequestSchema, value);
