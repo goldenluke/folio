@@ -4,25 +4,51 @@
  */
 export type CitationEditMode = 'parenthetical' | 'narrative' | 'suppress-author';
 
-export interface CitationDraft {
+/** Tipos que a gramática atual já reconhece; a UI não inventa locator novo. */
+export type CitationLocatorKind = 'page' | 'chapter' | 'section' | 'paragraph' | 'volume' | 'issue' | 'figure' | 'table';
+
+export interface CitationItemDraft {
   readonly referenceId: string;
-  readonly mode: CitationEditMode;
   readonly locator?: string;
+  readonly locatorKind?: CitationLocatorKind;
   readonly prefix?: string;
   readonly suffix?: string;
 }
 
-const locatorPart = (locator: string | undefined): string => locator?.trim() === '' || locator === undefined ? '' : `, ${locator.trim()}`;
+export interface CitationDraft {
+  readonly mode: CitationEditMode;
+  readonly items: readonly CitationItemDraft[];
+}
+
+const locatorPrefix: Record<CitationLocatorKind, string> = {
+  page: 'p.', chapter: 'cap.', section: 'seção', paragraph: 'par.', volume: 'vol.', issue: 'n.', figure: 'fig.', table: 'tab.',
+};
+
+export function citationLocatorSource(kind: CitationLocatorKind | undefined, locator: string | undefined): string | undefined {
+  const value = locator?.trim();
+  if (value === undefined || value === '') return undefined;
+  return `${locatorPrefix[kind ?? 'page']} ${value}`;
+}
+
+const citationItemSource = (item: CitationItemDraft, mode: CitationEditMode): string => {
+  const prefix = item.prefix?.trim();
+  const suffix = item.suffix?.trim();
+  const locator = citationLocatorSource(item.locatorKind, item.locator);
+  const key = mode === 'suppress-author' ? `-@${item.referenceId}` : `@${item.referenceId}`;
+  return `${prefix === undefined || prefix === '' ? '' : `${prefix} `}${key}${locator === undefined ? '' : `, ${locator}`}${suffix === undefined || suffix === '' ? '' : `, ${suffix}`}`;
+};
 
 export function citationSource(draft: CitationDraft): string {
-  const prefix = draft.prefix?.trim();
-  const suffix = draft.suffix?.trim();
+  const items = draft.items.filter((item) => item.referenceId.trim() !== '');
+  if (items.length === 0) return '';
   if (draft.mode === 'narrative') {
+    const item = items[0]!;
+    const prefix = item.prefix?.trim(); const suffix = item.suffix?.trim();
+    const locator = citationLocatorSource(item.locatorKind, item.locator);
     // A forma explícita evita ambiguidade com a prosa: @chave [p. 42].
-    return `${prefix === undefined || prefix === '' ? '' : `${prefix} `}@${draft.referenceId}${draft.locator?.trim() === '' || draft.locator === undefined ? '' : ` [${draft.locator.trim()}]`}${suffix === undefined || suffix === '' ? '' : ` ${suffix}`}`;
+    return `${prefix === undefined || prefix === '' ? '' : `${prefix} `}@${item.referenceId}${locator === undefined ? '' : ` [${locator}]`}${suffix === undefined || suffix === '' ? '' : ` ${suffix}`}`;
   }
-  const key = draft.mode === 'suppress-author' ? `-@${draft.referenceId}` : `@${draft.referenceId}`;
-  return `[${prefix === undefined || prefix === '' ? '' : `${prefix} `}${key}${locatorPart(draft.locator)}${suffix === undefined || suffix === '' ? '' : `, ${suffix}`}]`;
+  return `[${items.map((item) => citationItemSource(item, draft.mode)).join('; ')}]`;
 }
 
 /**
@@ -38,19 +64,25 @@ export function editableCitationAt(content: string, offset: number): { readonly 
     const body = content.slice(start + 1, end);
     const match = /^(.*?)?\s*(-)?@([A-Za-z0-9_][A-Za-z0-9_:.#$%&+?<>~/-]*)(.*)$/su.exec(body);
     if (match !== null) {
-      const prefix = (match[1] ?? '').trim();
-      const tail = (match[4] ?? '').replace(/^,\s*/u, '');
-      const separator = tail.indexOf(',');
-      const locator = separator < 0 ? tail : tail.slice(0, separator).trim();
-      const suffix = separator < 0 ? '' : tail.slice(separator + 1).trim();
+      const parseItem = (raw: string): CitationItemDraft | undefined => {
+        const item = /^(.*?)?\s*(-)?@([A-Za-z0-9_][A-Za-z0-9_:.#$%&+?<>~/-]*)(.*)$/su.exec(raw);
+        if (item === null) return undefined;
+        const prefix = (item[1] ?? '').trim(); const tail = (item[4] ?? '').replace(/^,\s*/u, '');
+        const [locatorRaw = '', ...suffixParts] = tail.split(',');
+        const locatorMatch = /^(p\.|cap\.|seção|par\.|vol\.|n\.|fig\.|tab\.)\s*(.+)$/iu.exec(locatorRaw.trim());
+        const kindByPrefix: Record<string, CitationLocatorKind> = { 'p.': 'page', 'cap.': 'chapter', 'seção': 'section', 'par.': 'paragraph', 'vol.': 'volume', 'n.': 'issue', 'fig.': 'figure', 'tab.': 'table' };
+        const locatorKind = locatorMatch === null ? undefined : kindByPrefix[locatorMatch[1]!.toLocaleLowerCase('pt-BR')];
+        const locator = locatorMatch === null ? locatorRaw.trim() : locatorMatch[2]!.trim();
+        const suffix = suffixParts.join(',').trim();
+        return { referenceId: item[3] ?? '', ...(prefix === '' ? {} : { prefix }), ...(locator === '' ? {} : { locator }), ...(locatorKind === undefined ? {} : { locatorKind }), ...(suffix === '' ? {} : { suffix }) };
+      };
+      const items = body.split(';').flatMap((item) => { const parsed = parseItem(item); return parsed === undefined ? [] : [parsed]; });
+      if (items.length === 0) return undefined;
       return {
         range: { start, end: end + 1 },
         draft: {
-          referenceId: match[3] ?? '',
           mode: match[2] === '-' ? 'suppress-author' : 'parenthetical',
-          ...(prefix === '' ? {} : { prefix }),
-          ...(locator === '' ? {} : { locator }),
-          ...(suffix === '' ? {} : { suffix }),
+          items,
         },
       };
     }
@@ -60,7 +92,7 @@ export function editableCitationAt(content: string, offset: number): { readonly 
     const startAt = match.index ?? -1;
     const endAt = startAt + match[0].length;
     if (startAt <= offset && offset <= endAt) {
-      return { range: { start: startAt, end: endAt }, draft: { referenceId: match[1] ?? '', mode: 'narrative', ...(match[2] === undefined ? {} : { locator: match[2] }) } };
+      return { range: { start: startAt, end: endAt }, draft: { mode: 'narrative', items: [{ referenceId: match[1] ?? '', ...(match[2] === undefined ? {} : { locator: match[2] }) }] } };
     }
   }
   return undefined;

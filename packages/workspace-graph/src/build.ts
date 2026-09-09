@@ -5,6 +5,7 @@ import type { IndexedCitation, IndexedLink, IndexedResource } from '@abnt/worksp
 
 import {
   documentNodeId,
+  organizationNodeId,
   personNodeId,
   referenceNodeId,
   resourceNodeId,
@@ -33,21 +34,27 @@ export interface WorkspaceGraphSources {
 
 const stripDiacritics = (value: string): string => value.normalize('NFKD').replace(/[\u0300-\u036f]/gu, '');
 
-const personSlug = (name: CslName): string => {
-  const parts = [name.given, name.family, name.literal].filter(
-    (part): part is string => typeof part === 'string' && part.length > 0,
-  );
-  const slug = stripDiacritics(parts.join(' '))
+const entitySlug = (parts: readonly (string | undefined)[]): string => {
+  const slug = stripDiacritics(parts.filter((part): part is string => typeof part === 'string' && part.length > 0).join(' '))
     .toLocaleLowerCase()
     .replace(/[^a-z0-9]+/gu, '-')
     .replace(/(^-+|-+$)/gu, '');
   return slug === '' ? 'desconhecido' : slug;
 };
 
+const personSlug = (name: CslName): string => entitySlug([name.given, name.family]);
+
 const personLabel = (name: CslName): string => {
   if (name.literal !== undefined) return name.literal;
   const parts = [name.given, name.family].filter((part): part is string => typeof part === 'string' && part.length > 0);
   return parts.length === 0 ? 'Autor desconhecido' : parts.join(' ');
+};
+
+const normalizedPersonName = (name: CslName): string => entitySlug([name.given, name.family]);
+const familyKey = (name: CslName): string => entitySlug([name.family]);
+const recordOrcid = (entry: BibliographicEntity): string | undefined => {
+  const value = entry.custom?.orcid;
+  return typeof value === 'string' && value.trim() !== '' ? value.trim().toLocaleLowerCase() : undefined;
 };
 
 /**
@@ -119,6 +126,17 @@ export function buildWorkspaceGraph(sources: WorkspaceGraphSources): WorkspaceGr
   }
 
   if (sources.bibliography !== undefined) {
+    const people: { readonly name: CslName }[] = [];
+    for (const [, entry] of sources.bibliography) {
+      for (const name of entry.entity.author ?? entry.entity.editor ?? []) if (name.literal === undefined) people.push({ name });
+    }
+    const exactCounts = new Map<string, number>();
+    const familyGiven = new Map<string, Set<string>>();
+    for (const person of people) {
+      const exact = normalizedPersonName(person.name); const family = familyKey(person.name);
+      exactCounts.set(exact, (exactCounts.get(exact) ?? 0) + 1);
+      if (family !== '') familyGiven.set(family, new Set([...(familyGiven.get(family) ?? []), exact]));
+    }
     for (const [referenceId, entry] of sources.bibliography) {
       const refNodeId = referenceNodeId(referenceId);
       const existing = nodes.get(refNodeId);
@@ -130,9 +148,22 @@ export function buildWorkspaceGraph(sources: WorkspaceGraphSources): WorkspaceGr
         resolved: true,
       });
 
-      for (const author of entry.entity.author ?? entry.entity.editor ?? []) {
-        const id = personNodeId(personSlug(author));
-        if (!nodes.has(id)) nodes.set(id, { id, kind: 'person', label: personLabel(author) });
+      for (const [index, author] of (entry.entity.author ?? entry.entity.editor ?? []).entries()) {
+        if (author.literal !== undefined) {
+          const id = organizationNodeId(entitySlug([author.literal]));
+          if (!nodes.has(id)) nodes.set(id, { id, kind: 'organization', label: author.literal });
+          edges.push({ kind: 'authored-by', from: refNodeId, to: id });
+          continue;
+        }
+        const exact = normalizedPersonName(author); const family = familyKey(author);
+        const orcid = entry.entity.author?.length === 1 ? recordOrcid(entry.entity) : undefined;
+        // Sem identificador forte não colapsamos homônimos em um nó só.
+        const id = personNodeId(orcid === undefined ? `${personSlug(author)}:${referenceId}:${index}` : `orcid:${orcid}`);
+        const identityState = orcid !== undefined
+          ? 'resolved'
+          : (familyGiven.get(family)?.size ?? 0) > 1 ? 'ambiguous'
+            : (exactCounts.get(exact) ?? 0) > 1 ? 'possible-match' : 'possible-match';
+        if (!nodes.has(id)) nodes.set(id, { id, kind: 'person', label: personLabel(author), identityState });
         edges.push({ kind: 'authored-by', from: refNodeId, to: id });
       }
     }

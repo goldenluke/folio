@@ -9,6 +9,8 @@ export interface WorkspaceGraphNode {
   readonly fileId?: WorkspaceFileId;
   readonly path?: WorkspacePath;
   readonly referenceId?: string;
+  /** F80: projeção operacional, nunca uma afirmação gravada no CSL-JSON. */
+  readonly identityState?: 'resolved' | 'possible-match' | 'ambiguous';
   /** `false` para uma referência citada mas sem entrada bibliográfica resolvida. */
   readonly resolved?: boolean;
 }
@@ -33,5 +35,6 @@ export const documentNodeId = (fileId: WorkspaceFileId): string => `document:${f
 export const referenceNodeId = (referenceId: string): string => `reference:${referenceId}`;
 export const resourceNodeId = (resourceId: string): string => `resource:${resourceId}`;
 export const personNodeId = (slug: string): string => `person:${slug}`;
+export const organizationNodeId = (slug: string): string => `organization:${slug}`;
 /** Tags são identificadores autorais, normalizados apenas para identidade do nó. */
 export const tagNodeId = (tag: string): string => `tag:${tag.toLocaleLowerCase()}`;

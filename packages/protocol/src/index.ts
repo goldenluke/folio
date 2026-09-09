@@ -129,6 +129,8 @@ export type {
   WorkspaceLibraryRenameKeyResponseDto,
   WorkspaceReferenceHealthRequest,
   WorkspaceReferenceHealthDto,
+  WorkspaceReferenceAuditCode,
+  WorkspaceReferenceAuditIssueDto,
   WorkspaceReferenceAttachmentDto,
   WorkspaceReferenceAttachmentsRequest,
   WorkspaceAttachReferencePdfRequest,

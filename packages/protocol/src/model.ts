@@ -365,6 +365,7 @@ export interface WorkspaceGraphNodeDto {
   readonly fileId?: string;
   readonly path?: string;
   readonly referenceId?: string;
+  readonly identityState?: 'resolved' | 'possible-match' | 'ambiguous';
   readonly resolved?: boolean;
 }
 
@@ -512,12 +513,23 @@ export interface WorkspaceLibraryRenameKeyRequest { readonly id: string; readonl
 export interface WorkspaceLibraryRenameKeyResponseDto { readonly entry: BibliographicEntityDto; readonly changedFiles: readonly string[]; }
 
 export interface WorkspaceReferenceHealthRequest {}
+export type WorkspaceReferenceAuditCode =
+  | 'invalid-doi' | 'invalid-isbn' | 'missing-url' | 'missing-access-date'
+  | 'incomplete-author' | 'missing-year' | 'possible-duplicate'
+  | 'inconsistent-key' | 'missing-pdf' | 'missing-literature-note';
+export interface WorkspaceReferenceAuditIssueDto {
+  readonly referenceId: string;
+  readonly code: WorkspaceReferenceAuditCode;
+  readonly message: string;
+}
 export interface WorkspaceReferenceHealthDto {
   readonly total: number;
   readonly cited: number;
   readonly unused: number;
   readonly missing: readonly string[];
   readonly withoutDoi: number;
+  /** F81: qualidade bibliográfica, distinta de diagnostics normativos do documento. */
+  readonly audit: readonly WorkspaceReferenceAuditIssueDto[];
 }
 
 /** F35: PDF local ligado a uma entrada CSL sem contaminar `library.json`. */

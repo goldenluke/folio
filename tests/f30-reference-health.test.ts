@@ -24,9 +24,16 @@ it('F30 — reference health deriva uso, chaves ausentes e DOI do catálogo e í
       { id: 'naoUsada2023', type: 'article-journal', title: 'Não usada', DOI: '10.1234/x' },
     ]), 'utf8');
     await expect(client.open({ rootPath: root })).resolves.toMatchObject({ ok: true });
-    await expect(client.referenceHealth({})).resolves.toEqual({
+    await expect(client.referenceHealth({})).resolves.toMatchObject({
       ok: true,
-      value: { total: 2, cited: 1, unused: 1, missing: ['ausente2024'], withoutDoi: 1 },
+      value: {
+        total: 2, cited: 1, unused: 1, missing: ['ausente2024'], withoutDoi: 1,
+        audit: expect.arrayContaining([
+          expect.objectContaining({ referenceId: 'silva2024', code: 'missing-year' }),
+          expect.objectContaining({ referenceId: 'silva2024', code: 'missing-pdf' }),
+          expect.objectContaining({ referenceId: 'naoUsada2023', code: 'missing-literature-note' }),
+        ]),
+      },
     });
   } finally {
     client.dispose(); stop(); channel.port1.close(); channel.port2.close(); await host.dispose();

@@ -11,6 +11,7 @@ export { buildWorkspaceGraph } from './build.js';
 export type { WorkspaceBibliographyEntry, WorkspaceGraphSources } from './build.js';
 export {
   documentNodeId,
+  organizationNodeId,
   personNodeId,
   referenceNodeId,
   resourceNodeId,

@@ -210,6 +210,22 @@ review:
 ## Write
 `;
 
+const validDoi = (value: string): boolean => /^10\.\d{4,9}\/.+$/iu.test(value.trim());
+const validIsbn = (value: string): boolean => {
+  const digits = value.replace(/[-\s]/gu, '');
+  if (/^\d{9}[\dX]$/iu.test(digits)) return [...digits].reduce((sum, digit, index) => sum + (digit.toUpperCase() === 'X' ? 10 : Number(digit)) * (10 - index), 0) % 11 === 0;
+  if (!/^\d{13}$/u.test(digits)) return false;
+  return [...digits].reduce((sum, digit, index) => sum + Number(digit) * (index % 2 === 0 ? 1 : 3), 0) % 10 === 0;
+};
+const hasYear = (entry: BibliographicEntity): boolean => entry.issued?.['date-parts']?.[0]?.[0] !== undefined || entry.issued?.literal !== undefined || entry.issued?.raw !== undefined;
+const hasCompleteAuthor = (entry: BibliographicEntity): boolean => {
+  const authors = entry.author ?? entry.editor;
+  return authors !== undefined && authors.length > 0 && authors.every((author) => (author.literal?.trim() ?? '') !== '' || (author.family?.trim() ?? '') !== '');
+};
+const templateValue = (value: string): string => value.replace(/\r?\n/gu, ' ').trim();
+const renderLiteratureTemplate = (template: string, values: Readonly<Record<string, string>>): string =>
+  template.replace(/\{\{(referenceId|title|authors|year|doi)\}\}/gu, (_match, key: string) => values[key] ?? '');
+
 const sourceRangeDto = (source: import('@abnt/document-model').SourceRange) => ({
   documentId: String(source.documentId),
   start: source.start,
@@ -781,16 +797,38 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
 
   async referenceHealth(_request: WorkspaceReferenceHealthRequest): Promise<ProtocolResult<WorkspaceReferenceHealthDto>> {
     return this.#run(async () => {
+      const storage = this.#requireStorage();
+      const files = await storage.list();
       const catalog = await this.#resolveVaultBibliography();
       const citedIds = new Set(this.#requireIndex().citations().map((citation) => citation.referenceId));
       const missing = [...citedIds].filter((id) => !catalog.has(id)).sort();
       const cited = [...catalog.keys()].filter((id) => citedIds.has(id)).length;
+      const attachmentIds = new Set((await readReferenceAttachments(storage)).map((attachment) => attachment.referenceId));
+      const noteIds = new Set((await scanLiteratureReviewNotes(storage, files)).map((note) => note.referenceId));
+      const duplicates = findReferenceDuplicates(Object.fromEntries([...catalog.entries()].map(([id, entry]) => [id, entry.entity])));
+      const duplicateIds = new Set(duplicates.flatMap((pair) => [pair.leftId, pair.rightId]));
+      const audit: import('@abnt/protocol').WorkspaceReferenceAuditIssueDto[] = [];
+      for (const [referenceId, item] of catalog) {
+        const entry = item.entity;
+        if (entry.DOI !== undefined && !validDoi(entry.DOI)) audit.push({ referenceId, code: 'invalid-doi', message: 'DOI inválido.' });
+        if (entry.ISBN !== undefined && !validIsbn(entry.ISBN)) audit.push({ referenceId, code: 'invalid-isbn', message: 'ISBN inválido.' });
+        if (entry.URL === undefined) audit.push({ referenceId, code: 'missing-url', message: 'URL ausente.' });
+        if (entry.URL !== undefined && entry.accessed === undefined) audit.push({ referenceId, code: 'missing-access-date', message: 'Data de acesso ausente para URL.' });
+        if (!hasCompleteAuthor(entry)) audit.push({ referenceId, code: 'incomplete-author', message: 'Autor ou editor incompleto.' });
+        if (!hasYear(entry)) audit.push({ referenceId, code: 'missing-year', message: 'Ano ausente.' });
+        if (duplicateIds.has(referenceId)) audit.push({ referenceId, code: 'possible-duplicate', message: 'Possível duplicata na biblioteca.' });
+        const expectedKey = suggestReferenceKey(entry, 'author-year', new Set());
+        if (expectedKey !== referenceId) audit.push({ referenceId, code: 'inconsistent-key', message: `Chave difere da política autor-ano sugerida (${expectedKey}).` });
+        if (!attachmentIds.has(referenceId)) audit.push({ referenceId, code: 'missing-pdf', message: 'PDF de pesquisa ausente.' });
+        if (!noteIds.has(referenceId)) audit.push({ referenceId, code: 'missing-literature-note', message: 'Literature note ausente.' });
+      }
       return {
         total: catalog.size,
         cited,
         unused: catalog.size - cited,
         missing,
         withoutDoi: [...catalog.values()].filter((entry) => entry.entity.DOI === undefined).length,
+        audit: audit.sort((left, right) => left.referenceId.localeCompare(right.referenceId) || left.code.localeCompare(right.code)),
       };
     });
   }
@@ -1022,6 +1060,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
           ...(node.path !== undefined ? { path: String(node.path) } : {}),
           ...(node.referenceId !== undefined ? { referenceId: node.referenceId } : {}),
           ...(node.resolved !== undefined ? { resolved: node.resolved } : {}),
+          ...(node.identityState !== undefined ? { identityState: node.identityState } : {}),
         })),
         edges: graph.edges.map((edge) => ({
           kind: edge.kind,
@@ -1459,20 +1498,30 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
   }
 
   async #ensureLiteratureNote(referenceId: string, activeFileId?: string): Promise<WorkspaceFileDto> {
-    let title = referenceId;
+    const catalogEntry = (await this.#resolveVaultBibliography()).get(referenceId);
+    let title = catalogEntry?.entity.title ?? referenceId;
+    const entity = catalogEntry?.entity;
     if (activeFileId !== undefined) {
       const controller = this.#requireEditors().controller(asWorkspaceFileId(activeFileId));
       if (controller === undefined) throw new WorkspaceFileNotFoundError(asWorkspaceFileId(activeFileId));
       const entry = controller.snapshot().bibliography?.entries[referenceId] as { readonly title?: unknown } | undefined;
       if (typeof entry?.title === 'string') title = entry.title;
-    } else {
-      const entry = (await this.#resolveVaultBibliography()).get(referenceId);
-      if (entry?.entity.title !== undefined) title = entry.entity.title;
     }
     const path = asWorkspacePath(`papers/${sanitizeReferenceFileName(referenceId)}.md`);
     const storage = this.#requireStorage();
-    const existing = (await storage.list()).find((file) => String(file.path) === String(path));
+    const files = await storage.list();
+    const existing = files.find((file) => String(file.path) === String(path));
     if (existing !== undefined) return workspaceFileDto(existing);
-    return workspaceFileDto(await storage.create({ path, content: literatureNoteContent(referenceId, title) }));
+    const template = files.find((file) => String(file.path) === 'templates/literature-note.md');
+    const content = template === undefined
+      ? literatureNoteContent(referenceId, title)
+      : renderLiteratureTemplate((await storage.read(template.id)).content, {
+          referenceId: templateValue(referenceId),
+          title: templateValue(title),
+          authors: templateValue((entity?.author ?? entity?.editor ?? []).map(authorLabel).filter(Boolean).join('; ')),
+          year: entity === undefined || !hasYear(entity) ? '' : String(entity.issued?.['date-parts']?.[0]?.[0] ?? entity.issued?.literal ?? entity.issued?.raw ?? ''),
+          doi: templateValue(entity?.DOI ?? ''),
+        });
+    return workspaceFileDto(await storage.create({ path, content }));
   }
 }

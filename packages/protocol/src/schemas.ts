@@ -683,6 +683,7 @@ export const workspaceGraphNodeDtoSchema = z.object({
   path: nonEmptyString.optional(),
   referenceId: nonEmptyString.optional(),
   resolved: z.boolean().optional(),
+  identityState: z.enum(['resolved', 'possible-match', 'ambiguous']).optional(),
 }) as z.ZodType<WorkspaceGraphNodeDto>;
 export const workspaceGraphEdgeDtoSchema = z.object({
   kind: z.enum(['links-to', 'cites', 'embeds', 'authored-by', 'tagged-with']),
@@ -844,6 +845,11 @@ export const workspaceReferenceHealthResponseSchema = z.object({
   unused: nonNegativeInteger,
   missing: z.array(nonEmptyString),
   withoutDoi: nonNegativeInteger,
+  audit: z.array(z.object({
+    referenceId: nonEmptyString,
+    code: z.enum(['invalid-doi', 'invalid-isbn', 'missing-url', 'missing-access-date', 'incomplete-author', 'missing-year', 'possible-duplicate', 'inconsistent-key', 'missing-pdf', 'missing-literature-note']),
+    message: z.string(),
+  })),
 }) as z.ZodType<WorkspaceReferenceHealthDto>;
 
 const languageRangeSchema = z.object({ start: nonNegativeInteger, end: nonNegativeInteger });

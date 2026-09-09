@@ -62,6 +62,21 @@ describe('F33 — buildWorkspaceGraph com bibliografia (person/organization)', (
     expect(graph.nodes.some((node) => node.kind === 'person')).toBe(false);
     expect(graph.nodes.find((node) => node.id === 'reference:x')).toMatchObject({ resolved: false });
   });
+
+  it('projeta autoria literal como organização e não une homônimos sem identificador forte', () => {
+    const artigo: WorkspaceFile = { id: asWorkspaceFileId('file_artigo'), path: asWorkspacePath('artigo.md'), revision: 1, contentHash: 'sha256:a' as never };
+    const entries = new Map<string, { entity: BibliographicEntity }>([
+      ['org', { entity: { id: asReferenceId('org'), type: 'report', author: [{ literal: 'Instituto Brasileiro de Geografia e Estatística' }] } }],
+      ['silva-a', { entity: { id: asReferenceId('silva-a'), type: 'book', author: [{ given: 'João', family: 'Silva' }] } }],
+      ['silva-b', { entity: { id: asReferenceId('silva-b'), type: 'book', author: [{ given: 'José', family: 'Silva' }] } }],
+    ]);
+    const graph = buildWorkspaceGraph({ files: [artigo], links: [], citations: [], resources: [], bibliography: entries });
+    expect(graph.nodes).toContainEqual(expect.objectContaining({ kind: 'organization', label: 'Instituto Brasileiro de Geografia e Estatística' }));
+    expect(graph.nodes.filter((node) => node.kind === 'person')).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'João Silva', identityState: 'ambiguous' }),
+      expect.objectContaining({ label: 'José Silva', identityState: 'ambiguous' }),
+    ]));
+  });
 });
 
 const ARTIGO = `---

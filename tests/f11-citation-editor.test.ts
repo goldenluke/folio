@@ -7,15 +7,15 @@ import { citationSource, editableCitationAt } from '../apps/desktop/src/renderer
 
 describe('F11/F12 — autoria visual de citações', () => {
   it('serializa modos editoriais para a gramática Markdown reconhecida', () => {
-    expect(citationSource({ referenceId: 'silva2024', mode: 'parenthetical', locator: 'p. 42' })).toBe('[@silva2024, p. 42]');
-    expect(citationSource({ referenceId: 'silva2024', mode: 'suppress-author', locator: 'cap. 3' })).toBe('[-@silva2024, cap. 3]');
-    expect(citationSource({ referenceId: 'silva2024', mode: 'narrative', locator: 'p. 42' })).toBe('@silva2024 [p. 42]');
+    expect(citationSource({ mode: 'parenthetical', items: [{ referenceId: 'silva2024', locator: '42', locatorKind: 'page' }] })).toBe('[@silva2024, p. 42]');
+    expect(citationSource({ mode: 'suppress-author', items: [{ referenceId: 'silva2024', locator: '3', locatorKind: 'chapter' }] })).toBe('[-@silva2024, cap. 3]');
+    expect(citationSource({ mode: 'narrative', items: [{ referenceId: 'silva2024', locator: '42', locatorKind: 'page' }] })).toBe('@silva2024 [p. 42]');
   });
 
   it('reconhece uma citação completa junto ao cursor para uma única transação de substituição', () => {
     const content = 'Como mostra [ver @silva2024, p. 42], o método funciona.';
     const found = editableCitationAt(content, content.indexOf('silva'));
-    expect(found).toEqual({ range: { start: 12, end: 35 }, draft: { referenceId: 'silva2024', mode: 'parenthetical', prefix: 'ver', locator: 'p. 42' } });
+    expect(found).toEqual({ range: { start: 12, end: 35 }, draft: { mode: 'parenthetical', items: [{ referenceId: 'silva2024', prefix: 'ver', locator: '42', locatorKind: 'page' }] } });
   });
 
   it('o parser mantém o locator da citação narrativa na AST sem o renderer precisar formatar norma', () => {

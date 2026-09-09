@@ -1068,6 +1068,30 @@ Ver ADR 0056. A busca não ganhou uma fonte de verdade nova: índice segue
 descartável, arquivos seguem autoria e buscas/collections seguem estado
 operacional local.
 
+### Onda Q — citações e bibliografia avançadas ✅ (F78 opcional adiado)
+
+- [x] **F76 — Multiple Citation Editor**: o picker edita grupo ordenado de
+      referências e serializa uma única transação para Markdown; não mantém
+      banco próprio de citações.
+- [x] **F77 — Locator UX**: cada item seleciona apenas `page`, `chapter`,
+      `section`, `paragraph`, `volume`, `issue`, `figure` ou `table`, tipos
+      já suportados pelo parser/semântica.
+- [ ] **F78 — Citation Intent**: adiado como feature opcional até existir store
+      operacional revisionado próprio; não será inscrito automaticamente na
+      citação publicada.
+- [x] **F79 — Organization entities**: `CslName.literal` projeta nós
+      `organization` no grafo, sem inferir instituição de uma string livre.
+- [x] **F80 — Person disambiguation**: homônimos não são fundidos sem
+      identificador forte; a projeção explicita `resolved`, `possible-match` ou
+      `ambiguous` e não altera CSL-JSON.
+- [x] **F81 — Bibliography audit**: Reference Health separa qualidade
+      bibliográfica de diagnóstico normativo e verifica DOI/ISBN, URL/acesso,
+      autoria/ano, duplicata, chave, PDF e literature note.
+- [x] **F82 — Literature Note templates**: `templates/literature-note.md`
+      aceita placeholders controlados, sem JavaScript arbitrário.
+
+Ver ADR 0057.
+
 Release operations (packaging, installers, signing, update e observabilidade).
 Nada disso deve alterar o núcleo semântico; é essa propriedade que o M4 existe
 para verificar.

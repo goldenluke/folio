@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { MessageChannel } from 'node:worker_threads';
@@ -116,6 +116,27 @@ describe('F34 — literature notes a partir de uma referência bibliográfica', 
         channel.port2.close();
         await host.dispose();
       }
+    });
+  });
+
+  it('expande somente placeholders controlados do template autoral do vault', async () => {
+    await withVault(async (root) => {
+      await mkdir(join(root, 'templates'));
+      await writeFile(join(root, 'templates', 'literature-note.md'), '# {{title}}\n\n{{authors}} · {{year}} · {{doi}}\n\n[@{{referenceId}}]\n{{naoExecutar}}\n');
+      const host = DesktopWorkspaceServiceHost.create({ compiler: createInProcessCompilerClient(criarServicoDeCompiler()) });
+      const channel = new MessageChannel(); const stop = serveWorkspaceOverMessagePort(channel.port1, host); const client = createWorkspaceMessagePortClient(channel.port2);
+      try {
+        const opened = await client.open({ rootPath: root }); if (!opened.ok) throw new Error('vault não abriu');
+        const artigo = opened.value.files.find((file) => file.path === 'artigo.md'); if (artigo === undefined) throw new Error('fixture incompleta');
+        await client.openEditor({ fileId: artigo.fileId }); await waitForReferences(client, artigo.fileId);
+        const note = await client.createLiteratureNote({ referenceId: 'tanenbaum2017', activeFileId: artigo.fileId });
+        if (!note.ok) throw new Error(note.error.message);
+        const read = await client.read({ fileId: note.value.fileId }); if (!read.ok) throw new Error(read.error.message);
+        expect(read.value.content).toMatch(/^# Distributed systems$/mu);
+        expect(read.value.content).toContain('Tanenbaum, Andrew S. · 2017');
+        expect(read.value.content).toContain('[@tanenbaum2017]');
+        expect(read.value.content).toContain('{{naoExecutar}}');
+      } finally { client.dispose(); stop(); channel.port1.close(); channel.port2.close(); await host.dispose(); }
     });
   });
 });
