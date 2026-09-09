@@ -297,6 +297,8 @@ export {
   workspaceProblemsRequestSchema,
   workspaceProblemDtoSchema,
   workspaceProblemsResponseSchema,
+  workspacePluginsResponseSchema,
+  workspacePluginSetEnabledRequestSchema,
   workspaceBacklinksRequestSchema,
   workspaceBacklinkDtoSchema,
   workspaceBacklinksResponseSchema,

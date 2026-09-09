@@ -42,6 +42,7 @@ import {
   validarWorkspacePdfAnnotationRequest,
   validarWorkspaceSearchRequest,
   validarWorkspaceProblemsRequest,
+  validarWorkspacePluginSetEnabledRequest,
   validarLanguageCompletionRequest,
   validarLanguageDefinitionRequest,
   validarLanguageHoverRequest,
@@ -67,6 +68,7 @@ import {
   workspaceOpenResponseSchema,
   workspaceSearchResponseSchema,
   workspaceProblemsResponseSchema,
+  workspacePluginsResponseSchema,
   workspaceBacklinksResponseSchema,
   workspaceReferencesResponseSchema,
   workspaceGraphResponseSchema,
@@ -147,6 +149,8 @@ import {
   type WorkspaceHistoryDiffDto,
   type WorkspaceDocumentComparisonRequest,
   type WorkspaceDocumentComparisonDto,
+  type WorkspacePluginDto,
+  type WorkspacePluginSetEnabledRequest,
   type WorkspaceCreateLiteratureNoteRequest,
   type WorkspaceCitationExplorerRequest,
   type WorkspaceCitationExplorerResponseDto,
@@ -212,6 +216,9 @@ export const DESKTOP_CHANNELS = {
   renameDocument: 'abnt:workspace:rename-document',
   search: 'abnt:workspace:search',
   problems: 'abnt:workspace:problems',
+  plugins: 'abnt:workspace:plugins',
+  pluginSetEnabled: 'abnt:workspace:plugin-set-enabled',
+  pluginsReload: 'abnt:workspace:plugins-reload',
   graph: 'abnt:workspace:graph',
   history: 'abnt:workspace:history',
   historyCreateSnapshot: 'abnt:workspace:history-create-snapshot',
@@ -273,6 +280,9 @@ export interface AcademicDesktopApi {
     list(request: WorkspaceListRequest): Promise<ProtocolResult<readonly WorkspaceFileDto[]>>;
     search(request: WorkspaceSearchRequest): Promise<ProtocolResult<readonly WorkspaceSearchResultDto[]>>;
     problems(request: WorkspaceProblemsRequest): Promise<ProtocolResult<readonly WorkspaceProblemDto[]>>;
+    plugins(): Promise<ProtocolResult<readonly WorkspacePluginDto[]>>;
+    setPluginEnabled(request: WorkspacePluginSetEnabledRequest): Promise<ProtocolResult<readonly WorkspacePluginDto[]>>;
+    reloadPlugins(): Promise<ProtocolResult<readonly WorkspacePluginDto[]>>;
     graph(request: WorkspaceGraphRequest): Promise<ProtocolResult<WorkspaceGraphDto>>;
     history(request: WorkspaceHistoryRequest): Promise<ProtocolResult<WorkspaceHistoryDto>>;
     historyCreateSnapshot(request: WorkspaceHistorySnapshotRequest): Promise<ProtocolResult<WorkspaceHistoryRevisionDto>>;
@@ -383,6 +393,9 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
         const checked = validarWorkspaceProblemsRequest(request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.problems, checked.value, workspaceProblemsResponseSchema) : checked;
       },
+      plugins: () => invoke(bridge, DESKTOP_CHANNELS.plugins, undefined, workspacePluginsResponseSchema),
+      setPluginEnabled: async (request) => { const checked = validarWorkspacePluginSetEnabledRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.pluginSetEnabled, checked.value, workspacePluginsResponseSchema) : checked; },
+      reloadPlugins: () => invoke(bridge, DESKTOP_CHANNELS.pluginsReload, undefined, workspacePluginsResponseSchema),
       graph: async (request) => {
         const checked = validarWorkspaceGraphRequest(request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.graph, checked.value, workspaceGraphResponseSchema) : checked;
