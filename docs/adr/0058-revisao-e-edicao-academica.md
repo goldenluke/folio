@@ -22,6 +22,7 @@
 
 Problemas e comentários não criam outra autoridade editorial. O arquivo e a
 sessão seguem sendo a fonte do rascunho; uma correção stale é recusada antes de
-despachar a transação. Comparação arbitrária de documentos (F89) fica para a
-próxima entrega: reutilizará text/structural diff do host, sem construir diff
-no renderer.
+despachar a transação. F89 compara dois documentos no Workspace Service: ele
+obtém o conteúdo autoral atual de cada sessão ou arquivo e projeta os mesmos
+diffs textual e estrutural já usados pelo histórico. O renderer escolhe os
+documentos e recebe apenas DTOs, sem ler arquivos nem calcular diffs.

@@ -21,6 +21,7 @@ import {
   validarWorkspaceHistoryRequest,
   validarWorkspaceHistorySnapshotRequest,
   validarWorkspaceHistoryDiffRequest,
+  validarWorkspaceDocumentComparisonRequest,
   validarWorkspaceCreateLiteratureNoteRequest,
   validarWorkspaceCitationExplorerRequest,
   validarWorkspaceResearchOverviewRequest,
@@ -72,6 +73,7 @@ import {
   workspaceHistoryResponseSchema,
   workspaceHistoryRevisionSchema,
   workspaceHistoryDiffResponseSchema,
+  workspaceDocumentComparisonResponseSchema,
   workspaceCreateLiteratureNoteResponseSchema,
   workspaceCitationExplorerResponseSchema,
   workspaceResearchOverviewResponseSchema,
@@ -143,6 +145,8 @@ import {
   type WorkspaceHistoryRevisionDto,
   type WorkspaceHistoryDiffRequest,
   type WorkspaceHistoryDiffDto,
+  type WorkspaceDocumentComparisonRequest,
+  type WorkspaceDocumentComparisonDto,
   type WorkspaceCreateLiteratureNoteRequest,
   type WorkspaceCitationExplorerRequest,
   type WorkspaceCitationExplorerResponseDto,
@@ -212,6 +216,7 @@ export const DESKTOP_CHANNELS = {
   history: 'abnt:workspace:history',
   historyCreateSnapshot: 'abnt:workspace:history-create-snapshot',
   historyDiff: 'abnt:workspace:history-diff',
+  compareDocuments: 'abnt:workspace:compare-documents',
   backlinks: 'abnt:document:backlinks',
   references: 'abnt:document:references',
   createLiteratureNote: 'abnt:document:create-literature-note',
@@ -272,6 +277,7 @@ export interface AcademicDesktopApi {
     history(request: WorkspaceHistoryRequest): Promise<ProtocolResult<WorkspaceHistoryDto>>;
     historyCreateSnapshot(request: WorkspaceHistorySnapshotRequest): Promise<ProtocolResult<WorkspaceHistoryRevisionDto>>;
     historyDiff(request: WorkspaceHistoryDiffRequest): Promise<ProtocolResult<WorkspaceHistoryDiffDto>>;
+    compareDocuments(request: WorkspaceDocumentComparisonRequest): Promise<ProtocolResult<WorkspaceDocumentComparisonDto>>;
     citationExplorer(request: WorkspaceCitationExplorerRequest): Promise<ProtocolResult<WorkspaceCitationExplorerResponseDto>>;
     researchOverview(request: WorkspaceResearchOverviewRequest): Promise<ProtocolResult<WorkspaceResearchOverviewDto>>;
     referenceHealth(request: WorkspaceReferenceHealthRequest): Promise<ProtocolResult<WorkspaceReferenceHealthDto>>;
@@ -384,6 +390,7 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
       history: async (request) => { const checked = validarWorkspaceHistoryRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.history, checked.value, workspaceHistoryResponseSchema) : checked; },
       historyCreateSnapshot: async (request) => { const checked = validarWorkspaceHistorySnapshotRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.historyCreateSnapshot, checked.value, workspaceHistoryRevisionSchema) : checked; },
       historyDiff: async (request) => { const checked = validarWorkspaceHistoryDiffRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.historyDiff, checked.value, workspaceHistoryDiffResponseSchema) : checked; },
+      compareDocuments: async (request) => { const checked = validarWorkspaceDocumentComparisonRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.compareDocuments, checked.value, workspaceDocumentComparisonResponseSchema) : checked; },
       citationExplorer: async (request) => {
         const checked = validarWorkspaceCitationExplorerRequest(request);
         return checked.ok

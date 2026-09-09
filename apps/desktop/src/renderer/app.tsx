@@ -22,6 +22,7 @@ import { ResearchWorkflowDialog } from './research-workflow.js';
 import { WritingWorkflowDialog } from './writing-workflow.js';
 import { ReferenceMaintenanceDialog } from './reference-maintenance.js';
 import { HistoryDialog } from './history-dialog.js';
+import { DocumentComparisonDialog } from './document-comparison.js';
 import { ReviewWorkspaceDialog, readReviewComments } from './review-workflow.js';
 import { RemoteEditorController } from './remote-editor-controller.js';
 import { createCommandRegistry } from './shell/commands.js';
@@ -966,6 +967,7 @@ export function App(): JSX.Element {
   const [writingWorkflowOpen, setWritingWorkflowOpen] = useState(false);
   const [referenceMaintenanceOpen, setReferenceMaintenanceOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [documentComparisonOpen, setDocumentComparisonOpen] = useState(false);
   const [, setNavigationVersion] = useState(0);
 
   const viewsModel = useRef(createViewsModel()).current;
@@ -1444,6 +1446,7 @@ export function App(): JSX.Element {
         },
       }),
       commandRegistry.register({ id: 'document.history', title: 'Mostrar histórico do documento', isEnabled: () => viewsModel.active()?.type === 'editor', run() { setHistoryOpen(true); } }),
+      commandRegistry.register({ id: 'document.compare', title: 'Comparar documentos', isEnabled: () => files.length > 1, run() { setDocumentComparisonOpen(true); } }),
       commandRegistry.register({
         id: 'library.manage',
         title: 'Gerenciar biblioteca de referências',
@@ -1770,6 +1773,7 @@ export function App(): JSX.Element {
           ['mod+shift+p', 'palette.commands'],
           ['mod+shift+f', 'search.openView'],
           ['mod+shift+r', 'review.open'],
+          ['mod+shift+d', 'document.compare'],
           ['mod+shift+c', 'citation.openPicker'],
           ['mod+shift+i', 'figure.insert'],
           ['mod+shift+n', 'application.newWindow'],
@@ -2009,6 +2013,7 @@ export function App(): JSX.Element {
           <div className="my-1 border-t border-slate-100" />
           <button type="button" role="menuitem" disabled={activeEditorView === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('problems.open', {}); }}>Problemas</button>
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('review.open', {}); }}>Modo de revisão</button>
+          <button type="button" role="menuitem" disabled={files.length < 2} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('document.compare', {}); }}>Comparar documentos</button>
           <button type="button" role="menuitem" disabled={activeEditorView === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('profile.select', {}); }}>Perfil</button>
           <div className="my-1 border-t border-slate-100" />
           <button type="button" role="menuitem" disabled={activeView === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); if (activeView !== undefined) void commandRegistry.execute('document.exportPdf', { activeViewId: activeView.id }); }}>Exportar PDF</button>
@@ -2078,6 +2083,7 @@ export function App(): JSX.Element {
       {crossReferencePicker && activeEditorView !== undefined && <CrossReferenceDialog view={activeEditorView} onClose={()=>setCrossReferencePicker(false)} onInsert={(identifier)=>{setCrossReferencePicker(false);void commandRegistry.execute('xref.insert',{targetCrossReference:{identifier}});}} />}
       {graphView && <GraphDialog {...(activeEditorView === undefined ? {} : { activeFileId: activeEditorView.fileId })} onClose={() => setGraphView(false)} onOpenDocument={(fileId, path) => void openDocument(fileId, path)} />}
       {historyOpen && activeEditorView !== undefined && <HistoryDialog fileId={activeEditorView.fileId} path={activeEditorView.path} onClose={() => setHistoryOpen(false)} />}
+      {documentComparisonOpen && <DocumentComparisonDialog files={files} {...(activeEditorView === undefined ? {} : { initialFileId: activeEditorView.fileId })} onClose={() => setDocumentComparisonOpen(false)} />}
       {knowledgeWorkspaceOpen && <KnowledgeWorkspaceDialog
         state={knowledgeWorkspace}
         query={searchQuery}

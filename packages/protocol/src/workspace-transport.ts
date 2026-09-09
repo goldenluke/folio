@@ -30,6 +30,7 @@ import {
   type WorkspaceHistoryRequest,
   type WorkspaceHistorySnapshotRequest,
   type WorkspaceHistoryDiffRequest,
+  type WorkspaceDocumentComparisonRequest,
   type WorkspaceCreateLiteratureNoteRequest,
   type WorkspaceCitationExplorerRequest,
   type WorkspaceResearchOverviewRequest,
@@ -96,6 +97,8 @@ import {
   workspaceHistoryRevisionSchema,
   workspaceHistoryDiffResponseSchema,
   workspaceHistoryStructuralDiffResponseSchema,
+  workspaceDocumentComparisonRequestSchema,
+  workspaceDocumentComparisonResponseSchema,
   workspaceCreateLiteratureNoteRequestSchema,
   workspaceCreateLiteratureNoteResponseSchema,
   workspaceCitationExplorerRequestSchema,
@@ -227,6 +230,7 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
     historyCreateSnapshot: (request, signal) => call(request, workspaceHistorySnapshotRequestSchema, workspaceHistoryRevisionSchema, service.historyCreateSnapshot.bind(service), signal),
     historyDiff: (request, signal) => call(request, workspaceHistoryDiffRequestSchema, workspaceHistoryDiffResponseSchema, service.historyDiff.bind(service), signal),
     historyStructuralDiff: (request, signal) => call(request, workspaceHistoryDiffRequestSchema, workspaceHistoryStructuralDiffResponseSchema, service.historyStructuralDiff.bind(service), signal),
+    compareDocuments: (request, signal) => call(request, workspaceDocumentComparisonRequestSchema, workspaceDocumentComparisonResponseSchema, service.compareDocuments.bind(service), signal),
     createLiteratureNote: (request, signal) =>
       call(
         request,
@@ -362,6 +366,8 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.historyDiff(envelope.payload as WorkspaceHistoryDiffRequest, controller.signal);
           case 'workspace/history-structural-diff':
             return local.historyStructuralDiff(envelope.payload as WorkspaceHistoryDiffRequest, controller.signal);
+          case 'workspace/compare-documents':
+            return local.compareDocuments(envelope.payload as WorkspaceDocumentComparisonRequest, controller.signal);
           case 'workspace/create-literature-note':
             return local.createLiteratureNote(envelope.payload as WorkspaceCreateLiteratureNoteRequest, controller.signal);
           case 'workspace/citation-explorer':
@@ -540,6 +546,7 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
     historyCreateSnapshot: (value, signal) => request('workspace/history-create-snapshot', value, workspaceHistorySnapshotRequestSchema, workspaceHistoryRevisionSchema, signal),
     historyDiff: (value, signal) => request('workspace/history-diff', value, workspaceHistoryDiffRequestSchema, workspaceHistoryDiffResponseSchema, signal),
     historyStructuralDiff: (value, signal) => request('workspace/history-structural-diff', value, workspaceHistoryDiffRequestSchema, workspaceHistoryStructuralDiffResponseSchema, signal),
+    compareDocuments: (value, signal) => request('workspace/compare-documents', value, workspaceDocumentComparisonRequestSchema, workspaceDocumentComparisonResponseSchema, signal),
     createLiteratureNote: (value, signal) =>
       request(
         'workspace/create-literature-note',

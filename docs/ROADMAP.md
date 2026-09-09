@@ -1092,7 +1092,7 @@ operacional local.
 
 Ver ADR 0057.
 
-### Onda R — revisão e edição acadêmica 🚧 (núcleo de revisão concluído)
+### Onda R — revisão e edição acadêmica ✅
 
 - [x] **F83 — Workspace Problems**: o Workspace Service agrega diagnósticos
       revisionados para o vault inteiro; React apenas filtra/navega DTOs.
@@ -1106,8 +1106,8 @@ Ver ADR 0057.
       superfície integrada.
 - [x] **F88 — Change navigation**: Command Registry navega diagnósticos e
       comentários sem atalhos acoplados ao DOM.
-- [ ] **F89 — Document comparison**: pendente; deve reaproveitar os diffs do
-      host para comparar dois documentos, em texto e estrutura.
+- [x] **F89 — Document comparison**: Workspace Service compara dois documentos
+      em texto e estrutura; o renderer apenas escolhe arquivos e projeta DTOs.
 
 Ver ADR 0058.
 

@@ -56,6 +56,8 @@ import {
   type WorkspaceHistoryDiffRequest,
   type WorkspaceHistoryDiffDto,
   type WorkspaceHistoryStructuralDiffDto,
+  type WorkspaceDocumentComparisonRequest,
+  type WorkspaceDocumentComparisonDto,
   type WorkspaceCreateLiteratureNoteRequest,
   type WorkspaceCitationExplorerRequest,
   type WorkspaceCitationExplorerResponseDto,
@@ -1181,6 +1183,18 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       const to = request.toRevisionId === undefined ? current : await history.content(request.fileId, String(file.path), request.toRevisionId, current);
       if (from === undefined || to === undefined) throw new WorkspaceFileNotFoundError(asWorkspaceFileId(request.fileId));
       return { changes: structuralDiff(from, to) };
+    });
+  }
+
+  /** F89: a comparação usa conteúdo autoral/sessões no host e envia só diffs DTO ao renderer. */
+  async compareDocuments(request: WorkspaceDocumentComparisonRequest): Promise<ProtocolResult<WorkspaceDocumentComparisonDto>> {
+    return this.#run(async () => {
+      const left = await this.#historyFile(request.leftFileId);
+      const right = await this.#historyFile(request.rightFileId);
+      const editors = this.#requireEditors(); const storage = this.#requireStorage();
+      const leftContent = editors.controller(left.id)?.snapshot().session.content ?? (await storage.read(left.id)).content;
+      const rightContent = editors.controller(right.id)?.snapshot().session.content ?? (await storage.read(right.id)).content;
+      return { text: { lines: lineDiff(leftContent, rightContent) }, structural: { changes: structuralDiff(leftContent, rightContent) } };
     });
   }
 

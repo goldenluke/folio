@@ -45,6 +45,8 @@ import {
   type WorkspaceHistoryDiffRequest,
   type WorkspaceHistoryDiffDto,
   type WorkspaceHistoryStructuralDiffDto,
+  type WorkspaceDocumentComparisonRequest,
+  type WorkspaceDocumentComparisonDto,
   type WorkspaceCreateLiteratureNoteRequest,
   type WorkspaceCitationExplorerRequest,
   type WorkspaceCitationExplorerResponseDto,
@@ -532,6 +534,7 @@ const requestEnvelopeSchema = z.object({
     'workspace/history-create-snapshot',
     'workspace/history-diff',
     'workspace/history-structural-diff',
+    'workspace/compare-documents',
     'workspace/create-literature-note',
     'workspace/citation-explorer',
     'workspace/research-overview',
@@ -719,6 +722,8 @@ export const workspaceHistoryRevisionSchema = z.object({ id: nonEmptyString, sou
 export const workspaceHistoryResponseSchema = z.object({ gitAvailable: z.boolean(), revisions: z.array(workspaceHistoryRevisionSchema) }) as z.ZodType<WorkspaceHistoryDto>;
 export const workspaceHistoryDiffResponseSchema = z.object({ lines: z.array(z.object({ kind: z.enum(['equal', 'added', 'removed']), leftLine: nonNegativeInteger.optional(), rightLine: nonNegativeInteger.optional(), text: z.string() })) }) as z.ZodType<WorkspaceHistoryDiffDto>;
 export const workspaceHistoryStructuralDiffResponseSchema = z.object({ changes: z.array(z.object({ kind: z.string(), description: z.string() })) }) as z.ZodType<WorkspaceHistoryStructuralDiffDto>;
+export const workspaceDocumentComparisonRequestSchema = z.object({ leftFileId: nonEmptyString, rightFileId: nonEmptyString }) as z.ZodType<WorkspaceDocumentComparisonRequest>;
+export const workspaceDocumentComparisonResponseSchema = z.object({ text: workspaceHistoryDiffResponseSchema, structural: workspaceHistoryStructuralDiffResponseSchema }) as z.ZodType<WorkspaceDocumentComparisonDto>;
 
 export const workspaceCreateLiteratureNoteRequestSchema = z.object({
   referenceId: nonEmptyString,
@@ -1142,6 +1147,7 @@ export const validarWorkspaceGraphRequest = (value: unknown): ProtocolResult<Wor
 export const validarWorkspaceHistoryRequest = (value: unknown): ProtocolResult<WorkspaceHistoryRequest> => validarDto(workspaceHistoryRequestSchema, value);
 export const validarWorkspaceHistorySnapshotRequest = (value: unknown): ProtocolResult<WorkspaceHistorySnapshotRequest> => validarDto(workspaceHistorySnapshotRequestSchema, value);
 export const validarWorkspaceHistoryDiffRequest = (value: unknown): ProtocolResult<WorkspaceHistoryDiffRequest> => validarDto(workspaceHistoryDiffRequestSchema, value);
+export const validarWorkspaceDocumentComparisonRequest = (value: unknown): ProtocolResult<WorkspaceDocumentComparisonRequest> => validarDto(workspaceDocumentComparisonRequestSchema, value);
 
 export const validarWorkspaceCreateLiteratureNoteRequest = (
   value: unknown,

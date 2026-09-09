@@ -412,6 +412,9 @@ export interface WorkspaceHistoryDiffDto { readonly lines: readonly WorkspaceHis
  */
 export interface WorkspaceHistoryStructuralChangeDto { readonly kind: string; readonly description: string; }
 export interface WorkspaceHistoryStructuralDiffDto { readonly changes: readonly WorkspaceHistoryStructuralChangeDto[]; }
+/** F89: comparação entre dois documentos do vault, sem leitura de arquivo no renderer. */
+export interface WorkspaceDocumentComparisonRequest { readonly leftFileId: string; readonly rightFileId: string; }
+export interface WorkspaceDocumentComparisonDto { readonly text: WorkspaceHistoryDiffDto; readonly structural: WorkspaceHistoryStructuralDiffDto; }
 
 export interface WorkspaceCitationExplorerRequest {}
 
@@ -908,6 +911,7 @@ export interface DesktopWorkspaceService {
   historyCreateSnapshot(request: WorkspaceHistorySnapshotRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceHistoryRevisionDto>>;
   historyDiff(request: WorkspaceHistoryDiffRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceHistoryDiffDto>>;
   historyStructuralDiff(request: WorkspaceHistoryDiffRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceHistoryStructuralDiffDto>>;
+  compareDocuments(request: WorkspaceDocumentComparisonRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceDocumentComparisonDto>>;
   createLiteratureNote(request: WorkspaceCreateLiteratureNoteRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceFileDto>>;
   citationExplorer(request: WorkspaceCitationExplorerRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceCitationExplorerResponseDto>>;
   researchOverview(request: WorkspaceResearchOverviewRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceResearchOverviewDto>>;
@@ -974,6 +978,7 @@ export type WorkspaceMethod =
   | 'workspace/history-create-snapshot'
   | 'workspace/history-diff'
   | 'workspace/history-structural-diff'
+  | 'workspace/compare-documents'
   | 'workspace/create-literature-note'
   | 'workspace/citation-explorer'
   | 'workspace/research-overview'
