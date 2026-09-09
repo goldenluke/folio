@@ -509,6 +509,18 @@ export interface WorkspaceResearchOverviewDto {
   readonly references: readonly WorkspaceResearchReferenceDto[];
 }
 
+/** F105: métricas derivadas para o dashboard; Project permanece estado operacional. */
+export interface WorkspaceProjectDashboardRequest { readonly fileIds: readonly string[]; }
+export interface WorkspaceProjectDocumentDto {
+  readonly fileId: string;
+  readonly path: string;
+  readonly revision: number;
+  readonly words: number;
+  readonly errors: number;
+  readonly warnings: number;
+}
+export interface WorkspaceProjectDashboardDto { readonly documents: readonly WorkspaceProjectDocumentDto[]; }
+
 /**
  * F6: biblioteca gerenciada do vault (`references/library.json`, CSL-JSON).
  * `entry.id` é a chave de citação; `libraryUpsert` cria ou substitui pela
@@ -984,6 +996,7 @@ export interface DesktopWorkspaceService {
   createLiteratureNote(request: WorkspaceCreateLiteratureNoteRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceFileDto>>;
   citationExplorer(request: WorkspaceCitationExplorerRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceCitationExplorerResponseDto>>;
   researchOverview(request: WorkspaceResearchOverviewRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceResearchOverviewDto>>;
+  projectDashboard(request: WorkspaceProjectDashboardRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceProjectDashboardDto>>;
   libraryList(request: WorkspaceLibraryListRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly BibliographicEntityDto[]>>;
   libraryUpsert(request: WorkspaceLibraryUpsertRequest, signal?: AbortSignal): Promise<ProtocolResult<BibliographicEntityDto>>;
   libraryRemove(request: WorkspaceLibraryRemoveRequest, signal?: AbortSignal): Promise<ProtocolResult<undefined>>;
@@ -1058,6 +1071,7 @@ export type WorkspaceMethod =
   | 'workspace/create-literature-note'
   | 'workspace/citation-explorer'
   | 'workspace/research-overview'
+  | 'workspace/project-dashboard'
   | 'workspace/library-list'
   | 'workspace/library-upsert'
   | 'workspace/library-remove'

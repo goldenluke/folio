@@ -66,6 +66,8 @@ import {
   type WorkspaceResearchOverviewRequest,
   type WorkspaceResearchOverviewDto,
   type WorkspaceResearchReferenceDto,
+  type WorkspaceProjectDashboardRequest,
+  type WorkspaceProjectDashboardDto,
   type BibliographicEntityDto,
   type WorkspaceLibraryListRequest,
   type WorkspaceLibraryUpsertRequest,
@@ -806,6 +808,40 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
         };
       });
       return { references: references.sort((left, right) => left.title.localeCompare(right.title, 'pt-BR')) };
+    });
+  }
+
+  /** F105: composição transitória de métricas existentes; não persiste analytics. */
+  async projectDashboard(request: WorkspaceProjectDashboardRequest): Promise<ProtocolResult<WorkspaceProjectDashboardDto>> {
+    return this.#run(async () => {
+      const storage = this.#requireStorage();
+      const files = new Map((await storage.list()).map((file) => [String(file.id), file]));
+      const editors = this.#requireEditors();
+      const sessions = this.#requireSessions();
+      const documents: WorkspaceProjectDashboardDto['documents'][number][] = [];
+      for (const id of request.fileIds) {
+        const file = files.get(id);
+        if (file === undefined || !String(file.path).toLowerCase().endsWith('.md')) continue;
+        const alreadyOpen = editors.controller(file.id) !== undefined;
+        const controller = alreadyOpen ? editors.controller(file.id)! : await editors.open(file.id);
+        try {
+          await sessions.idle(file.id);
+          const before = controller.snapshot();
+          const statistics = await this.#requireLanguage().writingStatistics(file.id);
+          const after = controller.snapshot();
+          // Nunca devolve métrica calculada sobre uma revisão que já mudou.
+          if (before.session.revision !== after.session.revision) continue;
+          documents.push({
+            fileId: String(file.id), path: String(file.path), revision: after.session.revision,
+            words: statistics.words,
+            errors: after.diagnostics.filter((diagnostic) => diagnostic.severity === 'error').length,
+            warnings: after.diagnostics.filter((diagnostic) => diagnostic.severity === 'warning').length,
+          });
+        } finally {
+          if (!alreadyOpen) await editors.close(file.id);
+        }
+      }
+      return { documents: documents.sort((left, right) => left.path.localeCompare(right.path, 'pt-BR')) };
     });
   }
 

@@ -34,6 +34,7 @@ import {
   type WorkspaceCreateLiteratureNoteRequest,
   type WorkspaceCitationExplorerRequest,
   type WorkspaceResearchOverviewRequest,
+  type WorkspaceProjectDashboardRequest,
   type WorkspaceLibraryListRequest,
   type WorkspaceLibraryUpsertRequest,
   type WorkspaceLibraryRemoveRequest,
@@ -110,6 +111,8 @@ import {
   workspaceCitationExplorerResponseSchema,
   workspaceResearchOverviewRequestSchema,
   workspaceResearchOverviewResponseSchema,
+  workspaceProjectDashboardRequestSchema,
+  workspaceProjectDashboardResponseSchema,
   workspaceLibraryListRequestSchema,
   workspaceLibraryListResponseSchema,
   workspaceLibraryEntryResponseSchema,
@@ -277,6 +280,8 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
         service.researchOverview.bind(service),
         signal,
       ),
+    projectDashboard: (request, signal) =>
+      call(request, workspaceProjectDashboardRequestSchema, workspaceProjectDashboardResponseSchema, service.projectDashboard.bind(service), signal),
     libraryList: (request, signal) =>
       call(request, workspaceLibraryListRequestSchema, workspaceLibraryListResponseSchema, service.libraryList.bind(service), signal),
     libraryUpsert: (request, signal) =>
@@ -405,6 +410,8 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.citationExplorer(envelope.payload as WorkspaceCitationExplorerRequest, controller.signal);
           case 'workspace/research-overview':
             return local.researchOverview(envelope.payload as WorkspaceResearchOverviewRequest, controller.signal);
+          case 'workspace/project-dashboard':
+            return local.projectDashboard(envelope.payload as WorkspaceProjectDashboardRequest, controller.signal);
           case 'workspace/library-list':
             return local.libraryList(envelope.payload as WorkspaceLibraryListRequest, controller.signal);
           case 'workspace/library-upsert':
@@ -609,6 +616,8 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
         workspaceResearchOverviewResponseSchema,
         signal,
       ),
+    projectDashboard: (value, signal) =>
+      request('workspace/project-dashboard', value, workspaceProjectDashboardRequestSchema, workspaceProjectDashboardResponseSchema, signal),
     libraryList: (value, signal) =>
       request('workspace/library-list', value, workspaceLibraryListRequestSchema, workspaceLibraryListResponseSchema, signal),
     libraryUpsert: (value, signal) =>

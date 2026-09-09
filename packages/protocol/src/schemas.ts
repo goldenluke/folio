@@ -66,6 +66,8 @@ import {
   type CitationExplorerLocationDto,
   type WorkspaceResearchOverviewRequest,
   type WorkspaceResearchOverviewDto,
+  type WorkspaceProjectDashboardRequest,
+  type WorkspaceProjectDashboardDto,
   type WorkspaceResearchReferenceDto,
   type WorkspaceLiteratureReviewDto,
   type WorkspaceLibraryListRequest,
@@ -568,6 +570,7 @@ const requestEnvelopeSchema = z.object({
     'workspace/create-literature-note',
     'workspace/citation-explorer',
     'workspace/research-overview',
+    'workspace/project-dashboard',
     'workspace/library-list',
     'workspace/library-upsert',
     'workspace/library-remove',
@@ -812,6 +815,10 @@ const workspaceResearchReferenceDtoSchema = z.object({
 export const workspaceResearchOverviewResponseSchema = z.object({
   references: z.array(workspaceResearchReferenceDtoSchema),
 }) as z.ZodType<WorkspaceResearchOverviewDto>;
+export const workspaceProjectDashboardRequestSchema = z.object({ fileIds: z.array(nonEmptyString) }) as z.ZodType<WorkspaceProjectDashboardRequest>;
+export const workspaceProjectDashboardResponseSchema = z.object({
+  documents: z.array(z.object({ fileId: nonEmptyString, path: nonEmptyString, revision: nonNegativeInteger, words: nonNegativeInteger, errors: nonNegativeInteger, warnings: nonNegativeInteger })),
+}) as z.ZodType<WorkspaceProjectDashboardDto>;
 
 export const workspaceLibraryListRequestSchema = z.object({}) as z.ZodType<WorkspaceLibraryListRequest>;
 export const workspaceLibraryEntryResponseSchema = bibliographyEntrySchema;
@@ -1207,6 +1214,8 @@ export const validarWorkspaceCitationExplorerRequest = (
 export const validarWorkspaceResearchOverviewRequest = (
   value: unknown,
 ): ProtocolResult<WorkspaceResearchOverviewRequest> => validarDto(workspaceResearchOverviewRequestSchema, value);
+export const validarWorkspaceProjectDashboardRequest = (value: unknown): ProtocolResult<WorkspaceProjectDashboardRequest> =>
+  validarDto(workspaceProjectDashboardRequestSchema, value);
 
 export const validarWorkspaceLibraryListRequest = (value: unknown): ProtocolResult<WorkspaceLibraryListRequest> =>
   validarDto(workspaceLibraryListRequestSchema, value);

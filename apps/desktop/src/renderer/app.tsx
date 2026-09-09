@@ -20,6 +20,7 @@ import type { EditorController } from '@abnt/editor-core';
 import { EditorPane } from './editor-pane.js';
 import { PdfReaderDialog } from './pdf-reader.js';
 import { ResearchWorkflowDialog } from './research-workflow.js';
+import { ResearchProjectsDialog } from './research-projects.js';
 import { WritingWorkflowDialog } from './writing-workflow.js';
 import { ReferenceMaintenanceDialog } from './reference-maintenance.js';
 import { HistoryDialog } from './history-dialog.js';
@@ -956,6 +957,7 @@ export function App(): JSX.Element {
   const [knowledgeWorkspace, setKnowledgeWorkspace] = useState<KnowledgeWorkspaceState>(emptyKnowledgeWorkspace);
   const [knowledgeWorkspaceOpen, setKnowledgeWorkspaceOpen] = useState(false);
   const [researchWorkflowOpen, setResearchWorkflowOpen] = useState(false);
+  const [researchProjectsOpen, setResearchProjectsOpen] = useState(false);
   const [writingWorkflowOpen, setWritingWorkflowOpen] = useState(false);
   const [referenceMaintenanceOpen, setReferenceMaintenanceOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -1401,6 +1403,12 @@ export function App(): JSX.Element {
         title: 'Abrir fluxo de pesquisa',
         isEnabled: () => workspaceId !== undefined,
         run() { setResearchWorkflowOpen(true); },
+      }),
+      commandRegistry.register({
+        id: 'projects.open',
+        title: 'Abrir projetos de pesquisa',
+        isEnabled: () => workspaceId !== undefined,
+        run() { setResearchProjectsOpen(true); },
       }),
       commandRegistry.register({
         id: 'writing.open',
@@ -2012,6 +2020,7 @@ export function App(): JSX.Element {
           <button type="button" role="menuitem" className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('application.newWindow', {}); }}>Nova janela</button>
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('knowledge.open', {}); }}>Knowledge Workspace</button>
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('research.open', {}); }}>Fluxo de pesquisa</button>
+          <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('projects.open', {}); }}>Projetos de pesquisa</button>
           <button type="button" role="menuitem" disabled={activeEditorView === undefined || writingStatistics === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('writing.open', {}); }}>Escrita acadêmica</button>
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('library.maintenance', {}); }}>Qualidade da biblioteca</button>
           <div className="my-1 border-t border-slate-100" />
@@ -2104,6 +2113,7 @@ export function App(): JSX.Element {
         onRemoveCollection={(id) => setKnowledgeWorkspace((current) => ({ ...current, collections: current.collections.filter((collection) => collection.id !== id) }))}
       />}
       {researchWorkflowOpen && workspaceId !== undefined && <ResearchWorkflowDialog workspaceId={workspaceId} onClose={() => setResearchWorkflowOpen(false)} onOpenDocument={(fileId, path) => { setResearchWorkflowOpen(false); void openDocument(fileId, path); }} />}
+      {researchProjectsOpen && workspaceId !== undefined && <ResearchProjectsDialog workspaceId={workspaceId} files={files} knowledge={knowledgeWorkspace} {...(activeEditorView === undefined ? {} : { activeFile: { fileId: activeEditorView.fileId, path: activeEditorView.path, revision: activeEditorView.snapshot.session.revision, contentHash: activeEditorView.snapshot.session.contentHash ?? '', mediaType: 'text/markdown' } })} onClose={() => setResearchProjectsOpen(false)} />}
       {writingWorkflowOpen && workspaceId !== undefined && activeEditorView !== undefined && writingStatistics !== undefined && <WritingWorkflowDialog workspaceId={workspaceId} fileId={activeEditorView.fileId} profileId={metadataFromSource(activeEditorView.snapshot.session.content).profile || 'abnt-artigo'} outline={activeEditorView.snapshot.outline} diagnostics={activeEditorView.snapshot.diagnostics} statistics={writingStatistics} onClose={() => setWritingWorkflowOpen(false)} onNavigate={(offset) => activeEditorView.controller.dispatch({ selection: { anchor: offset, head: offset } })} />}
       {referenceMaintenanceOpen && <ReferenceMaintenanceDialog onClose={() => setReferenceMaintenanceOpen(false)} />}
       {referenceLibraryEditor && <ReferenceLibraryDialog onClose={() => setReferenceLibraryEditor(false)} onOpenLiteratureNote={(fileId, path) => { setReferenceLibraryEditor(false); void openDocument(fileId, path); }} />}

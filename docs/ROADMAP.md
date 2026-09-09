@@ -1152,6 +1152,26 @@ Ver ADR 0059.
 
 Ver ADR 0060.
 
+### Onda U — Research Projects ✅
+
+- [x] **F103 — Research Project**: iniciativa acadêmica operacional por vault,
+      independente de pasta e de frontmatter.
+- [x] **F104 — Project Membership**: documentos, referências, collections,
+      buscas salvas e notas são vinculados por IDs e podem participar de vários
+      projetos sem duplicação.
+- [x] **F105 — Project Dashboard**: Workspace Service projeta palavras,
+      revisões e diagnósticos por FileId; desktop agrega leituras e referências
+      sem criar banco de analytics.
+- [x] **F106 — Milestones**: marcos e prazos são estado operacional local.
+- [x] **F107 — Project Goals**: metas de palavras, leitura, referências e zero
+      erros reaproveitam as projeções existentes.
+- [x] **F108 — Submission Targets**: alvo, profile, deadline, outputs e
+      checklist são associados ao projeto, sem alterar publicação autoral.
+- [x] **F109 — Project Archive**: arquivar só oculta das listas ativas e
+      preserva todos os vínculos.
+
+Ver ADR 0061.
+
 Release operations (packaging, installers, signing, update e observabilidade).
 Nada disso deve alterar o núcleo semântico; é essa propriedade que o M4 existe
 para verificar.

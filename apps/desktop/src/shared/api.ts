@@ -26,6 +26,7 @@ import {
   validarWorkspaceCreateLiteratureNoteRequest,
   validarWorkspaceCitationExplorerRequest,
   validarWorkspaceResearchOverviewRequest,
+  validarWorkspaceProjectDashboardRequest,
   validarWorkspaceLibraryListRequest,
   validarWorkspaceLibraryUpsertRequest,
   validarWorkspaceLibraryRemoveRequest,
@@ -86,6 +87,7 @@ import {
   workspaceCreateLiteratureNoteResponseSchema,
   workspaceCitationExplorerResponseSchema,
   workspaceResearchOverviewResponseSchema,
+  workspaceProjectDashboardResponseSchema,
   workspaceLibraryListResponseSchema,
   workspaceLibraryEntryResponseSchema,
   workspaceLibraryFormatResponseSchema,
@@ -167,6 +169,8 @@ import {
   type WorkspaceCitationExplorerResponseDto,
   type WorkspaceResearchOverviewRequest,
   type WorkspaceResearchOverviewDto,
+  type WorkspaceProjectDashboardRequest,
+  type WorkspaceProjectDashboardDto,
   type BibliographicEntityDto,
   type WorkspaceLibraryListRequest,
   type WorkspaceLibraryUpsertRequest,
@@ -248,6 +252,7 @@ export const DESKTOP_CHANNELS = {
   createLiteratureNote: 'abnt:document:create-literature-note',
   citationExplorer: 'abnt:workspace:citation-explorer',
   researchOverview: 'abnt:workspace:research-overview',
+  projectDashboard: 'abnt:workspace:project-dashboard',
   libraryList: 'abnt:library:list',
   libraryUpsert: 'abnt:library:upsert',
   libraryRemove: 'abnt:library:remove',
@@ -313,6 +318,7 @@ export interface AcademicDesktopApi {
     compareDocuments(request: WorkspaceDocumentComparisonRequest): Promise<ProtocolResult<WorkspaceDocumentComparisonDto>>;
     citationExplorer(request: WorkspaceCitationExplorerRequest): Promise<ProtocolResult<WorkspaceCitationExplorerResponseDto>>;
     researchOverview(request: WorkspaceResearchOverviewRequest): Promise<ProtocolResult<WorkspaceResearchOverviewDto>>;
+    projectDashboard(request: WorkspaceProjectDashboardRequest): Promise<ProtocolResult<WorkspaceProjectDashboardDto>>;
     referenceHealth(request: WorkspaceReferenceHealthRequest): Promise<ProtocolResult<WorkspaceReferenceHealthDto>>;
     referenceAttachments(request: WorkspaceReferenceAttachmentsRequest): Promise<ProtocolResult<readonly WorkspaceReferenceAttachmentDto[]>>;
     createDocument(request: WorkspaceCreateDocumentRequest): Promise<ProtocolResult<WorkspaceFileDto>>;
@@ -446,6 +452,10 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
         return checked.ok
           ? invoke(bridge, DESKTOP_CHANNELS.researchOverview, checked.value, workspaceResearchOverviewResponseSchema)
           : checked;
+      },
+      projectDashboard: async (request) => {
+        const checked = validarWorkspaceProjectDashboardRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.projectDashboard, checked.value, workspaceProjectDashboardResponseSchema) : checked;
       },
       referenceHealth: async (request) => {
         const checked = validarWorkspaceReferenceHealthRequest(request);
