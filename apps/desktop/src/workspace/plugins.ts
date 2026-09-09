@@ -3,7 +3,7 @@ import { join, relative, resolve } from 'node:path';
 
 import { folioPluginManifestSchema, type FolioPluginManifest, type PluginCommandContext, type PluginCommandResult, type PluginExportResult } from '@abnt/plugin-api';
 import { PluginHost } from '@abnt/plugin-host';
-import type { PublicationDocument } from '@abnt/protocol';
+import type { DiagnosticDto, PublicationDocument, ResolvedDocumentDto } from '@abnt/protocol';
 
 const PLUGINS_DIRECTORY = '.academic/plugins';
 const STATE_PATH = '.academic/plugin-state.json';
@@ -74,6 +74,17 @@ export class WorkspacePluginCatalog {
   async export(pluginId: string, exportId: string, publication: PublicationDocument): Promise<PluginExportResult> {
     const plugin = this.#enabled(pluginId, 'export'); if (!plugin.descriptor.exports.some((output) => output.id === exportId)) throw new Error(`Exportação de plugin desconhecida: ${exportId}`);
     const host = new PluginHost(plugin.entryPath); try { await this.#assertIdentity(host, plugin.manifest); return await host.export(exportId, publication); } finally { host.dispose(); }
+  }
+  async languageDiagnostics(document: ResolvedDocumentDto): Promise<readonly DiagnosticDto[]> {
+    const diagnostics: DiagnosticDto[] = [];
+    for (const plugin of this.#plugins.values()) {
+      if (!plugin.descriptor.enabled || !plugin.manifest.capabilities.includes('language-diagnostics')) continue;
+      const host = new PluginHost(plugin.entryPath);
+      try { await this.#assertIdentity(host, plugin.manifest); for (const diagnostic of await host.lint(document)) diagnostics.push({ id: diagnostic.id, severity: diagnostic.severity, message: diagnostic.message, ...(diagnostic.nodeId === undefined ? {} : { nodeId: String(diagnostic.nodeId) }), ...(diagnostic.source === undefined ? {} : { source: { documentId: String(diagnostic.source.documentId), start: diagnostic.source.start, end: diagnostic.source.end } }) }); }
+      catch (error) { diagnostics.push({ id: 'PLUGIN-FALHA', severity: 'warning', message: `Plugin "${plugin.manifest.id}" falhou: ${error instanceof Error ? error.message : String(error)}` }); }
+      finally { host.dispose(); }
+    }
+    return diagnostics;
   }
 
   #enabled(id: string, capability: string): LoadedPlugin { const plugin = this.#plugins.get(id); if (plugin === undefined) throw new Error(`Plugin desconhecido: ${id}`); if (!plugin.descriptor.enabled) throw new Error(`Plugin desabilitado: ${id}`); if (!plugin.manifest.capabilities.includes(capability as never)) throw new Error(`Plugin não declarou capability ${capability}.`); return plugin; }

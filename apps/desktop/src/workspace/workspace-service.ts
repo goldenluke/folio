@@ -515,7 +515,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
         await sessions.idle(file.id);
         const snapshot = controller.snapshot();
         const headings = index.headings(file.id);
-        const diagnostics = await this.#requireLanguage().diagnostics(file.id);
+        const diagnostics = [...await this.#requireLanguage().diagnostics(file.id), ...(snapshot.session.resolved === undefined ? [] : await this.#requirePlugins().languageDiagnostics(snapshot.session.resolved))];
         for (const diagnostic of diagnostics) {
           const start = diagnostic.source?.start.offset;
           const end = diagnostic.source?.end.offset;

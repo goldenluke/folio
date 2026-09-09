@@ -54,6 +54,8 @@ export interface DocumentSessionSnapshot {
   readonly status: DocumentSessionStatus;
   readonly dependencies?: AuthoredDependenciesDto;
   readonly diagnostics: readonly DiagnosticDto[];
+  /** Projeção serializável da compilação vigente; usada por hosts para extensões read-only. */
+  readonly resolved?: import('@abnt/protocol').ResolvedDocumentDto;
   readonly preview?: DocumentSessionPreview;
   /**
    * Bibliografia resolvida na última compilação bem-sucedida do ambiente —

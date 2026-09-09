@@ -46,6 +46,7 @@ interface MutableSession {
   dependencies: PreparedCompilationDto['dependencies'] | undefined;
   diagnostics: readonly import('@abnt/protocol').DiagnosticDto[];
   preview: DocumentSessionPreview | undefined;
+  resolved: import('@abnt/protocol').ResolvedDocumentDto | undefined;
   bibliography: import('@abnt/protocol').BibliographyEnvironmentDto | undefined;
   externalChange: WorkspaceFile | undefined;
   active: ActiveCompilation | undefined;
@@ -128,6 +129,7 @@ export class DocumentSessionsService implements DocumentSessions {
       dependencies: undefined,
       diagnostics: [],
       preview: undefined,
+      resolved: undefined,
       bibliography: undefined,
       externalChange: undefined,
       active: undefined,
@@ -165,6 +167,7 @@ export class DocumentSessionsService implements DocumentSessions {
     session.dependencies = undefined;
     session.diagnostics = [];
     session.preview = undefined;
+    session.resolved = undefined;
     // Diferente de uma edição incremental, uma recarga troca toda a fonte:
     // o catálogo de referências anterior não pode continuar projetado.
     session.bibliography = undefined;
@@ -337,6 +340,7 @@ export class DocumentSessionsService implements DocumentSessions {
       session.status = 'idle';
       session.diagnostics = [...expansion.diagnostics, ...this.#remapDiagnostics(result.value.diagnostics, expansion, source.documentId)];
       session.preview = { profileId: result.value.profileId, revision: active.revision, publication: result.value.publication };
+      session.resolved = result.value.resolved;
       this.#emitDiagnostics(session, active.revision);
       this.#emit({
         type: 'session:preview-updated',
@@ -481,6 +485,7 @@ export class DocumentSessionsService implements DocumentSessions {
       ...(session.dependencies !== undefined ? { dependencies: session.dependencies } : {}),
       diagnostics: session.diagnostics,
       ...(session.preview !== undefined ? { preview: session.preview } : {}),
+      ...(session.resolved !== undefined ? { resolved: session.resolved } : {}),
       ...(session.bibliography !== undefined ? { bibliography: session.bibliography } : {}),
       ...(session.externalChange !== undefined ? { externalChange: session.externalChange } : {}),
     };
