@@ -148,13 +148,15 @@ describe('P15 — plugin de lint isolado (PluginHost + @abnt/plugin-api)', () =>
     const root = await mkdtemp(join(tmpdir(), 'folio-f90-'));
     try {
       const valid = join(root, '.academic', 'plugins', 'exemplo'); await mkdir(valid, { recursive: true });
-      await writeFile(join(valid, 'index.mjs'), "process.send({ version: 1, type: 'abnt-plugin/ready', plugin: { id: 'exemplo.local', version: '1.0.0' } }); process.on('message', (msg) => { if (msg.type === 'abnt-plugin/command') process.send({ version: 1, type: 'abnt-plugin/command-result', requestId: msg.requestId, ok: true, result: { kind: 'notice', message: 'ok' } }); });", 'utf8');
-      await writeFile(join(valid, 'plugin.json'), JSON.stringify({ id: 'exemplo.local', version: '1.0.0', apiVersion: 1, entry: 'index.mjs', capabilities: ['commands', 'views'], commands: [{ id: 'saudar', title: 'Saudar' }], views: [{ id: 'sobre', title: 'Sobre', body: 'Plugin local.' }] }), 'utf8');
+      await writeFile(join(valid, 'index.mjs'), "process.send({ version: 1, type: 'abnt-plugin/ready', plugin: { id: 'exemplo.local', version: '1.0.0' } }); process.on('message', (msg) => { if (msg.type === 'abnt-plugin/command') process.send({ version: 1, type: 'abnt-plugin/command-result', requestId: msg.requestId, ok: true, result: { kind: 'notice', message: 'ok' } }); if (msg.type === 'abnt-plugin/export') process.send({ version: 1, type: 'abnt-plugin/export-result', requestId: msg.requestId, ok: true, result: { content: '# exportado pelo plugin' } }); });", 'utf8');
+      await writeFile(join(valid, 'plugin.json'), JSON.stringify({ id: 'exemplo.local', version: '1.0.0', apiVersion: 1, entry: 'index.mjs', capabilities: ['commands', 'views', 'language-diagnostics', 'export'], commands: [{ id: 'saudar', title: 'Saudar' }], views: [{ id: 'sobre', title: 'Sobre', body: 'Plugin local.' }], exports: [{ id: 'markdown', title: 'Markdown de teste', extension: 'md', mimeType: 'text/markdown' }] }), 'utf8');
       const invalid = join(root, '.academic', 'plugins', 'invalido'); await mkdir(invalid, { recursive: true });
       await writeFile(join(invalid, 'plugin.json'), JSON.stringify({ id: 'invalido', version: '1.0.0', apiVersion: 1, entry: '../fora.mjs', capabilities: [] }), 'utf8');
       const catalog = new WorkspacePluginCatalog(root);
       await expect(catalog.discover()).resolves.toEqual(expect.arrayContaining([expect.objectContaining({ id: 'exemplo.local', enabled: true, commands: [{ id: 'saudar', title: 'Saudar' }] }), expect.objectContaining({ id: 'invalido', enabled: false, error: expect.stringMatching(/Entry/u) })]));
       await expect(catalog.command('exemplo.local', 'saudar', {})).resolves.toMatchObject({ kind: 'notice', message: 'ok' });
+      const compiled = await compilar(FONTE, { documentId: 'f90.md' });
+      await expect(catalog.export('exemplo.local', 'markdown', compiled.publication)).resolves.toEqual({ content: '# exportado pelo plugin' });
       await expect(catalog.setEnabled('exemplo.local', false)).resolves.toEqual(expect.arrayContaining([expect.objectContaining({ id: 'exemplo.local', enabled: false })]));
       await expect(catalog.command('exemplo.local', 'saudar', {})).rejects.toThrow(/desabilitado/u);
     } finally { await rm(root, { recursive: true, force: true }); }
