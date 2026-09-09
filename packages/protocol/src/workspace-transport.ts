@@ -41,6 +41,7 @@ import {
   type WorkspaceLibraryFormatRequest,
   type WorkspaceLibraryResolveDoiRequest,
   type WorkspaceLibraryImportRequest,
+  type WorkspaceLibraryIntakePreviewRequest,
   type WorkspaceLibraryDuplicatesRequest,
   type WorkspaceLibraryMergeRequest,
   type WorkspaceLibraryKeyPreviewRequest,
@@ -123,6 +124,8 @@ import {
   workspaceLibraryResolveDoiRequestSchema,
   workspaceLibraryImportRequestSchema,
   workspaceLibraryImportResponseSchema,
+  workspaceLibraryIntakePreviewRequestSchema,
+  workspaceLibraryIntakePreviewResponseSchema,
   workspaceLibraryDuplicatesRequestSchema,
   workspaceLibraryDuplicatesResponseSchema,
   workspaceLibraryMergeRequestSchema,
@@ -300,6 +303,8 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
       call(request, workspaceLibraryResolveDoiRequestSchema, workspaceLibraryEntryResponseSchema, service.libraryResolveDoi.bind(service), signal),
     libraryImport: (request, signal) =>
       call(request, workspaceLibraryImportRequestSchema, workspaceLibraryImportResponseSchema, service.libraryImport.bind(service), signal),
+    libraryIntakePreview: (request, signal) =>
+      call(request, workspaceLibraryIntakePreviewRequestSchema, workspaceLibraryIntakePreviewResponseSchema, service.libraryIntakePreview.bind(service), signal),
     libraryDuplicates: (request, signal) => call(request, workspaceLibraryDuplicatesRequestSchema, workspaceLibraryDuplicatesResponseSchema, service.libraryDuplicates.bind(service), signal),
     libraryMerge: (request, signal) => call(request, workspaceLibraryMergeRequestSchema, workspaceLibraryMergeResponseSchema, service.libraryMerge.bind(service), signal),
     libraryKeyPreview: (request, signal) => call(request, workspaceLibraryKeyPreviewRequestSchema, workspaceLibraryKeyPreviewResponseSchema, service.libraryKeyPreview.bind(service), signal),
@@ -424,6 +429,8 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.libraryResolveDoi(envelope.payload as WorkspaceLibraryResolveDoiRequest, controller.signal);
           case 'workspace/library-import':
             return local.libraryImport(envelope.payload as WorkspaceLibraryImportRequest, controller.signal);
+          case 'workspace/library-intake-preview':
+            return local.libraryIntakePreview(envelope.payload as WorkspaceLibraryIntakePreviewRequest, controller.signal);
           case 'workspace/library-duplicates':
             return local.libraryDuplicates(envelope.payload as WorkspaceLibraryDuplicatesRequest, controller.signal);
           case 'workspace/library-merge':
@@ -636,6 +643,8 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
       request('workspace/library-resolve-doi', value, workspaceLibraryResolveDoiRequestSchema, workspaceLibraryEntryResponseSchema, signal),
     libraryImport: (value, signal) =>
       request('workspace/library-import', value, workspaceLibraryImportRequestSchema, workspaceLibraryImportResponseSchema, signal),
+    libraryIntakePreview: (value, signal) =>
+      request('workspace/library-intake-preview', value, workspaceLibraryIntakePreviewRequestSchema, workspaceLibraryIntakePreviewResponseSchema, signal),
     libraryDuplicates: (value, signal) => request('workspace/library-duplicates', value, workspaceLibraryDuplicatesRequestSchema, workspaceLibraryDuplicatesResponseSchema, signal),
     libraryMerge: (value, signal) => request('workspace/library-merge', value, workspaceLibraryMergeRequestSchema, workspaceLibraryMergeResponseSchema, signal),
     libraryKeyPreview: (value, signal) => request('workspace/library-key-preview', value, workspaceLibraryKeyPreviewRequestSchema, workspaceLibraryKeyPreviewResponseSchema, signal),

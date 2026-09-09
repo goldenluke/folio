@@ -77,6 +77,8 @@ import {
   type WorkspaceLibraryResolveDoiRequest,
   type WorkspaceLibraryImportRequest,
   type WorkspaceLibraryImportResponseDto,
+  type WorkspaceLibraryIntakePreviewRequest,
+  type WorkspaceLibraryIntakePreviewDto,
   type WorkspaceLibraryDuplicatesRequest,
   type WorkspaceLibraryDuplicateDto,
   type WorkspaceLibraryMergeRequest,
@@ -577,6 +579,7 @@ const requestEnvelopeSchema = z.object({
     'workspace/library-format',
     'workspace/library-resolve-doi',
     'workspace/library-import',
+    'workspace/library-intake-preview',
     'workspace/library-duplicates',
     'workspace/library-merge',
     'workspace/library-key-preview',
@@ -846,6 +849,13 @@ export const workspaceLibraryImportResponseSchema = z.object({
   imported: z.array(bibliographyEntrySchema),
   diagnostics: z.array(diagnosticDtoSchema),
 }) as z.ZodType<WorkspaceLibraryImportResponseDto>;
+export const workspaceLibraryIntakePreviewRequestSchema = z.object({
+  format: z.enum(['bibtex', 'ris', 'csl-json']).optional(), content: z.string().optional(), entry: bibliographyEntrySchema.optional(),
+}).refine((value) => value.entry !== undefined || (value.format !== undefined && value.content !== undefined), 'Informe uma entrada ou formato e conteúdo.') as z.ZodType<WorkspaceLibraryIntakePreviewRequest>;
+export const workspaceLibraryIntakePreviewResponseSchema = z.object({
+  imported: z.array(bibliographyEntrySchema), diagnostics: z.array(diagnosticDtoSchema),
+  duplicates: z.record(z.string(), z.array(z.object({ leftId: nonEmptyString, rightId: nonEmptyString, score: nonNegativeInteger, reasons: z.array(z.enum(['doi', 'isbn', 'title', 'author-year'])) }))),
+}) as z.ZodType<WorkspaceLibraryIntakePreviewDto>;
 export const workspaceLibraryDuplicatesRequestSchema = z.object({}) as z.ZodType<WorkspaceLibraryDuplicatesRequest>;
 export const workspaceLibraryDuplicatesResponseSchema = z.array(z.object({
   leftId: nonEmptyString, rightId: nonEmptyString, score: nonNegativeInteger,
@@ -1233,6 +1243,8 @@ export const validarWorkspaceLibraryResolveDoiRequest = (value: unknown): Protoc
   validarDto(workspaceLibraryResolveDoiRequestSchema, value);
 export const validarWorkspaceLibraryImportRequest = (value: unknown): ProtocolResult<WorkspaceLibraryImportRequest> =>
   validarDto(workspaceLibraryImportRequestSchema, value);
+export const validarWorkspaceLibraryIntakePreviewRequest = (value: unknown): ProtocolResult<WorkspaceLibraryIntakePreviewRequest> =>
+  validarDto(workspaceLibraryIntakePreviewRequestSchema, value);
 export const validarWorkspaceReferenceHealthRequest = (value: unknown): ProtocolResult<WorkspaceReferenceHealthRequest> =>
   validarDto(workspaceReferenceHealthRequestSchema, value);
 export const validarWorkspaceReferenceAttachmentsRequest = (value: unknown): ProtocolResult<WorkspaceReferenceAttachmentsRequest> => validarDto(workspaceReferenceAttachmentsRequestSchema, value);

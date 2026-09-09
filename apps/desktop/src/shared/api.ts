@@ -33,6 +33,7 @@ import {
   validarWorkspaceLibraryFormatRequest,
   validarWorkspaceLibraryResolveDoiRequest,
   validarWorkspaceLibraryImportRequest,
+  validarWorkspaceLibraryIntakePreviewRequest,
   validarWorkspaceLibraryDuplicatesRequest,
   validarWorkspaceLibraryMergeRequest,
   validarWorkspaceLibraryKeyPreviewRequest,
@@ -92,6 +93,7 @@ import {
   workspaceLibraryEntryResponseSchema,
   workspaceLibraryFormatResponseSchema,
   workspaceLibraryImportResponseSchema,
+  workspaceLibraryIntakePreviewResponseSchema,
   workspaceLibraryDuplicatesResponseSchema,
   workspaceLibraryMergeResponseSchema,
   workspaceLibraryKeyPreviewResponseSchema,
@@ -99,6 +101,7 @@ import {
   workspaceReferenceHealthResponseSchema,
   workspaceReferenceAttachmentsResponseSchema,
   workspaceReferenceAttachmentDtoSchema,
+  workspaceAttachReferencePdfRequestSchema,
   workspaceReferencePdfResponseSchema,
   workspacePdfAnnotationsResponseSchema,
   workspacePdfAnnotationDtoSchema,
@@ -179,6 +182,8 @@ import {
   type WorkspaceLibraryResolveDoiRequest,
   type WorkspaceLibraryImportRequest,
   type WorkspaceLibraryImportResponseDto,
+  type WorkspaceLibraryIntakePreviewRequest,
+  type WorkspaceLibraryIntakePreviewDto,
   type WorkspaceLibraryDuplicateDto,
   type WorkspaceLibraryMergeRequest,
   type WorkspaceLibraryMergeResponseDto,
@@ -190,6 +195,7 @@ import {
   type WorkspaceReferenceHealthDto,
   type WorkspaceReferenceAttachmentsRequest,
   type WorkspaceReferenceAttachmentDto,
+  type WorkspaceAttachReferencePdfRequest,
   type WorkspaceReferenceAttachmentRequest,
   type WorkspaceReferencePdfDto,
   type WorkspacePdfAnnotationDto,
@@ -259,11 +265,13 @@ export const DESKTOP_CHANNELS = {
   libraryFormat: 'abnt:library:format',
   libraryResolveDoi: 'abnt:library:resolve-doi',
   libraryImport: 'abnt:library:import',
+  libraryIntakePreview: 'abnt:library:intake-preview',
   libraryDuplicates: 'abnt:library:duplicates',
   libraryMerge: 'abnt:library:merge',
   libraryKeyPreview: 'abnt:library:key-preview',
   libraryRenameKey: 'abnt:library:rename-key',
   libraryAttachPdf: 'abnt:library:attach-pdf',
+  libraryAttachPdfData: 'abnt:library:attach-pdf-data',
   libraryOpenAttachment: 'abnt:library:open-attachment',
   libraryRevealAttachment: 'abnt:library:reveal-attachment',
   libraryRemoveAttachment: 'abnt:library:remove-attachment',
@@ -331,11 +339,14 @@ export interface AcademicDesktopApi {
     format(request: WorkspaceLibraryFormatRequest): Promise<ProtocolResult<string>>;
     resolveDoi(request: WorkspaceLibraryResolveDoiRequest): Promise<ProtocolResult<BibliographicEntityDto>>;
     import(request: WorkspaceLibraryImportRequest): Promise<ProtocolResult<WorkspaceLibraryImportResponseDto>>;
+    intakePreview(request: WorkspaceLibraryIntakePreviewRequest): Promise<ProtocolResult<WorkspaceLibraryIntakePreviewDto>>;
     duplicates(): Promise<ProtocolResult<readonly WorkspaceLibraryDuplicateDto[]>>;
     merge(request: WorkspaceLibraryMergeRequest): Promise<ProtocolResult<WorkspaceLibraryMergeResponseDto>>;
     keyPreview(request: WorkspaceLibraryKeyPreviewRequest): Promise<ProtocolResult<WorkspaceLibraryKeyPreviewDto>>;
     renameKey(request: WorkspaceLibraryRenameKeyRequest): Promise<ProtocolResult<WorkspaceLibraryRenameKeyResponseDto>>;
     attachPdf(request: WorkspaceReferenceAttachmentRequest): Promise<ProtocolResult<WorkspaceReferenceAttachmentDto>>;
+    /** F126: bytes de PDF recebidos por drop passam pelo Main e pelo Workspace Service. */
+    attachPdfData(request: WorkspaceAttachReferencePdfRequest): Promise<ProtocolResult<WorkspaceReferenceAttachmentDto>>;
     openAttachment(request: WorkspaceReferenceAttachmentRequest): Promise<ProtocolResult<undefined>>;
     revealAttachment(request: WorkspaceReferenceAttachmentRequest): Promise<ProtocolResult<undefined>>;
     removeAttachment(request: WorkspaceReferenceAttachmentRequest): Promise<ProtocolResult<undefined>>;
@@ -503,6 +514,10 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
         const checked = validarWorkspaceLibraryImportRequest(request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryImport, checked.value, workspaceLibraryImportResponseSchema) : checked;
       },
+      intakePreview: async (request) => {
+        const checked = validarWorkspaceLibraryIntakePreviewRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryIntakePreview, checked.value, workspaceLibraryIntakePreviewResponseSchema) : checked;
+      },
       duplicates: async () => {
         const checked = validarWorkspaceLibraryDuplicatesRequest({});
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryDuplicates, checked.value, workspaceLibraryDuplicatesResponseSchema) : checked;
@@ -520,6 +535,7 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryRenameKey, checked.value, workspaceLibraryRenameKeyResponseSchema) : checked;
       },
       attachPdf: async (request) => { const checked=validarWorkspaceReferenceAttachmentRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryAttachPdf, checked.value, workspaceReferenceAttachmentDtoSchema) : checked; },
+      attachPdfData: async (request) => { const checked=validarDto(workspaceAttachReferencePdfRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryAttachPdfData, checked.value, workspaceReferenceAttachmentDtoSchema) : checked; },
       openAttachment: async (request) => { const checked=validarWorkspaceReferenceAttachmentRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryOpenAttachment, checked.value, emptyResponseSchema) : checked; },
       revealAttachment: async (request) => { const checked=validarWorkspaceReferenceAttachmentRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryRevealAttachment, checked.value, emptyResponseSchema) : checked; },
       removeAttachment: async (request) => { const checked=validarWorkspaceReferenceAttachmentRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryRemoveAttachment, checked.value, emptyResponseSchema) : checked; },

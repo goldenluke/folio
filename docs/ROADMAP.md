@@ -1198,6 +1198,29 @@ Ver ADR 0061.
 
 Ver ADR 0062.
 
+### Onda X — Research Capture & Intake ✅
+
+- [x] **F124 — Universal Import**: uma única superfície recebe BibTeX, RIS,
+      CSL-JSON, DOI, URL e PDF, encaminhando cada formato pelo adapter
+      apropriado antes de qualquer gravação canônica.
+- [x] **F125 — Reference Inbox**: candidatos entram como `unreviewed` no
+      estado operacional local do vault; importar não altera `library.json`.
+- [x] **F126 — PDF Intake**: drag-and-drop calcula SHA-256, procura apenas
+      DOI literalmente presente nos bytes e mantém o PDF pendente até a
+      confirmação; não há OCR nem metadata inventada.
+- [x] **F127 — Metadata Resolution**: DOI preserva proveniência do provider,
+      PDF registra DOI literal/ausência e URL é capturada sem scraping frágil.
+- [x] **F128 — Duplicate-aware Import**: candidatos usam os mesmos sinais
+      explicáveis de DOI/ISBN/título/autor-ano e oferecem criar ou anexar ao
+      registro canônico já existente.
+- [x] **F129 — URL Reference Capture**: HTTP(S) cria candidato `webpage` com
+      URL e data de acesso; provider não vira modelo interno.
+- [x] **F130 — Intake Review Queue**: a inbox apresenta totais, lacunas e
+      duplicatas. Confirmar chama a biblioteca canônica, anexa o PDF pelo
+      Workspace Service e adiciona a referência à fila de leitura.
+
+Ver ADR 0063.
+
 Release operations (packaging, installers, signing, update e observabilidade).
 Nada disso deve alterar o núcleo semântico; é essa propriedade que o M4 existe
 para verificar.

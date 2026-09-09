@@ -21,6 +21,7 @@ import { EditorPane } from './editor-pane.js';
 import { PdfReaderDialog } from './pdf-reader.js';
 import { ResearchWorkflowDialog } from './research-workflow.js';
 import { ResearchProjectsDialog } from './research-projects.js';
+import { ResearchIntakeDialog } from './research-intake.js';
 import { WritingWorkflowDialog } from './writing-workflow.js';
 import { ReferenceMaintenanceDialog } from './reference-maintenance.js';
 import { HistoryDialog } from './history-dialog.js';
@@ -1000,6 +1001,7 @@ export function App(): JSX.Element {
   const [knowledgeWorkspaceOpen, setKnowledgeWorkspaceOpen] = useState(false);
   const [researchWorkflowOpen, setResearchWorkflowOpen] = useState(false);
   const [researchProjectsOpen, setResearchProjectsOpen] = useState(false);
+  const [researchIntakeOpen, setResearchIntakeOpen] = useState(false);
   const [automationOpen, setAutomationOpen] = useState(false);
   const [customKeybindings, setCustomKeybindings] = useState<CustomKeybindings>({});
   const [customKeybindingsWorkspace, setCustomKeybindingsWorkspace] = useState<string | undefined>(undefined);
@@ -1471,6 +1473,12 @@ export function App(): JSX.Element {
         title: 'Abrir fluxo de pesquisa',
         isEnabled: () => workspaceId !== undefined,
         run() { setResearchWorkflowOpen(true); },
+      }),
+      commandRegistry.register({
+        id: 'research.intake',
+        title: 'Importar pesquisa para a inbox',
+        isEnabled: () => workspaceId !== undefined,
+        run() { setResearchIntakeOpen(true); },
       }),
       commandRegistry.register({
         id: 'projects.open',
@@ -2142,6 +2150,7 @@ export function App(): JSX.Element {
           <button type="button" role="menuitem" className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('application.newWindow', {}); }}>Nova janela</button>
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('knowledge.open', {}); }}>Knowledge Workspace</button>
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('research.open', {}); }}>Fluxo de pesquisa</button>
+          <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('research.intake', {}); }}>Importar pesquisa</button>
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('projects.open', {}); }}>Projetos de pesquisa</button>
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('automation.open', {}); }}>Automação e atalhos</button>
           <button type="button" role="menuitem" disabled={activeEditorView === undefined || writingStatistics === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('writing.open', {}); }}>Escrita acadêmica</button>
@@ -2249,6 +2258,7 @@ export function App(): JSX.Element {
         onRemoveCollection={(id) => setKnowledgeWorkspace((current) => ({ ...current, collections: current.collections.filter((collection) => collection.id !== id) }))}
       />}
       {researchWorkflowOpen && workspaceId !== undefined && <ResearchWorkflowDialog workspaceId={workspaceId} onClose={() => setResearchWorkflowOpen(false)} onOpenDocument={(fileId, path) => { setResearchWorkflowOpen(false); void openDocument(fileId, path); }} />}
+      {researchIntakeOpen && workspaceId !== undefined && <ResearchIntakeDialog workspaceId={workspaceId} onClose={() => setResearchIntakeOpen(false)} onMessage={setMessage} />}
       {researchProjectsOpen && workspaceId !== undefined && <ResearchProjectsDialog workspaceId={workspaceId} files={files} knowledge={knowledgeWorkspace} {...(activeEditorView === undefined ? {} : { activeFile: { fileId: activeEditorView.fileId, path: activeEditorView.path, revision: activeEditorView.snapshot.session.revision, contentHash: activeEditorView.snapshot.session.contentHash ?? '', mediaType: 'text/markdown' } })} onClose={() => setResearchProjectsOpen(false)} />}
       {writingWorkflowOpen && workspaceId !== undefined && activeEditorView !== undefined && writingStatistics !== undefined && <WritingWorkflowDialog workspaceId={workspaceId} fileId={activeEditorView.fileId} profileId={metadataFromSource(activeEditorView.snapshot.session.content).profile || 'abnt-artigo'} outline={activeEditorView.snapshot.outline} diagnostics={activeEditorView.snapshot.diagnostics} statistics={writingStatistics} onClose={() => setWritingWorkflowOpen(false)} onNavigate={(offset) => activeEditorView.controller.dispatch({ selection: { anchor: offset, head: offset } })} />}
       {referenceMaintenanceOpen && <ReferenceMaintenanceDialog onClose={() => setReferenceMaintenanceOpen(false)} />}

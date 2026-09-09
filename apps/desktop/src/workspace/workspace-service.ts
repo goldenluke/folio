@@ -76,6 +76,8 @@ import {
   type WorkspaceLibraryResolveDoiRequest,
   type WorkspaceLibraryImportRequest,
   type WorkspaceLibraryImportResponseDto,
+  type WorkspaceLibraryIntakePreviewRequest,
+  type WorkspaceLibraryIntakePreviewDto,
   type WorkspaceLibraryDuplicatesRequest,
   type WorkspaceLibraryDuplicateDto,
   type WorkspaceLibraryMergeRequest,
@@ -900,6 +902,25 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
           id: diagnostic.id, severity: diagnostic.severity, message: diagnostic.message,
         })),
       };
+    });
+  }
+
+  /** F124/F128: adapta e compara candidatos sem tocar `library.json`. */
+  async libraryIntakePreview(request: WorkspaceLibraryIntakePreviewRequest): Promise<ProtocolResult<WorkspaceLibraryIntakePreviewDto>> {
+    return this.#run(async () => {
+      const parsed = request.entry === undefined ? importLibraryContent(request.format!, request.content!) : undefined;
+      const imported = parsed?.entries ?? { [request.entry!.id]: { ...request.entry!, id: asReferenceId(request.entry!.id) } };
+      const diagnostics = parsed?.diagnostics ?? [];
+      const canonical = await readLibrary(this.#requireStorage());
+      const duplicates = Object.fromEntries(Object.entries(imported).map(([id, entry]) => {
+        const candidateId = `__intake_${id}`;
+        const pairs = findReferenceDuplicates({ ...canonical, [candidateId]: entry }).flatMap((pair) => {
+          if (pair.leftId !== candidateId && pair.rightId !== candidateId) return [];
+          return [{ leftId: candidateId, rightId: pair.leftId === candidateId ? pair.rightId : pair.leftId, score: pair.score, reasons: pair.reasons }];
+        });
+        return [id, pairs];
+      }));
+      return { imported: Object.entries(imported).map(([id, entry]) => ({ ...entry, id })), diagnostics: diagnostics.map((diagnostic) => ({ id: diagnostic.id, severity: diagnostic.severity, message: diagnostic.message })), duplicates };
     });
   }
 

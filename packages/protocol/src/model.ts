@@ -556,6 +556,18 @@ export interface WorkspaceLibraryImportResponseDto {
   readonly diagnostics: readonly DiagnosticDto[];
 }
 
+/** F124/F128: parse e comparação antes de promover qualquer dado à biblioteca. */
+export interface WorkspaceLibraryIntakePreviewRequest {
+  readonly format?: 'bibtex' | 'ris' | 'csl-json';
+  readonly content?: string;
+  readonly entry?: BibliographicEntityDto;
+}
+export interface WorkspaceLibraryIntakePreviewDto {
+  readonly imported: readonly BibliographicEntityDto[];
+  readonly diagnostics: readonly DiagnosticDto[];
+  readonly duplicates: Readonly<Record<string, readonly WorkspaceLibraryDuplicateDto[]>>;
+}
+
 export type WorkspaceReferenceDuplicateReason = 'doi' | 'isbn' | 'title' | 'author-year';
 export interface WorkspaceLibraryDuplicateDto {
   readonly leftId: string;
@@ -1003,6 +1015,7 @@ export interface DesktopWorkspaceService {
   libraryFormat(request: WorkspaceLibraryFormatRequest, signal?: AbortSignal): Promise<ProtocolResult<string>>;
   libraryResolveDoi(request: WorkspaceLibraryResolveDoiRequest, signal?: AbortSignal): Promise<ProtocolResult<BibliographicEntityDto>>;
   libraryImport(request: WorkspaceLibraryImportRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceLibraryImportResponseDto>>;
+  libraryIntakePreview(request: WorkspaceLibraryIntakePreviewRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceLibraryIntakePreviewDto>>;
   libraryDuplicates(request: WorkspaceLibraryDuplicatesRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceLibraryDuplicateDto[]>>;
   libraryMerge(request: WorkspaceLibraryMergeRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceLibraryMergeResponseDto>>;
   libraryKeyPreview(request: WorkspaceLibraryKeyPreviewRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceLibraryKeyPreviewDto>>;
@@ -1078,6 +1091,7 @@ export type WorkspaceMethod =
   | 'workspace/library-format'
   | 'workspace/library-resolve-doi'
   | 'workspace/library-import'
+  | 'workspace/library-intake-preview'
   | 'workspace/library-duplicates'
   | 'workspace/library-merge'
   | 'workspace/library-key-preview'

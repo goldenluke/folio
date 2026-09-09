@@ -38,3 +38,5 @@ export {
 
 export { formatarReferenciaAbnt, referenciaComoTexto } from './referencias-abnt.js';
 export type { ReferenciaFormatada, TrechoBibliografico } from './referencias-abnt.js';
+export { findReferenceDuplicates } from './duplicates.js';
+export type { DuplicateReason, ReferenceDuplicate } from './duplicates.js';
