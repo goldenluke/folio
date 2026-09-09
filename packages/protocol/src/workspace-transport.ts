@@ -57,6 +57,7 @@ import {
   type WorkspaceReadRequest,
   type WorkspaceReferencesRequest,
   type WorkspaceSearchRequest,
+  type WorkspaceProblemsRequest,
 } from './model.js';
 import {
   editorCloseRequestSchema,
@@ -140,6 +141,8 @@ import {
   workspaceRenameRequestSchema,
   workspaceSearchRequestSchema,
   workspaceSearchResponseSchema,
+  workspaceProblemsRequestSchema,
+  workspaceProblemsResponseSchema,
   languageCompletionRequestSchema,
   languageCompletionResponseSchema,
   languageDefinitionRequestSchema,
@@ -212,6 +215,8 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
       call(request, editorExportRequestSchema, editorExportResponseSchema, service.exportDocument.bind(service), signal),
     search: (request, signal) =>
       call(request, workspaceSearchRequestSchema, workspaceSearchResponseSchema, service.search.bind(service), signal),
+    problems: (request, signal) =>
+      call(request, workspaceProblemsRequestSchema, workspaceProblemsResponseSchema, service.problems.bind(service), signal),
     backlinks: (request, signal) =>
       call(request, workspaceBacklinksRequestSchema, workspaceBacklinksResponseSchema, service.backlinks.bind(service), signal),
     references: (request, signal) =>
@@ -341,6 +346,8 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.exportDocument(envelope.payload as EditorExportRequest, controller.signal);
           case 'workspace/search':
             return local.search(envelope.payload as WorkspaceSearchRequest, controller.signal);
+          case 'workspace/problems':
+            return local.problems(envelope.payload as WorkspaceProblemsRequest, controller.signal);
           case 'workspace/backlinks':
             return local.backlinks(envelope.payload as WorkspaceBacklinksRequest, controller.signal);
           case 'workspace/references':
@@ -521,6 +528,8 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
       request('editor/export', value, editorExportRequestSchema, editorExportResponseSchema, signal),
     search: (value, signal) =>
       request('workspace/search', value, workspaceSearchRequestSchema, workspaceSearchResponseSchema, signal),
+    problems: (value, signal) =>
+      request('workspace/problems', value, workspaceProblemsRequestSchema, workspaceProblemsResponseSchema, signal),
     backlinks: (value, signal) =>
       request('workspace/backlinks', value, workspaceBacklinksRequestSchema, workspaceBacklinksResponseSchema, signal),
     references: (value, signal) =>

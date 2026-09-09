@@ -22,6 +22,7 @@ import { ResearchWorkflowDialog } from './research-workflow.js';
 import { WritingWorkflowDialog } from './writing-workflow.js';
 import { ReferenceMaintenanceDialog } from './reference-maintenance.js';
 import { HistoryDialog } from './history-dialog.js';
+import { ReviewWorkspaceDialog, readReviewComments } from './review-workflow.js';
 import { RemoteEditorController } from './remote-editor-controller.js';
 import { createCommandRegistry } from './shell/commands.js';
 import { registerKeybindings } from './shell/keybindings.js';
@@ -952,6 +953,7 @@ export function App(): JSX.Element {
   const [metadataEditor, setMetadataEditor] = useState(false);
   const [profileSelector, setProfileSelector] = useState(false);
   const [problemsPanel, setProblemsPanel] = useState(false);
+  const [reviewMode, setReviewMode] = useState(false);
   const [crossReferencePicker, setCrossReferencePicker] = useState(false);
   const [graphView, setGraphView] = useState(false);
   const [referenceLibraryEditor, setReferenceLibraryEditor] = useState(false);
@@ -1672,6 +1674,19 @@ export function App(): JSX.Element {
       commandRegistry.register({ id: 'metadata.edit', title: 'Editar metadados do documento', isEnabled: () => viewsModel.active()?.type === 'editor', run() { setMetadataEditor(true); } }),
       commandRegistry.register({ id: 'profile.select', title: 'Selecionar perfil de publicação', isEnabled: () => viewsModel.active()?.type === 'editor', run() { setProfileSelector(true); } }),
       commandRegistry.register({ id: 'problems.open', title: 'Mostrar Problemas', isEnabled: () => viewsModel.active()?.type === 'editor', run() { setProblemsPanel(true); } }),
+      commandRegistry.register({ id: 'review.open', title: 'Abrir modo de revisão', isEnabled: () => workspaceId !== undefined, run() { setReviewMode(true); } }),
+      commandRegistry.register({
+        id: 'review.nextDiagnostic', title: 'Próximo diagnóstico', isEnabled: () => viewsModel.active()?.type === 'editor',
+        run() { const active=viewsModel.active(); if(active?.type!=='editor') return; const entries=active.snapshot.diagnostics.filter((item)=>item.source!==undefined).sort((a,b)=>a.source!.start.offset-b.source!.start.offset); const next=entries.find((item)=>item.source!.start.offset>active.snapshot.selection.head) ?? entries[0]; if(next?.source!==undefined) active.controller.dispatch({selection:{anchor:next.source.start.offset,head:next.source.end.offset}}); },
+      }),
+      commandRegistry.register({
+        id: 'review.previousDiagnostic', title: 'Diagnóstico anterior', isEnabled: () => viewsModel.active()?.type === 'editor',
+        run() { const active=viewsModel.active(); if(active?.type!=='editor') return; const entries=active.snapshot.diagnostics.filter((item)=>item.source!==undefined).sort((a,b)=>b.source!.start.offset-a.source!.start.offset); const previous=entries.find((item)=>item.source!.start.offset<active.snapshot.selection.head) ?? entries[0]; if(previous?.source!==undefined) active.controller.dispatch({selection:{anchor:previous.source.start.offset,head:previous.source.end.offset}}); },
+      }),
+      commandRegistry.register({
+        id: 'review.nextComment', title: 'Próximo comentário', isEnabled: () => workspaceId !== undefined,
+        async run() { if(workspaceId===undefined) return; const comments=[...readReviewComments(workspaceId)].sort((a,b)=>a.path.localeCompare(b.path)||a.range.start-b.range.start); const active=viewsModel.active(); const next=comments.find((comment)=>comment.fileId===active?.fileId&&comment.range.start>(active?.type==='editor'?active.snapshot.selection.head:-1)) ?? comments[0]; if(next===undefined)return; const controller=await openDocument(next.fileId,next.path); if(controller!==undefined)controller.dispatch({selection:{anchor:next.range.start,head:next.range.end}}); },
+      }),
       commandRegistry.register({
         id: 'figure.insert', title: 'Inserir figura', isEnabled: () => viewsModel.active()?.type === 'editor',
         async run() {
@@ -1754,6 +1769,7 @@ export function App(): JSX.Element {
           ['mod+p', 'palette.quickOpen'],
           ['mod+shift+p', 'palette.commands'],
           ['mod+shift+f', 'search.openView'],
+          ['mod+shift+r', 'review.open'],
           ['mod+shift+c', 'citation.openPicker'],
           ['mod+shift+i', 'figure.insert'],
           ['mod+shift+n', 'application.newWindow'],
@@ -1992,6 +2008,7 @@ export function App(): JSX.Element {
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('library.maintenance', {}); }}>Qualidade da biblioteca</button>
           <div className="my-1 border-t border-slate-100" />
           <button type="button" role="menuitem" disabled={activeEditorView === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('problems.open', {}); }}>Problemas</button>
+          <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('review.open', {}); }}>Modo de revisão</button>
           <button type="button" role="menuitem" disabled={activeEditorView === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('profile.select', {}); }}>Perfil</button>
           <div className="my-1 border-t border-slate-100" />
           <button type="button" role="menuitem" disabled={activeView === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); if (activeView !== undefined) void commandRegistry.execute('document.exportPdf', { activeViewId: activeView.id }); }}>Exportar PDF</button>
@@ -2034,6 +2051,13 @@ export function App(): JSX.Element {
         commandContext={paletteContext}
         onQueryChange={setSearchQuery}
         onClose={() => setSearchViewOpen(false)}
+      />}
+      {reviewMode && workspaceId !== undefined && <ReviewWorkspaceDialog
+        workspaceId={workspaceId}
+        activeView={activeEditorView}
+        onClose={() => setReviewMode(false)}
+        onOpenProblem={(problem) => { void openDocument(problem.fileId, problem.path, { remember: true }).then((controller) => { if (controller !== undefined && problem.range !== undefined) controller.dispatch({ selection: { anchor: problem.range.start, head: problem.range.end } }); }); }}
+        onApplyEdit={(edit) => { const active = viewsModel.active(); if (active?.type !== 'editor' || active.fileId !== edit.fileId || active.snapshot.session.revision !== edit.expectedRevision) { setMessage('A correção ficou desatualizada; reabra o problema antes de aplicá-la.'); return; } active.controller.dispatch({ edits: edit.edits }); }}
       />}
       {citationEditor !== undefined && activeEditorView !== undefined && (
         <CitationDialog

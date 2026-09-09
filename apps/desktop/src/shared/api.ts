@@ -40,6 +40,7 @@ import {
   validarWorkspaceCreatePdfAnnotationRequest,
   validarWorkspacePdfAnnotationRequest,
   validarWorkspaceSearchRequest,
+  validarWorkspaceProblemsRequest,
   validarLanguageCompletionRequest,
   validarLanguageDefinitionRequest,
   validarLanguageHoverRequest,
@@ -64,6 +65,7 @@ import {
   workspaceOpenRequestSchema,
   workspaceOpenResponseSchema,
   workspaceSearchResponseSchema,
+  workspaceProblemsResponseSchema,
   workspaceBacklinksResponseSchema,
   workspaceReferencesResponseSchema,
   workspaceGraphResponseSchema,
@@ -180,6 +182,8 @@ import {
   type WorkspaceReferencesRequest,
   type WorkspaceSearchRequest,
   type WorkspaceSearchResultDto,
+  type WorkspaceProblemsRequest,
+  type WorkspaceProblemDto,
 } from '@abnt/protocol';
 
 export const DESKTOP_CHANNELS = {
@@ -203,6 +207,7 @@ export const DESKTOP_CHANNELS = {
   createDocument: 'abnt:workspace:create-document',
   renameDocument: 'abnt:workspace:rename-document',
   search: 'abnt:workspace:search',
+  problems: 'abnt:workspace:problems',
   graph: 'abnt:workspace:graph',
   history: 'abnt:workspace:history',
   historyCreateSnapshot: 'abnt:workspace:history-create-snapshot',
@@ -262,6 +267,7 @@ export interface AcademicDesktopApi {
     open(request: WorkspaceOpenRequest): Promise<ProtocolResult<WorkspaceOpenResponse>>;
     list(request: WorkspaceListRequest): Promise<ProtocolResult<readonly WorkspaceFileDto[]>>;
     search(request: WorkspaceSearchRequest): Promise<ProtocolResult<readonly WorkspaceSearchResultDto[]>>;
+    problems(request: WorkspaceProblemsRequest): Promise<ProtocolResult<readonly WorkspaceProblemDto[]>>;
     graph(request: WorkspaceGraphRequest): Promise<ProtocolResult<WorkspaceGraphDto>>;
     history(request: WorkspaceHistoryRequest): Promise<ProtocolResult<WorkspaceHistoryDto>>;
     historyCreateSnapshot(request: WorkspaceHistorySnapshotRequest): Promise<ProtocolResult<WorkspaceHistoryRevisionDto>>;
@@ -366,6 +372,10 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
       search: async (request) => {
         const checked = validarWorkspaceSearchRequest(request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.search, checked.value, workspaceSearchResponseSchema) : checked;
+      },
+      problems: async (request) => {
+        const checked = validarWorkspaceProblemsRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.problems, checked.value, workspaceProblemsResponseSchema) : checked;
       },
       graph: async (request) => {
         const checked = validarWorkspaceGraphRequest(request);

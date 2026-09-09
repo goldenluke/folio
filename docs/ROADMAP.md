@@ -1092,6 +1092,25 @@ operacional local.
 
 Ver ADR 0057.
 
+### Onda R — revisão e edição acadêmica 🚧 (núcleo de revisão concluído)
+
+- [x] **F83 — Workspace Problems**: o Workspace Service agrega diagnósticos
+      revisionados para o vault inteiro; React apenas filtra/navega DTOs.
+- [x] **F84 — Persistent Problems filters**: severidade, categoria e escopo
+      persistem como preferência operacional local por vault.
+- [x] **F85 — Quick Fix framework**: diagnóstico produz ações somente quando
+      há `WorkspaceEdit` mecânico, seguro e revisionado.
+- [x] **F86 — Review comments**: comentários editoriais locais guardam
+      `fileId`, range e revisão, sem entrar no Markdown.
+- [x] **F87 — Review mode**: Problems, comentários e quick fixes usam a mesma
+      superfície integrada.
+- [x] **F88 — Change navigation**: Command Registry navega diagnósticos e
+      comentários sem atalhos acoplados ao DOM.
+- [ ] **F89 — Document comparison**: pendente; deve reaproveitar os diffs do
+      host para comparar dois documentos, em texto e estrutura.
+
+Ver ADR 0058.
+
 Release operations (packaging, installers, signing, update e observabilidade).
 Nada disso deve alterar o núcleo semântico; é essa propriedade que o M4 existe
 para verificar.

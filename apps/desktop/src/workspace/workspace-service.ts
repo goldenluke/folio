@@ -95,6 +95,8 @@ import {
   type WorkspaceReferencesRequest,
   type WorkspaceSearchRequest,
   type WorkspaceSearchResultDto,
+  type WorkspaceProblemsRequest,
+  type WorkspaceProblemDto,
 } from '@abnt/protocol';
 import { renderizarHtml } from '@abnt/renderer-html';
 import type { PublicationBlock, PublicationDocument } from '@abnt/publication';
@@ -483,6 +485,41 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
         score: result.score,
         ...(result.section === undefined ? {} : { section: result.section }),
       }));
+    });
+  }
+
+  /** F83: o host produz a projeção vault-wide; o renderer não recompila nem parseia Markdown. */
+  async problems(request: WorkspaceProblemsRequest): Promise<ProtocolResult<readonly WorkspaceProblemDto[]>> {
+    return this.#run(async () => {
+      const storage = this.#requireStorage();
+      const editors = this.#requireEditors();
+      const sessions = this.#requireSessions();
+      const index = this.#requireIndex();
+      const selected = request.fileIds === undefined ? undefined : new Set(request.fileIds);
+      const files = (await storage.list()).filter((file) => /\.md$/iu.test(String(file.path)) && (selected === undefined || selected.has(String(file.id))));
+      const result: WorkspaceProblemDto[] = [];
+      for (const file of files) {
+        const alreadyOpen = editors.controller(file.id) !== undefined;
+        const controller = alreadyOpen ? editors.controller(file.id) : await editors.open(file.id);
+        if (controller === undefined) continue;
+        await sessions.idle(file.id);
+        const snapshot = controller.snapshot();
+        const headings = index.headings(file.id);
+        const diagnostics = await this.#requireLanguage().diagnostics(file.id);
+        for (const diagnostic of diagnostics) {
+          const start = diagnostic.source?.start.offset;
+          const end = diagnostic.source?.end.offset;
+          const section = start === undefined ? undefined : headings.filter((heading) => heading.sourceStart !== undefined && heading.sourceStart <= start).at(-1)?.title;
+          result.push({
+            fileId: String(file.id), path: String(file.path), revision: snapshot.session.revision,
+            severity: diagnostic.severity, ruleId: diagnostic.id, message: diagnostic.message,
+            ...(start === undefined || end === undefined ? {} : { range: { start, end } }),
+            ...(section === undefined ? {} : { section }),
+          });
+        }
+        if (!alreadyOpen) await editors.close(file.id);
+      }
+      return result.sort((left, right) => left.path.localeCompare(right.path) || (left.range?.start ?? -1) - (right.range?.start ?? -1) || left.ruleId.localeCompare(right.ruleId));
     });
   }
 

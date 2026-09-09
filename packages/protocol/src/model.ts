@@ -300,6 +300,19 @@ export interface WorkspaceSearchRequest {
   readonly limit?: number;
 }
 
+/** F83: projeção vault-wide de diagnósticos já produzidos pelo host. */
+export interface WorkspaceProblemsRequest { readonly fileIds?: readonly string[]; }
+export interface WorkspaceProblemDto {
+  readonly fileId: string;
+  readonly path: string;
+  readonly revision: number;
+  readonly severity: 'info' | 'warning' | 'error';
+  readonly ruleId: string;
+  readonly message: string;
+  readonly range?: { readonly start: number; readonly end: number };
+  readonly section?: string;
+}
+
 /** Mesma forma de `@abnt/workspace-index` `WorkspaceSearchResult`, com IDs como string. */
 export interface WorkspaceSearchResultDto {
   readonly fileId: string;
@@ -887,6 +900,7 @@ export interface DesktopWorkspaceService {
   /** `undefined` quando a sessão ainda não produziu nenhuma compilação bem-sucedida. */
   exportDocument(request: EditorExportRequest, signal?: AbortSignal): Promise<ProtocolResult<EditorExportDto | undefined>>;
   search(request: WorkspaceSearchRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceSearchResultDto[]>>;
+  problems(request: WorkspaceProblemsRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceProblemDto[]>>;
   backlinks(request: WorkspaceBacklinksRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceBacklinkDto[]>>;
   references(request: WorkspaceReferencesRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceReferenceDto[]>>;
   graph(request: WorkspaceGraphRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceGraphDto>>;
@@ -952,6 +966,7 @@ export type WorkspaceMethod =
   | 'editor/preview'
   | 'editor/export'
   | 'workspace/search'
+  | 'workspace/problems'
   | 'workspace/backlinks'
   | 'workspace/references'
   | 'workspace/graph'

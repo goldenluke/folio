@@ -32,6 +32,8 @@ import {
   type WorkspaceRenameRequest,
   type WorkspaceSearchRequest,
   type WorkspaceSearchResultDto,
+  type WorkspaceProblemsRequest,
+  type WorkspaceProblemDto,
   type WorkspaceGraphRequest,
   type WorkspaceGraphDto,
   type WorkspaceGraphNodeDto,
@@ -522,6 +524,7 @@ const requestEnvelopeSchema = z.object({
     'editor/preview',
     'editor/export',
     'workspace/search',
+    'workspace/problems',
     'workspace/backlinks',
     'workspace/references',
     'workspace/graph',
@@ -632,6 +635,19 @@ export const workspaceSearchRequestSchema = z.object({
   query: z.string(),
   limit: z.number().int().positive().optional(),
 }) as z.ZodType<WorkspaceSearchRequest>;
+
+export const workspaceProblemsRequestSchema = z.object({ fileIds: z.array(nonEmptyString).optional() }) as z.ZodType<WorkspaceProblemsRequest>;
+export const workspaceProblemDtoSchema = z.object({
+  fileId: nonEmptyString,
+  path: nonEmptyString,
+  revision: nonNegativeInteger,
+  severity: z.enum(['info', 'warning', 'error']),
+  ruleId: nonEmptyString,
+  message: z.string(),
+  range: z.object({ start: nonNegativeInteger, end: nonNegativeInteger }).optional(),
+  section: z.string().optional(),
+}) as z.ZodType<WorkspaceProblemDto>;
+export const workspaceProblemsResponseSchema = z.array(workspaceProblemDtoSchema) as z.ZodType<readonly WorkspaceProblemDto[]>;
 
 export const workspaceSearchResultDtoSchema = z.object({
   fileId: nonEmptyString,
@@ -1112,6 +1128,8 @@ export const validarDesktopExportRequest = (value: unknown): ProtocolResult<Desk
 
 export const validarWorkspaceSearchRequest = (value: unknown): ProtocolResult<WorkspaceSearchRequest> =>
   validarDto(workspaceSearchRequestSchema, value);
+export const validarWorkspaceProblemsRequest = (value: unknown): ProtocolResult<WorkspaceProblemsRequest> =>
+  validarDto(workspaceProblemsRequestSchema, value);
 
 export const validarWorkspaceBacklinksRequest = (value: unknown): ProtocolResult<WorkspaceBacklinksRequest> =>
   validarDto(workspaceBacklinksRequestSchema, value);
