@@ -35,6 +35,8 @@ import {
   type WorkspaceProblemsRequest,
   type WorkspacePluginDto,
   type WorkspacePluginSetEnabledRequest,
+  type WorkspacePluginCommandRequest,
+  type WorkspacePluginCommandResultDto,
   type WorkspaceProblemDto,
   type WorkspaceGraphRequest,
   type WorkspaceGraphDto,
@@ -532,6 +534,7 @@ const requestEnvelopeSchema = z.object({
     'workspace/plugins',
     'workspace/plugin-set-enabled',
     'workspace/plugins-reload',
+    'workspace/plugin-command',
     'workspace/backlinks',
     'workspace/references',
     'workspace/graph',
@@ -648,6 +651,8 @@ export const workspaceProblemsRequestSchema = z.object({ fileIds: z.array(nonEmp
 const workspacePluginDtoSchema = z.object({ id: nonEmptyString, version: z.string().optional(), apiVersion: nonNegativeInteger.optional(), capabilities: z.array(nonEmptyString), enabled: z.boolean(), commands: z.array(z.object({ id: nonEmptyString, title: nonEmptyString })), views: z.array(z.object({ id: nonEmptyString, title: nonEmptyString, body: z.string() })), exports: z.array(z.object({ id: nonEmptyString, title: nonEmptyString, extension: nonEmptyString, mimeType: nonEmptyString })), error: z.string().optional() }) as z.ZodType<WorkspacePluginDto>;
 export const workspacePluginsResponseSchema = z.array(workspacePluginDtoSchema) as z.ZodType<readonly WorkspacePluginDto[]>;
 export const workspacePluginSetEnabledRequestSchema = z.object({ id: nonEmptyString, enabled: z.boolean() }) as z.ZodType<WorkspacePluginSetEnabledRequest>;
+export const workspacePluginCommandRequestSchema = z.object({ pluginId: nonEmptyString, commandId: nonEmptyString, activeFileId: nonEmptyString.optional(), activeRevision: nonNegativeInteger.optional() }) as z.ZodType<WorkspacePluginCommandRequest>;
+export const workspacePluginCommandResponseSchema = z.object({ kind: z.enum(['notice', 'open-view']), message: z.string().optional(), viewId: nonEmptyString.optional() }) as z.ZodType<WorkspacePluginCommandResultDto>;
 export const workspaceProblemDtoSchema = z.object({
   fileId: nonEmptyString,
   path: nonEmptyString,
@@ -1144,6 +1149,7 @@ export const validarWorkspaceSearchRequest = (value: unknown): ProtocolResult<Wo
 export const validarWorkspaceProblemsRequest = (value: unknown): ProtocolResult<WorkspaceProblemsRequest> =>
   validarDto(workspaceProblemsRequestSchema, value);
 export const validarWorkspacePluginSetEnabledRequest = (value: unknown): ProtocolResult<WorkspacePluginSetEnabledRequest> => validarDto(workspacePluginSetEnabledRequestSchema, value);
+export const validarWorkspacePluginCommandRequest = (value: unknown): ProtocolResult<WorkspacePluginCommandRequest> => validarDto(workspacePluginCommandRequestSchema, value);
 
 export const validarWorkspaceBacklinksRequest = (value: unknown): ProtocolResult<WorkspaceBacklinksRequest> =>
   validarDto(workspaceBacklinksRequestSchema, value);

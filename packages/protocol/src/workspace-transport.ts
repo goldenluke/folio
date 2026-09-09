@@ -60,6 +60,7 @@ import {
   type WorkspaceSearchRequest,
   type WorkspaceProblemsRequest,
   type WorkspacePluginSetEnabledRequest,
+  type WorkspacePluginCommandRequest,
 } from './model.js';
 import {
   editorCloseRequestSchema,
@@ -149,6 +150,8 @@ import {
   workspaceProblemsResponseSchema,
   workspacePluginsResponseSchema,
   workspacePluginSetEnabledRequestSchema,
+  workspacePluginCommandRequestSchema,
+  workspacePluginCommandResponseSchema,
   languageCompletionRequestSchema,
   languageCompletionResponseSchema,
   languageDefinitionRequestSchema,
@@ -226,6 +229,7 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
     plugins: (signal) => call({}, emptyResponseSchema, workspacePluginsResponseSchema, service.plugins.bind(service), signal),
     setPluginEnabled: (request, signal) => call(request, workspacePluginSetEnabledRequestSchema, workspacePluginsResponseSchema, service.setPluginEnabled.bind(service), signal),
     reloadPlugins: (signal) => call({}, emptyResponseSchema, workspacePluginsResponseSchema, service.reloadPlugins.bind(service), signal),
+    runPluginCommand: (request, signal) => call(request, workspacePluginCommandRequestSchema, workspacePluginCommandResponseSchema, service.runPluginCommand.bind(service), signal),
     backlinks: (request, signal) =>
       call(request, workspaceBacklinksRequestSchema, workspaceBacklinksResponseSchema, service.backlinks.bind(service), signal),
     references: (request, signal) =>
@@ -361,6 +365,7 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
           case 'workspace/plugins': return local.plugins(controller.signal);
           case 'workspace/plugin-set-enabled': return local.setPluginEnabled(envelope.payload as WorkspacePluginSetEnabledRequest, controller.signal);
           case 'workspace/plugins-reload': return local.reloadPlugins(controller.signal);
+          case 'workspace/plugin-command': return local.runPluginCommand(envelope.payload as WorkspacePluginCommandRequest, controller.signal);
           case 'workspace/backlinks':
             return local.backlinks(envelope.payload as WorkspaceBacklinksRequest, controller.signal);
           case 'workspace/references':
@@ -548,6 +553,7 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
     plugins: (signal) => request('workspace/plugins', {}, emptyResponseSchema, workspacePluginsResponseSchema, signal),
     setPluginEnabled: (value, signal) => request('workspace/plugin-set-enabled', value, workspacePluginSetEnabledRequestSchema, workspacePluginsResponseSchema, signal),
     reloadPlugins: (signal) => request('workspace/plugins-reload', {}, emptyResponseSchema, workspacePluginsResponseSchema, signal),
+    runPluginCommand: (value, signal) => request('workspace/plugin-command', value, workspacePluginCommandRequestSchema, workspacePluginCommandResponseSchema, signal),
     backlinks: (value, signal) =>
       request('workspace/backlinks', value, workspaceBacklinksRequestSchema, workspaceBacklinksResponseSchema, signal),
     references: (value, signal) =>

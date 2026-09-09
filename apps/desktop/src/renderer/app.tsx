@@ -11,6 +11,7 @@ import type {
   WorkspaceReferenceAttachmentDto,
   WorkspaceOpenResponse,
   WorkspaceSearchResultDto,
+  WorkspacePluginDto,
   LanguageWritingStatisticsDto,
 } from '@abnt/protocol';
 import type { LanguageLocation } from '@abnt/language-service';
@@ -970,6 +971,7 @@ export function App(): JSX.Element {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [documentComparisonOpen, setDocumentComparisonOpen] = useState(false);
   const [pluginManagerOpen, setPluginManagerOpen] = useState(false);
+  const [pluginContributions, setPluginContributions] = useState<readonly WorkspacePluginDto[]>([]);
   const [, setNavigationVersion] = useState(0);
 
   const viewsModel = useRef(createViewsModel()).current;
@@ -1010,6 +1012,13 @@ export function App(): JSX.Element {
     if (workspaceId === undefined) return;
     try { window.localStorage.setItem(`folio.recent:${workspaceId}`, JSON.stringify(recentFileIds)); } catch { /* armazenamento de UI é opcional */ }
   }, [recentFileIds, workspaceId]);
+
+  useEffect(() => {
+    if (workspaceId === undefined) { setPluginContributions([]); return; }
+    let cancelled = false;
+    void window.academic.workspace.plugins().then((result) => { if (!cancelled && result.ok) setPluginContributions(result.value); });
+    return () => { cancelled = true; };
+  }, [workspaceId]);
 
   useEffect(() => {
     if (editorSplit !== undefined && splitEditorViews.length !== 2) setEditorSplit(undefined);
@@ -1450,6 +1459,7 @@ export function App(): JSX.Element {
       commandRegistry.register({ id: 'document.history', title: 'Mostrar histórico do documento', isEnabled: () => viewsModel.active()?.type === 'editor', run() { setHistoryOpen(true); } }),
       commandRegistry.register({ id: 'document.compare', title: 'Comparar documentos', isEnabled: () => files.length > 1, run() { setDocumentComparisonOpen(true); } }),
       commandRegistry.register({ id: 'plugins.manage', title: 'Gerenciar plugins locais', isEnabled: () => workspaceId !== undefined, run() { setPluginManagerOpen(true); } }),
+      ...pluginContributions.flatMap((plugin) => plugin.commands.map((command) => commandRegistry.register({ id: `plugin.${plugin.id}.${command.id}`, title: `${plugin.id}: ${command.title}`, isEnabled: () => plugin.enabled, async run() { const active = viewsModel.active(); const result = await window.academic.workspace.runPluginCommand({ pluginId: plugin.id, commandId: command.id, ...(active?.type === 'editor' ? { activeFileId: active.fileId, activeRevision: active.snapshot.session.revision } : {}) }); if (!result.ok) { setMessage(result.error.message); return; } setMessage(result.value.message ?? `Comando ${command.title} executado.`); if (result.value.kind === 'open-view') setPluginManagerOpen(true); } }))),
       commandRegistry.register({
         id: 'library.manage',
         title: 'Gerenciar biblioteca de referências',
@@ -1763,7 +1773,7 @@ export function App(): JSX.Element {
     return () => unregister.forEach((off) => off());
     // `files` só participa da disponibilidade do Quick Open; registrar de novo
     // quando o vault muda preserva o mesmo registry usado por menus/atalhos.
-  }, [commandRegistry, files]);
+  }, [commandRegistry, files, pluginContributions]);
 
   useEffect(
     () =>
@@ -2088,7 +2098,7 @@ export function App(): JSX.Element {
       {graphView && <GraphDialog {...(activeEditorView === undefined ? {} : { activeFileId: activeEditorView.fileId })} onClose={() => setGraphView(false)} onOpenDocument={(fileId, path) => void openDocument(fileId, path)} />}
       {historyOpen && activeEditorView !== undefined && <HistoryDialog fileId={activeEditorView.fileId} path={activeEditorView.path} onClose={() => setHistoryOpen(false)} />}
       {documentComparisonOpen && <DocumentComparisonDialog files={files} {...(activeEditorView === undefined ? {} : { initialFileId: activeEditorView.fileId })} onClose={() => setDocumentComparisonOpen(false)} />}
-      {pluginManagerOpen && <PluginManagerDialog onClose={() => setPluginManagerOpen(false)} />}
+      {pluginManagerOpen && <PluginManagerDialog onClose={() => setPluginManagerOpen(false)} onChanged={setPluginContributions} />}
       {knowledgeWorkspaceOpen && <KnowledgeWorkspaceDialog
         state={knowledgeWorkspace}
         query={searchQuery}

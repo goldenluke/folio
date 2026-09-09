@@ -101,6 +101,8 @@ import {
   type WorkspaceProblemDto,
   type WorkspacePluginDto,
   type WorkspacePluginSetEnabledRequest,
+  type WorkspacePluginCommandRequest,
+  type WorkspacePluginCommandResultDto,
 } from '@abnt/protocol';
 import { renderizarHtml } from '@abnt/renderer-html';
 import type { PublicationBlock, PublicationDocument } from '@abnt/publication';
@@ -534,6 +536,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
   async plugins(): Promise<ProtocolResult<readonly WorkspacePluginDto[]>> { return this.#run(async () => this.#requirePlugins().list()); }
   async setPluginEnabled(request: WorkspacePluginSetEnabledRequest): Promise<ProtocolResult<readonly WorkspacePluginDto[]>> { return this.#run(async () => this.#requirePlugins().setEnabled(request.id, request.enabled)); }
   async reloadPlugins(): Promise<ProtocolResult<readonly WorkspacePluginDto[]>> { return this.#run(async () => this.#requirePlugins().reload()); }
+  async runPluginCommand(request: WorkspacePluginCommandRequest): Promise<ProtocolResult<WorkspacePluginCommandResultDto>> { return this.#run(async () => this.#requirePlugins().command(request.pluginId, request.commandId, { ...(request.activeFileId === undefined ? {} : { activeFileId: request.activeFileId }), ...(request.activeRevision === undefined ? {} : { activeRevision: request.activeRevision }) })); }
 
   /**
    * Formata com o mesmo motor ABNT do compilador (`@abnt/bibliography`) — não
