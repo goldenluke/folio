@@ -119,4 +119,26 @@ describe('P15 — plugin de lint isolado (PluginHost + @abnt/plugin-api)', () =>
       child.on('error', reject);
     });
   });
+
+  it('suporta comandos declarativos e exportação textual sem dar ao plugin acesso ao renderer', async () => {
+    await withTempPlugin(
+      `
+      process.send({ version: 1, type: 'abnt-plugin/ready', plugin: { id: 'teste.produto', version: '0.0.1' } });
+      process.on('message', (msg) => {
+        if (msg.type === 'abnt-plugin/command') process.send({ version: 1, type: 'abnt-plugin/command-result', requestId: msg.requestId, ok: true, result: { kind: 'notice', message: 'Comando executado.' } });
+        if (msg.type === 'abnt-plugin/export') process.send({ version: 1, type: 'abnt-plugin/export-result', requestId: msg.requestId, ok: true, result: { content: 'exportação do plugin' } });
+      });
+      `,
+      async (entryPath) => {
+        const etapas = await compilar(FONTE, { documentId: 'p15.md' });
+        const host = new PluginHost(entryPath);
+        try {
+          await expect(host.command('teste.aviso', {})).resolves.toMatchObject({ kind: 'notice', message: 'Comando executado.' });
+          await expect(host.export('teste.txt', etapas.publication)).resolves.toEqual({ content: 'exportação do plugin' });
+        } finally {
+          host.dispose();
+        }
+      },
+    );
+  });
 });

@@ -1,4 +1,4 @@
-import { diagnosticDtoSchema, resolvedDocumentDtoSchema } from '@abnt/protocol';
+import { diagnosticDtoSchema, publicationDocumentDtoSchema, resolvedDocumentDtoSchema } from '@abnt/protocol';
 import { z } from 'zod';
 
 import type {
@@ -6,7 +6,22 @@ import type {
   PluginLintRequestMessage,
   PluginLintResponseMessage,
   PluginReadyMessage,
+  FolioPluginManifest,
+  PluginCommandRequestMessage,
+  PluginCommandResponseMessage,
+  PluginExportRequestMessage,
+  PluginExportResponseMessage,
 } from './model.js';
+
+const pluginCapabilitySchema = z.enum(['lint', 'commands', 'views', 'language-diagnostics', 'export']);
+const pluginCommandSchema = z.object({ id: z.string().min(1), title: z.string().min(1) });
+const pluginViewSchema = z.object({ id: z.string().min(1), title: z.string().min(1), body: z.string().max(10_000) });
+const pluginExportSchema = z.object({ id: z.string().min(1), title: z.string().min(1), extension: z.string().regex(/^[a-z0-9]+$/iu), mimeType: z.string().min(1) });
+export const folioPluginManifestSchema = z.object({ id: z.string().min(1), version: z.string().min(1), apiVersion: z.literal(1), entry: z.string().min(1), capabilities: z.array(pluginCapabilitySchema), commands: z.array(pluginCommandSchema).optional(), views: z.array(pluginViewSchema).optional(), exports: z.array(pluginExportSchema).optional() }).superRefine((value, context) => {
+  if (value.commands !== undefined && !value.capabilities.includes('commands')) context.addIssue({ code: 'custom', message: 'commands exige capability commands.' });
+  if (value.views !== undefined && !value.capabilities.includes('views')) context.addIssue({ code: 'custom', message: 'views exige capability views.' });
+  if (value.exports !== undefined && !value.capabilities.includes('export')) context.addIssue({ code: 'custom', message: 'exports exige capability export.' });
+}) as z.ZodType<FolioPluginManifest>;
 
 const pluginInfoSchema = z.object({
   id: z.string().min(1),
@@ -43,3 +58,10 @@ export const pluginLintResponseMessageSchema = z.discriminatedUnion('ok', [
     error: z.string(),
   }),
 ]) as z.ZodType<PluginLintResponseMessage>;
+
+const commandContextSchema = z.object({ activeFileId: z.string().min(1).optional(), activeRevision: z.number().int().nonnegative().optional() });
+const commandResultSchema = z.object({ kind: z.enum(['notice', 'open-view']), message: z.string().optional(), viewId: z.string().min(1).optional() });
+export const pluginCommandRequestMessageSchema = z.object({ version: z.number().int().positive(), type: z.literal('abnt-plugin/command'), requestId: z.string().min(1), commandId: z.string().min(1), context: commandContextSchema }) as z.ZodType<PluginCommandRequestMessage>;
+export const pluginCommandResponseMessageSchema = z.discriminatedUnion('ok', [z.object({ version: z.number().int().positive(), type: z.literal('abnt-plugin/command-result'), requestId: z.string().min(1), ok: z.literal(true), result: commandResultSchema }), z.object({ version: z.number().int().positive(), type: z.literal('abnt-plugin/command-result'), requestId: z.string().min(1), ok: z.literal(false), error: z.string() })]) as z.ZodType<PluginCommandResponseMessage>;
+export const pluginExportRequestMessageSchema = z.object({ version: z.number().int().positive(), type: z.literal('abnt-plugin/export'), requestId: z.string().min(1), exportId: z.string().min(1), publication: publicationDocumentDtoSchema }) as z.ZodType<PluginExportRequestMessage>;
+export const pluginExportResponseMessageSchema = z.discriminatedUnion('ok', [z.object({ version: z.number().int().positive(), type: z.literal('abnt-plugin/export-result'), requestId: z.string().min(1), ok: z.literal(true), result: z.object({ content: z.string() }) }), z.object({ version: z.number().int().positive(), type: z.literal('abnt-plugin/export-result'), requestId: z.string().min(1), ok: z.literal(false), error: z.string() })]) as z.ZodType<PluginExportResponseMessage>;

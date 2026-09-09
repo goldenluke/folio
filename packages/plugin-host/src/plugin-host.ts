@@ -4,11 +4,16 @@ import { randomUUID } from 'node:crypto';
 import { asDocumentId, asNodeId, type Diagnostic } from '@abnt/document-model';
 import {
   PLUGIN_PROTOCOL_VERSION,
+  pluginCommandResponseMessageSchema,
+  pluginExportResponseMessageSchema,
   pluginLintResponseMessageSchema,
   pluginReadyMessageSchema,
   type AbntLintPluginInfo,
+  type PluginCommandContext,
+  type PluginCommandResult,
+  type PluginExportResult,
 } from '@abnt/plugin-api';
-import type { DiagnosticDto, ResolvedDocumentDto } from '@abnt/protocol';
+import type { DiagnosticDto, PublicationDocument, ResolvedDocumentDto } from '@abnt/protocol';
 
 export interface PluginHostOptions {
   /** Tempo máximo para o plugin anunciar `ready` depois de subir. */
@@ -30,6 +35,7 @@ interface PendingLint {
   readonly reject: (error: Error) => void;
   readonly timer: NodeJS.Timeout;
 }
+interface PendingProduct<T> { readonly resolve: (value: T) => void; readonly reject: (error: Error) => void; readonly timer: NodeJS.Timeout; }
 
 /**
  * Executa UM plugin de lint isolado num processo Node próprio
@@ -47,6 +53,8 @@ interface PendingLint {
 export class PluginHost {
   readonly #child: ChildProcess;
   readonly #pending = new Map<string, PendingLint>();
+  readonly #pendingCommands = new Map<string, PendingProduct<PluginCommandResult>>();
+  readonly #pendingExports = new Map<string, PendingProduct<PluginExportResult>>();
   readonly #entryPath: string;
   readonly #ready: Promise<AbntLintPluginInfo>;
   #dead = false;
@@ -106,6 +114,18 @@ export class PluginHost {
       if (parsed.data.ok) pending.resolve(parsed.data.diagnostics.map(diagnosticoParaDominio));
       else pending.reject(new Error(parsed.data.error));
     });
+    this.#child.on('message', (raw: unknown) => {
+      const parsed = pluginCommandResponseMessageSchema.safeParse(raw); if (!parsed.success) return;
+      const pending = this.#pendingCommands.get(parsed.data.requestId); if (pending === undefined) return;
+      this.#pendingCommands.delete(parsed.data.requestId); clearTimeout(pending.timer);
+      if (parsed.data.ok) pending.resolve(parsed.data.result); else pending.reject(new Error(parsed.data.error));
+    });
+    this.#child.on('message', (raw: unknown) => {
+      const parsed = pluginExportResponseMessageSchema.safeParse(raw); if (!parsed.success) return;
+      const pending = this.#pendingExports.get(parsed.data.requestId); if (pending === undefined) return;
+      this.#pendingExports.delete(parsed.data.requestId); clearTimeout(pending.timer);
+      if (parsed.data.ok) pending.resolve(parsed.data.result); else pending.reject(new Error(parsed.data.error));
+    });
 
     this.#child.on('exit', (code) => {
       this.#dead = true;
@@ -115,6 +135,8 @@ export class PluginHost {
         pending.reject(error);
         this.#pending.delete(id);
       }
+      this.#rejectProduct(this.#pendingCommands, error);
+      this.#rejectProduct(this.#pendingExports, error);
     });
   }
 
@@ -138,6 +160,30 @@ export class PluginHost {
     });
   }
 
+  async command(commandId: string, context: PluginCommandContext, timeoutMs = 10_000): Promise<PluginCommandResult> {
+    await this.#ready;
+    return this.#request(this.#pendingCommands, 'abnt-plugin/command', { commandId, context }, timeoutMs);
+  }
+
+  async export(exportId: string, publication: PublicationDocument, timeoutMs = 20_000): Promise<PluginExportResult> {
+    await this.#ready;
+    return this.#request(this.#pendingExports, 'abnt-plugin/export', { exportId, publication }, timeoutMs);
+  }
+
+  #request<T>(pending: Map<string, PendingProduct<T>>, type: 'abnt-plugin/command' | 'abnt-plugin/export', payload: object, timeoutMs: number): Promise<T> {
+    if (this.#dead) return Promise.reject(new Error(`Plugin já encerrou; não é possível enviar pedido: ${this.#entryPath}`));
+    const requestId = randomUUID();
+    return new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => { pending.delete(requestId); this.dispose(); reject(new Error(`Plugin não respondeu em ${timeoutMs}ms: ${this.#entryPath}`)); }, timeoutMs);
+      pending.set(requestId, { resolve, reject, timer });
+      this.#child.send({ version: PLUGIN_PROTOCOL_VERSION, type, requestId, ...payload });
+    });
+  }
+
+  #rejectProduct<T>(pending: Map<string, PendingProduct<T>>, error: Error): void {
+    for (const [id, request] of pending) { clearTimeout(request.timer); request.reject(error); pending.delete(id); }
+  }
+
   dispose(): void {
     if (this.#dead) return;
     this.#dead = true;
@@ -148,5 +194,7 @@ export class PluginHost {
       pending.reject(error);
       this.#pending.delete(id);
     }
+    this.#rejectProduct(this.#pendingCommands, error);
+    this.#rejectProduct(this.#pendingExports, error);
   }
 }

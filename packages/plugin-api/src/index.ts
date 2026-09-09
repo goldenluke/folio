@@ -15,6 +15,20 @@ export {
   type PluginLintResponseMessage,
   type PluginOutboundMessage,
   type PluginReadyMessage,
+  FOLIO_PLUGIN_API_VERSION,
+  type FolioPluginCapability,
+  type FolioPluginManifest,
+  type FolioPluginViewContribution,
+  type FolioPluginCommandContribution,
+  type FolioPluginExportContribution,
+  type PluginCommandContext,
+  type PluginCommandResult,
+  type PluginExportResult,
+  type FolioProductPlugin,
+  type PluginCommandRequestMessage,
+  type PluginCommandResponseMessage,
+  type PluginExportRequestMessage,
+  type PluginExportResponseMessage,
 } from './model.js';
-export { pluginLintRequestMessageSchema, pluginLintResponseMessageSchema, pluginReadyMessageSchema } from './schemas.js';
-export { runLintPlugin } from './runtime.js';
+export { folioPluginManifestSchema, pluginCommandRequestMessageSchema, pluginCommandResponseMessageSchema, pluginExportRequestMessageSchema, pluginExportResponseMessageSchema, pluginLintRequestMessageSchema, pluginLintResponseMessageSchema, pluginReadyMessageSchema } from './schemas.js';
+export { runFolioPlugin, runLintPlugin } from './runtime.js';

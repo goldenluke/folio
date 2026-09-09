@@ -5,6 +5,7 @@ import type {
   Registry,
 } from '@abnt/document-model';
 import type { PublicationDocument } from '@abnt/publication';
+export type { PublicationDocument } from '@abnt/publication';
 
 /**
  * Versão do protocolo entre processos. Ela não acompanha automaticamente a

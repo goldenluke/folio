@@ -67,6 +67,7 @@ export type {
   LanguageReferencesRequest,
   MessagePortLike,
   PreparedCompilationDto,
+  PublicationDocument,
   ProtocolCancelEnvelope,
   ProtocolEnvelope,
   ProtocolError,
