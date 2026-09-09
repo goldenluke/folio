@@ -3,10 +3,9 @@
 Markdown como linguagem de autoria; ABNT como camada de regras sobre um modelo
 semântico genérico. Produto comercial. 100% TypeScript.
 
-**Estado: M5 + P0–P22 + Ondas A–N concluídas, Onda O concluída no nível de
-produto/host (F66–F70); UI do desktop para elas — Problems clicável
-cross-file, diff estrutural na tela — ainda não; Ondas P concluída (F71–F75) e
-Q concluída em F76/F77/F79–F82 (F78 opcional adiado); Onda R concluída
+**Estado: M5 + P0–P22 + Ondas A–N concluídas, Onda O concluída (F66–F70,
+incluindo Problems cross-file e diff estrutural no desktop); Ondas P concluída
+(F71–F75) e Q concluída em F76/F77/F79–F82 (F78 opcional adiado); Onda R concluída
 (F83–F89); Onda S concluída (F90–F95)** — artigo ABNT, segundo profile `web-article`,
 TCC com elementos pré/pós-textuais, regressão visual PDF/PNG, compiler
 headless, vault local-first, índice SQLite/FTS5 descartável, shell desktop

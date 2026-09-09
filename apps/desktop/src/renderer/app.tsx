@@ -26,6 +26,7 @@ import { HistoryDialog } from './history-dialog.js';
 import { DocumentComparisonDialog } from './document-comparison.js';
 import { PluginManagerDialog } from './plugin-manager.js';
 import { ReviewWorkspaceDialog, readReviewComments } from './review-workflow.js';
+import { openWorkspaceProblem } from './workspace-problem-navigation.js';
 import { RemoteEditorController } from './remote-editor-controller.js';
 import { createCommandRegistry } from './shell/commands.js';
 import { registerKeybindings } from './shell/keybindings.js';
@@ -2076,7 +2077,7 @@ export function App(): JSX.Element {
         workspaceId={workspaceId}
         activeView={activeEditorView}
         onClose={() => setReviewMode(false)}
-        onOpenProblem={(problem) => { void openDocument(problem.fileId, problem.path, { remember: true }).then((controller) => { if (controller !== undefined && problem.range !== undefined) controller.dispatch({ selection: { anchor: problem.range.start, head: problem.range.end } }); }); }}
+        onOpenProblem={(problem) => { void openWorkspaceProblem(problem, openDocument); }}
         onApplyEdit={(edit) => { const active = viewsModel.active(); if (active?.type !== 'editor' || active.fileId !== edit.fileId || active.snapshot.session.revision !== edit.expectedRevision) { setMessage('A correção ficou desatualizada; reabra o problema antes de aplicá-la.'); return; } active.controller.dispatch({ edits: edit.edits }); }}
       />}
       {citationEditor !== undefined && activeEditorView !== undefined && (

@@ -1004,19 +1004,18 @@ Git é consultado somente quando já existe; snapshots manuais vivem em
 `.academic/history`, e o renderer recebe apenas revisões e linhas do diff.
 Ver ADR 0053.
 
-### Onda O — fonte composta e navegação estrutural ✅ (produto; UI parcial)
+### Onda O — fonte composta e navegação estrutural ✅
 
 - [x] **F66 — Composite Source Map**: `@abnt/source-composition` mapeia a
       fonte virtual (F60–F62) de volta ao arquivo e offset autorais reais,
       plano mesmo com embeds aninhados; diagnósticos de composição (ciclo,
       embed ausente, seção ausente, URI inválida) passaram a carregar a
       origem de quem escreveu o embed.
-- [x] **F67 — Diagnostics remapeados (host)**: `CompilationEnvironmentResolver.
+- [x] **F67 — Diagnostics remapeados**: `CompilationEnvironmentResolver.
       remapCompositionDiagnostics` reescreve `documentId`/offset de um
       diagnóstico do compiler sobre a fonte composta para o arquivo real antes
-      de a sessão publicá-lo. **Não inclui** a metade de UI: o painel de
-      diagnósticos do desktop ainda não abre um arquivo diferente do
-      documento ativo a partir desse `documentId` remapeado.
+      de a sessão publicá-lo; `Workspace Problems` preserva `fileId`, heading
+      e range autorais para a navegação do desktop.
 - [x] **F68 — Navegação através de embeds**: `workspace-index` schema v3
       (`indexed_identifiers`/`indexed_xrefs`) sustenta
       `definition`/`references`/`hover` de `[[ref:id]]` vault-wide no
@@ -1038,13 +1037,13 @@ composição, e só o efeito (um `DiagnosticDto.source` já corrigido) atravessa
 protocolo, na mesma forma de DTO que já existia — nenhum schema novo. Ver ADR
 0054 (F66/F67) e ADR 0055 (F68/F69/F70).
 
-Ficou fora de propósito, deliberadamente: UI do desktop para as três
-capacidades (painel de Problems clicável cross-file, comando de rename além
-do já existente, visualização de diff estrutural ao lado do diff por linha) —
-tudo testado e correto no protocolo/host via `MessagePort`, nada exposto ainda
-na superfície do produto. Diff estrutural da fonte composta inteira (`index.md`
-com capítulos) também ficou fora: exigiria rodar a composição dentro do fluxo
-de histórico, que hoje só compara texto já em mãos.
+**O-UI — superfície desktop concluída:** o modo de revisão abre o módulo
+autoral e seleciona seu range ao clicar em Problems, inclusive para diagnóstico
+de TCC composto; o histórico expõe `Text Diff | Structural Diff` sobre a mesma
+revisão. A interface só projeta DTOs do host, sem abrir fonte virtual ou
+reconstruir o diff. Diff estrutural da fonte composta inteira (`index.md` com
+capítulos) continua fora: exigiria rodar a composição dentro do fluxo de
+histórico, que hoje só compara texto já em mãos.
 
 ### Onda P — query language e descoberta avançada ✅
 

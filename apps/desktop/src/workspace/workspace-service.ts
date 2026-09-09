@@ -508,30 +508,41 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       const sessions = this.#requireSessions();
       const index = this.#requireIndex();
       const selected = request.fileIds === undefined ? undefined : new Set(request.fileIds);
-      const files = (await storage.list()).filter((file) => /\.md$/iu.test(String(file.path)) && (selected === undefined || selected.has(String(file.id))));
-      const result: WorkspaceProblemDto[] = [];
+      const allFiles = await storage.list();
+      const files = allFiles.filter((file) => /\.md$/iu.test(String(file.path)) && (selected === undefined || selected.has(String(file.id))));
+      // F67 já trocou o SourceRange virtual pelo autoral. Esta projeção precisa
+      // preservar essa autoria também na identidade do problema; caso contrário
+      // o renderer abriria `index.md` e aplicaria um offset de capítulo nele.
+      const filesByPath = new Map(allFiles.map((file) => [String(file.path), file]));
+      const result = new Map<string, WorkspaceProblemDto>();
       for (const file of files) {
         const alreadyOpen = editors.controller(file.id) !== undefined;
         const controller = alreadyOpen ? editors.controller(file.id) : await editors.open(file.id);
         if (controller === undefined) continue;
         await sessions.idle(file.id);
         const snapshot = controller.snapshot();
-        const headings = index.headings(file.id);
         const diagnostics = [...await this.#requireLanguage().diagnostics(file.id), ...(snapshot.session.resolved === undefined ? [] : await this.#requirePlugins().languageDiagnostics(snapshot.session.resolved))];
         for (const diagnostic of diagnostics) {
           const start = diagnostic.source?.start.offset;
           const end = diagnostic.source?.end.offset;
+          const authoredFile = diagnostic.source?.documentId === undefined ? undefined : filesByPath.get(String(diagnostic.source.documentId));
+          const problemFile = authoredFile ?? file;
+          const headings = index.headings(problemFile.id);
           const section = start === undefined ? undefined : headings.filter((heading) => heading.sourceStart !== undefined && heading.sourceStart <= start).at(-1)?.title;
-          result.push({
-            fileId: String(file.id), path: String(file.path), revision: snapshot.session.revision,
+          const problem: WorkspaceProblemDto = {
+            fileId: String(problemFile.id), path: String(problemFile.path), revision: snapshot.session.revision,
             severity: diagnostic.severity, ruleId: diagnostic.id, message: diagnostic.message,
             ...(start === undefined || end === undefined ? {} : { range: { start, end } }),
             ...(section === undefined ? {} : { section }),
-          });
+          };
+          // Um módulo pode ser diagnosticado sozinho e ao compor sua raiz. A
+          // Problems mostra o fato autoral uma vez, não uma cópia por host.
+          const key = `${problem.fileId}:${problem.ruleId}:${problem.range?.start ?? ''}:${problem.range?.end ?? ''}:${problem.message}`;
+          result.set(key, problem);
         }
         if (!alreadyOpen) await editors.close(file.id);
       }
-      return result.sort((left, right) => left.path.localeCompare(right.path) || (left.range?.start ?? -1) - (right.range?.start ?? -1) || left.ruleId.localeCompare(right.ruleId));
+      return [...result.values()].sort((left, right) => left.path.localeCompare(right.path) || (left.range?.start ?? -1) - (right.range?.start ?? -1) || left.ruleId.localeCompare(right.ruleId));
     });
   }
 
