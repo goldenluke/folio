@@ -99,6 +99,8 @@ import {
   type WorkspaceSearchResultDto,
   type WorkspaceProblemsRequest,
   type WorkspaceProblemDto,
+  type WorkspacePluginDto,
+  type WorkspacePluginSetEnabledRequest,
 } from '@abnt/protocol';
 import { renderizarHtml } from '@abnt/renderer-html';
 import type { PublicationBlock, PublicationDocument } from '@abnt/publication';
@@ -528,6 +530,10 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       return result.sort((left, right) => left.path.localeCompare(right.path) || (left.range?.start ?? -1) - (right.range?.start ?? -1) || left.ruleId.localeCompare(right.ruleId));
     });
   }
+
+  async plugins(): Promise<ProtocolResult<readonly WorkspacePluginDto[]>> { return this.#run(async () => this.#requirePlugins().list()); }
+  async setPluginEnabled(request: WorkspacePluginSetEnabledRequest): Promise<ProtocolResult<readonly WorkspacePluginDto[]>> { return this.#run(async () => this.#requirePlugins().setEnabled(request.id, request.enabled)); }
+  async reloadPlugins(): Promise<ProtocolResult<readonly WorkspacePluginDto[]>> { return this.#run(async () => this.#requirePlugins().reload()); }
 
   /**
    * Formata com o mesmo motor ABNT do compilador (`@abnt/bibliography`) — não
@@ -1474,6 +1480,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
     if (this.#history === undefined) throw new Error('Nenhum vault está aberto.');
     return this.#history;
   }
+  #requirePlugins(): WorkspacePluginCatalog { if (this.#plugins === undefined) throw new Error('Nenhum vault está aberto.'); return this.#plugins; }
 
   async #historyFile(fileId: string): Promise<WorkspaceFile> {
     const file = (await this.#requireStorage().list()).find((candidate) => String(candidate.id) === fileId);

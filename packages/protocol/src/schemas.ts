@@ -33,6 +33,8 @@ import {
   type WorkspaceSearchRequest,
   type WorkspaceSearchResultDto,
   type WorkspaceProblemsRequest,
+  type WorkspacePluginDto,
+  type WorkspacePluginSetEnabledRequest,
   type WorkspaceProblemDto,
   type WorkspaceGraphRequest,
   type WorkspaceGraphDto,
@@ -527,6 +529,9 @@ const requestEnvelopeSchema = z.object({
     'editor/export',
     'workspace/search',
     'workspace/problems',
+    'workspace/plugins',
+    'workspace/plugin-set-enabled',
+    'workspace/plugins-reload',
     'workspace/backlinks',
     'workspace/references',
     'workspace/graph',
@@ -640,6 +645,9 @@ export const workspaceSearchRequestSchema = z.object({
 }) as z.ZodType<WorkspaceSearchRequest>;
 
 export const workspaceProblemsRequestSchema = z.object({ fileIds: z.array(nonEmptyString).optional() }) as z.ZodType<WorkspaceProblemsRequest>;
+const workspacePluginDtoSchema = z.object({ id: nonEmptyString, version: z.string().optional(), apiVersion: nonNegativeInteger.optional(), capabilities: z.array(nonEmptyString), enabled: z.boolean(), commands: z.array(z.object({ id: nonEmptyString, title: nonEmptyString })), views: z.array(z.object({ id: nonEmptyString, title: nonEmptyString, body: z.string() })), exports: z.array(z.object({ id: nonEmptyString, title: nonEmptyString, extension: nonEmptyString, mimeType: nonEmptyString })), error: z.string().optional() }) as z.ZodType<WorkspacePluginDto>;
+export const workspacePluginsResponseSchema = z.array(workspacePluginDtoSchema) as z.ZodType<readonly WorkspacePluginDto[]>;
+export const workspacePluginSetEnabledRequestSchema = z.object({ id: nonEmptyString, enabled: z.boolean() }) as z.ZodType<WorkspacePluginSetEnabledRequest>;
 export const workspaceProblemDtoSchema = z.object({
   fileId: nonEmptyString,
   path: nonEmptyString,
@@ -1135,6 +1143,7 @@ export const validarWorkspaceSearchRequest = (value: unknown): ProtocolResult<Wo
   validarDto(workspaceSearchRequestSchema, value);
 export const validarWorkspaceProblemsRequest = (value: unknown): ProtocolResult<WorkspaceProblemsRequest> =>
   validarDto(workspaceProblemsRequestSchema, value);
+export const validarWorkspacePluginSetEnabledRequest = (value: unknown): ProtocolResult<WorkspacePluginSetEnabledRequest> => validarDto(workspacePluginSetEnabledRequestSchema, value);
 
 export const validarWorkspaceBacklinksRequest = (value: unknown): ProtocolResult<WorkspaceBacklinksRequest> =>
   validarDto(workspaceBacklinksRequestSchema, value);

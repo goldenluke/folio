@@ -303,6 +303,8 @@ export interface WorkspaceSearchRequest {
 
 /** F83: projeção vault-wide de diagnósticos já produzidos pelo host. */
 export interface WorkspaceProblemsRequest { readonly fileIds?: readonly string[]; }
+export interface WorkspacePluginDto { readonly id: string; readonly version?: string; readonly apiVersion?: number; readonly capabilities: readonly string[]; readonly enabled: boolean; readonly commands: readonly { readonly id: string; readonly title: string }[]; readonly views: readonly { readonly id: string; readonly title: string; readonly body: string }[]; readonly exports: readonly { readonly id: string; readonly title: string; readonly extension: string; readonly mimeType: string }[]; readonly error?: string; }
+export interface WorkspacePluginSetEnabledRequest { readonly id: string; readonly enabled: boolean; }
 export interface WorkspaceProblemDto {
   readonly fileId: string;
   readonly path: string;
@@ -905,6 +907,9 @@ export interface DesktopWorkspaceService {
   exportDocument(request: EditorExportRequest, signal?: AbortSignal): Promise<ProtocolResult<EditorExportDto | undefined>>;
   search(request: WorkspaceSearchRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceSearchResultDto[]>>;
   problems(request: WorkspaceProblemsRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceProblemDto[]>>;
+  plugins(signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspacePluginDto[]>>;
+  setPluginEnabled(request: WorkspacePluginSetEnabledRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspacePluginDto[]>>;
+  reloadPlugins(signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspacePluginDto[]>>;
   backlinks(request: WorkspaceBacklinksRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceBacklinkDto[]>>;
   references(request: WorkspaceReferencesRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceReferenceDto[]>>;
   graph(request: WorkspaceGraphRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceGraphDto>>;
@@ -972,6 +977,9 @@ export type WorkspaceMethod =
   | 'editor/export'
   | 'workspace/search'
   | 'workspace/problems'
+  | 'workspace/plugins'
+  | 'workspace/plugin-set-enabled'
+  | 'workspace/plugins-reload'
   | 'workspace/backlinks'
   | 'workspace/references'
   | 'workspace/graph'
