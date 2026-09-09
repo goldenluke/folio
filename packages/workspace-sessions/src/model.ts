@@ -205,6 +205,15 @@ export interface CompileDocumentSessionOptions {
   readonly profileId?: string;
 }
 
+/** F101: compilação candidata que nunca substitui o preview/draft da sessão. */
+export interface ProfileEvaluation {
+  readonly revision: number;
+  readonly profileId: string;
+  readonly errors: number;
+  readonly warnings: number;
+  readonly diagnostics: readonly DiagnosticDto[];
+}
+
 /**
  * `keep-local`: aceita a revisão externa como nova base do arquivo persistido
  * sem tocar no rascunho — o próximo `save()` sobrescreve o disco com o
@@ -228,6 +237,7 @@ export interface DocumentSessions {
     fileId: WorkspaceFileId,
     options?: CompileDocumentSessionOptions,
   ): Promise<DocumentSessionSnapshot | undefined>;
+  evaluateProfile(fileId: WorkspaceFileId, profileId: string, signal?: AbortSignal): Promise<ProfileEvaluation | undefined>;
   /** Aguarda o trabalho agendado até agora; útil para hosts headless e testes. */
   idle(fileId?: WorkspaceFileId): Promise<void>;
   subscribe(listener: DocumentSessionEventListener): () => void;

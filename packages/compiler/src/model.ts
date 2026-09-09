@@ -6,7 +6,7 @@ import type {
   Registry,
   ResourceId,
 } from '@abnt/document-model';
-import type { PublicationDocument, PublicationProfile } from '@abnt/publication';
+import type { PagePolicy, PublicationDocument, PublicationProfile } from '@abnt/publication';
 import type { ResolvedDocument } from '@abnt/semantics';
 import type { RelatorioDeValidacao } from '@abnt/standards';
 
@@ -106,6 +106,45 @@ export interface CompilationUnit {
 export interface CompilationProfileDefinition {
   readonly profile: PublicationProfile;
   validar(document: ResolvedDocument): RelatorioDeValidacao;
+  /** Metadados declarativos para hosts/UI; nunca contém implementação normativa. */
+  readonly manifest: PublicationProfileManifest;
+}
+
+export type PublicationProfileCapability =
+  | 'abstract' | 'keywords' | 'numbered-sections' | 'figures' | 'tables'
+  | 'equations' | 'bibliography' | 'toc' | 'lists' | 'pretextual' | 'posttextual';
+
+export interface PublicationProfileRuleManifest {
+  readonly id: string;
+  readonly standard?: string;
+  readonly description: string;
+}
+
+/** Metadata de produto, distinta da implementação `PublicationProfile`. */
+export interface PublicationProfileManifest {
+  readonly id: string;
+  readonly version: string;
+  readonly name: string;
+  readonly description?: string;
+  readonly documentKinds: readonly string[];
+  readonly citationSystem?: string;
+  readonly capabilities: readonly PublicationProfileCapability[];
+  readonly requiredMetadata: readonly string[];
+  readonly optionalMetadata: readonly string[];
+  readonly rules: readonly PublicationProfileRuleManifest[];
+  readonly pagePolicy: PagePolicy;
+  readonly composition?: { readonly baseProfileId: string; readonly overrides: readonly string[] };
+}
+
+/** Composição declarada; não há subclasses de profiles institucionais. */
+export interface InstitutionalProfileComposition {
+  readonly id: string;
+  readonly version: string;
+  readonly name: string;
+  readonly description: string;
+  readonly baseProfileId: string;
+  readonly margin?: Partial<PagePolicy['margin']>;
+  readonly requiredMetadata?: readonly string[];
 }
 
 export interface CompilationProfileRegistry {

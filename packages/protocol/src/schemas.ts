@@ -8,6 +8,8 @@ import {
   protocolOk,
   type CompilationResultDto,
   type CompilerCompileRequest,
+  type CompilerProfilesRequest,
+  type PublicationProfileManifestDto,
   type CompilerPrepareRequest,
   type EnvironmentPreparationDto,
   type PreparedCompilationDto,
@@ -33,6 +35,9 @@ import {
   type WorkspaceSearchRequest,
   type WorkspaceSearchResultDto,
   type WorkspaceProblemsRequest,
+  type WorkspaceProfilesRequest,
+  type WorkspaceProfileValidationPreviewRequest,
+  type WorkspaceProfileValidationPreviewDto,
   type WorkspacePluginDto,
   type WorkspacePluginSetEnabledRequest,
   type WorkspacePluginCommandRequest,
@@ -497,6 +502,16 @@ export const compilerCompileRequestSchema = z.object({
   environment: environmentPreparationDtoSchema,
   profileId: nonEmptyString.optional(),
 }) as z.ZodType<CompilerCompileRequest>;
+export const compilerProfilesRequestSchema = z.object({}) as z.ZodType<CompilerProfilesRequest>;
+const publicationProfileManifestDtoSchema = z.object({
+  id: nonEmptyString, version: nonEmptyString, name: nonEmptyString, description: z.string().optional(),
+  documentKinds: z.array(nonEmptyString), citationSystem: z.string().optional(), capabilities: z.array(nonEmptyString),
+  requiredMetadata: z.array(nonEmptyString), optionalMetadata: z.array(nonEmptyString),
+  rules: z.array(z.object({ id: nonEmptyString, standard: z.string().optional(), description: z.string() })),
+  pagePolicy: z.object({ size: z.enum(['A4', 'Letter']), margin: z.object({ top: nonEmptyString, right: nonEmptyString, bottom: nonEmptyString, left: nonEmptyString }), pageNumber: z.enum(['top-right', 'top-center', 'bottom-center', 'none']).optional() }),
+  composition: z.object({ baseProfileId: nonEmptyString, overrides: z.array(nonEmptyString) }).optional(),
+}) as z.ZodType<PublicationProfileManifestDto>;
+export const compilerProfilesResponseSchema = z.array(publicationProfileManifestDtoSchema) as z.ZodType<readonly PublicationProfileManifestDto[]>;
 
 const protocolProblemSchema = z.object({ path: z.string(), message: z.string() });
 
@@ -519,9 +534,12 @@ const requestEnvelopeSchema = z.object({
   kind: z.literal('request'),
   id: nonEmptyString,
   method: z.enum([
+    'compiler/profiles',
     'compiler/prepare',
     'compiler/compile',
     'workspace/open',
+    'workspace/profiles',
+    'workspace/profile-validation-preview',
     'workspace/list',
     'workspace/read',
     'editor/open',
@@ -652,6 +670,10 @@ export const workspaceSearchRequestSchema = z.object({
 }) as z.ZodType<WorkspaceSearchRequest>;
 
 export const workspaceProblemsRequestSchema = z.object({ fileIds: z.array(nonEmptyString).optional() }) as z.ZodType<WorkspaceProblemsRequest>;
+export const workspaceProfilesRequestSchema = z.object({}) as z.ZodType<WorkspaceProfilesRequest>;
+export const workspaceProfilesResponseSchema = compilerProfilesResponseSchema;
+export const workspaceProfileValidationPreviewRequestSchema = z.object({ fileId: nonEmptyString, expectedRevision: nonNegativeInteger, profileId: nonEmptyString }) as z.ZodType<WorkspaceProfileValidationPreviewRequest>;
+export const workspaceProfileValidationPreviewResponseSchema = z.object({ revision: nonNegativeInteger, profileId: nonEmptyString, errors: nonNegativeInteger, warnings: nonNegativeInteger, errorDelta: z.number().int(), warningDelta: z.number().int() }) as z.ZodType<WorkspaceProfileValidationPreviewDto>;
 const workspacePluginDtoSchema = z.object({ id: nonEmptyString, version: z.string().optional(), apiVersion: nonNegativeInteger.optional(), capabilities: z.array(nonEmptyString), enabled: z.boolean(), commands: z.array(z.object({ id: nonEmptyString, title: nonEmptyString })), views: z.array(z.object({ id: nonEmptyString, title: nonEmptyString, body: z.string() })), exports: z.array(z.object({ id: nonEmptyString, title: nonEmptyString, extension: nonEmptyString, mimeType: nonEmptyString })), error: z.string().optional() }) as z.ZodType<WorkspacePluginDto>;
 export const workspacePluginsResponseSchema = z.array(workspacePluginDtoSchema) as z.ZodType<readonly WorkspacePluginDto[]>;
 export const workspacePluginSetEnabledRequestSchema = z.object({ id: nonEmptyString, enabled: z.boolean() }) as z.ZodType<WorkspacePluginSetEnabledRequest>;
@@ -1155,6 +1177,8 @@ export const validarWorkspaceSearchRequest = (value: unknown): ProtocolResult<Wo
   validarDto(workspaceSearchRequestSchema, value);
 export const validarWorkspaceProblemsRequest = (value: unknown): ProtocolResult<WorkspaceProblemsRequest> =>
   validarDto(workspaceProblemsRequestSchema, value);
+export const validarWorkspaceProfileValidationPreviewRequest = (value: unknown): ProtocolResult<WorkspaceProfileValidationPreviewRequest> =>
+  validarDto(workspaceProfileValidationPreviewRequestSchema, value);
 export const validarWorkspacePluginSetEnabledRequest = (value: unknown): ProtocolResult<WorkspacePluginSetEnabledRequest> => validarDto(workspacePluginSetEnabledRequestSchema, value);
 export const validarWorkspacePluginCommandRequest = (value: unknown): ProtocolResult<WorkspacePluginCommandRequest> => validarDto(workspacePluginCommandRequestSchema, value);
 export const validarDesktopPluginExportRequest = (value: unknown): ProtocolResult<DesktopPluginExportRequest> => validarDto(desktopPluginExportRequestSchema, value);

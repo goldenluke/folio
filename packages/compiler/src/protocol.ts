@@ -32,6 +32,7 @@ import {
 
 import { criarCompiler } from './compiler.js';
 import type { HeadlessCompiler } from './model.js';
+import { profileManifests } from './profiles.js';
 
 const serializarDiagnostico = (diagnostic: Diagnostic): DiagnosticDto => ({
   id: diagnostic.id,
@@ -251,6 +252,14 @@ const erroDoCompiler = (error: unknown, signal?: AbortSignal) => {
  */
 export function criarServicoDeCompiler(compiler: HeadlessCompiler = criarCompiler()): CompilerService {
   return {
+    async profiles(_request, signal) {
+      try {
+        if (signal?.aborted === true) return protocolError('CANCELLED', 'Compilação cancelada.');
+        return protocolOk(profileManifests());
+      } catch (error) {
+        return erroDoCompiler(error, signal);
+      }
+    },
     async prepare(request, signal) {
       try {
         const prepared = await compiler.prepare(sourceParaDominio(request.source), signal);

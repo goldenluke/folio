@@ -99,6 +99,10 @@ import {
   type WorkspaceSearchResultDto,
   type WorkspaceProblemsRequest,
   type WorkspaceProblemDto,
+  type WorkspaceProfilesRequest,
+  type WorkspaceProfileManifestDto,
+  type WorkspaceProfileValidationPreviewRequest,
+  type WorkspaceProfileValidationPreviewDto,
   type WorkspacePluginDto,
   type WorkspacePluginSetEnabledRequest,
   type WorkspacePluginCommandRequest,
@@ -543,6 +547,47 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
         if (!alreadyOpen) await editors.close(file.id);
       }
       return [...result.values()].sort((left, right) => left.path.localeCompare(right.path) || (left.range?.start ?? -1) - (right.range?.start ?? -1) || left.ruleId.localeCompare(right.ruleId));
+    });
+  }
+
+  /** F96/F97: só manifests DTO atravessam até a superfície desktop. */
+  async profiles(_request: WorkspaceProfilesRequest): Promise<ProtocolResult<readonly WorkspaceProfileManifestDto[]>> {
+    return this.#run(async () => {
+      const profiles = await this.#compiler.profiles({});
+      if (!profiles.ok) throw new Error(profiles.error.message);
+      return profiles.value;
+    });
+  }
+
+  /** F101: avalia outro profile sem sobrescrever preview, diagnósticos ou autoria. */
+  async previewProfileValidation(request: WorkspaceProfileValidationPreviewRequest): Promise<ProtocolResult<WorkspaceProfileValidationPreviewDto>> {
+    return this.#run(async () => {
+      const fileId = asWorkspaceFileId(request.fileId);
+      const controller = this.#requireEditors().controller(fileId);
+      if (controller === undefined) throw new WorkspaceFileNotFoundError(fileId);
+      const before = controller.snapshot();
+      if (before.session.revision !== request.expectedRevision) {
+        throw new WorkspaceConflictError(fileId, request.expectedRevision, before.session.revision);
+      }
+      const evaluation = await this.#requireSessions().evaluateProfile(fileId, request.profileId);
+      const after = controller.snapshot();
+      if (evaluation === undefined || after.session.revision !== request.expectedRevision) {
+        throw new WorkspaceConflictError(fileId, request.expectedRevision, after.session.revision);
+      }
+      const count = (diagnostics: readonly { readonly severity: 'error' | 'warning' | 'info' }[], severity: 'error' | 'warning'): number =>
+        diagnostics.filter((diagnostic) => diagnostic.severity === severity).length;
+      const baselineErrors = count(before.diagnostics, 'error');
+      const baselineWarnings = count(before.diagnostics, 'warning');
+      const errors = count(evaluation.diagnostics, 'error');
+      const warnings = count(evaluation.diagnostics, 'warning');
+      return {
+        revision: evaluation.revision,
+        profileId: evaluation.profileId,
+        errors,
+        warnings,
+        errorDelta: errors - baselineErrors,
+        warningDelta: warnings - baselineWarnings,
+      };
     });
   }
 

@@ -1131,6 +1131,27 @@ Ver ADR 0058.
 
 Ver ADR 0059.
 
+### Onda T — ecossistema de profiles ✅ até F101
+
+- [x] **F96 — Profile manifest**: o registro do compiler expõe metadata
+      declarativa e versionada (identidade, tipo documental, citações,
+      metadados, regras e página) por DTO validado.
+- [x] **F97 — Profile capabilities**: capabilities e metadados obrigatórios
+      orientam UI sem importar implementações normativas no renderer.
+- [x] **F98 — Profile inspector**: desktop mostra profile, regras ativas,
+      metadata, página e composição a partir dos manifests do Compiler Service.
+- [x] **F99 — Institutional profile composition**: `institutional-tcc` prova
+      composição explícita sobre `abnt-tcc`, sem herança dinâmica ou AST nova.
+- [x] **F100 — Profile comparison**: inspector compara diferenças editoriais
+      declaradas entre dois profiles.
+- [x] **F101 — Profile validation preview**: avaliação seca revision-safe
+      informa o impacto antes de escrever o profile no frontmatter.
+- [ ] **F102 — Nova família acadêmica real**: aguarda escolha explícita de
+      produto/mercado; não selecionar APA, IEEE, Vancouver ou equivalente por
+      reflexo técnico.
+
+Ver ADR 0060.
+
 Release operations (packaging, installers, signing, update e observabilidade).
 Nada disso deve alterar o núcleo semântico; é essa propriedade que o M4 existe
 para verificar.

@@ -8,6 +8,8 @@
 export { authoredDependencies, criarCompiler } from './compiler.js';
 export type { CompilerOptions } from './compiler.js';
 export { criarServicoDeCompiler, resolvedDocumentParaDto } from './protocol.js';
+export { profileManifests } from './profiles.js';
+export type { InstitutionalProfileComposition, PublicationProfileCapability, PublicationProfileManifest, PublicationProfileRuleManifest } from './model.js';
 export {
   PERFIL_PADRAO,
   PERFIS_PADRAO,

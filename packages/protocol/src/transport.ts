@@ -2,6 +2,7 @@ import {
   PROTOCOL_VERSION,
   protocolError,
   type CompilerCompileRequest,
+  type CompilerProfilesRequest,
   type CompilerPrepareRequest,
   type CompilerService,
   type MessagePortLike,
@@ -12,6 +13,8 @@ import {
 import {
   compilationResultDtoSchema,
   compilerCompileRequestSchema,
+  compilerProfilesRequestSchema,
+  compilerProfilesResponseSchema,
   compilerPrepareRequestSchema,
   preparedCompilationDtoSchema,
   protocolEnvelopeSchema,
@@ -53,6 +56,13 @@ const chamarComProtecao = async <T>(
  */
 export function createInProcessCompilerClient(service: CompilerService): CompilerService {
   return {
+    async profiles(request, signal) {
+      const input = validarDto(compilerProfilesRequestSchema, request);
+      if (!input.ok) return input;
+      const result = await chamarComProtecao(() => service.profiles(input.value, signal), signal);
+      const checked = validarResultadoDoProtocolo(result, compilerProfilesResponseSchema);
+      return checked.ok ? checked.value : checked;
+    },
     async prepare(request, signal) {
       const input = validarDto(compilerPrepareRequestSchema, request);
       if (!input.ok) return input;
@@ -86,7 +96,9 @@ export function serveCompilerOverMessagePort(port: MessagePortLike, service: Com
     pending.set(envelope.id, controller);
     try {
       const result =
-        envelope.method === 'compiler/prepare'
+        envelope.method === 'compiler/profiles'
+          ? await local.profiles(envelope.payload as CompilerProfilesRequest, controller.signal)
+          : envelope.method === 'compiler/prepare'
           ? await local.prepare(envelope.payload as CompilerPrepareRequest, controller.signal)
           : envelope.method === 'compiler/compile'
             ? await local.compile(envelope.payload as CompilerCompileRequest, controller.signal)
@@ -150,13 +162,13 @@ export function createCompilerMessagePortClient(port: MessagePortLike): MessageP
   });
 
   const request = <T>(
-    method: 'compiler/prepare' | 'compiler/compile',
+    method: 'compiler/profiles' | 'compiler/prepare' | 'compiler/compile',
     payload: unknown,
     schema: import('zod').z.ZodType<unknown>,
     signal?: AbortSignal,
   ): Promise<ProtocolResult<T>> => {
     const input = validarDto<unknown>(
-      method === 'compiler/prepare' ? compilerPrepareRequestSchema : compilerCompileRequestSchema,
+      method === 'compiler/profiles' ? compilerProfilesRequestSchema : method === 'compiler/prepare' ? compilerPrepareRequestSchema : compilerCompileRequestSchema,
       payload,
     );
     if (!input.ok) return Promise.resolve(input);
@@ -178,6 +190,7 @@ export function createCompilerMessagePortClient(port: MessagePortLike): MessageP
   };
 
   return {
+    profiles: (request, signal) => requestForProfiles(request, signal),
     prepare: (request, signal) => requestForPrepare(request, signal),
     compile: (request, signal) => requestForCompile(request, signal),
     dispose: () => {
@@ -195,6 +208,13 @@ export function createCompilerMessagePortClient(port: MessagePortLike): MessageP
     signal?: AbortSignal,
   ): Promise<ProtocolResult<import('./model.js').PreparedCompilationDto>> {
     return request('compiler/prepare', value, preparedCompilationDtoSchema, signal);
+  }
+
+  function requestForProfiles(
+    value: CompilerProfilesRequest,
+    signal?: AbortSignal,
+  ): Promise<ProtocolResult<readonly import('./model.js').PublicationProfileManifestDto[]>> {
+    return request('compiler/profiles', value, compilerProfilesResponseSchema, signal);
   }
 
   function requestForCompile(

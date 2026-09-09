@@ -59,6 +59,8 @@ import {
   type WorkspaceReferencesRequest,
   type WorkspaceSearchRequest,
   type WorkspaceProblemsRequest,
+  type WorkspaceProfilesRequest,
+  type WorkspaceProfileValidationPreviewRequest,
   type WorkspacePluginSetEnabledRequest,
   type WorkspacePluginCommandRequest,
   type WorkspacePluginExportRequest,
@@ -149,6 +151,10 @@ import {
   workspaceSearchResponseSchema,
   workspaceProblemsRequestSchema,
   workspaceProblemsResponseSchema,
+  workspaceProfilesRequestSchema,
+  workspaceProfilesResponseSchema,
+  workspaceProfileValidationPreviewRequestSchema,
+  workspaceProfileValidationPreviewResponseSchema,
   workspacePluginsResponseSchema,
   workspacePluginSetEnabledRequestSchema,
   workspacePluginCommandRequestSchema,
@@ -204,6 +210,8 @@ const call = async <I, O>(
 /** Cliente local com a mesma validação da porta remota. */
 export function createInProcessWorkspaceClient(service: DesktopWorkspaceService): DesktopWorkspaceService {
   return {
+    profiles: (request, signal) => call(request, workspaceProfilesRequestSchema, workspaceProfilesResponseSchema, service.profiles.bind(service), signal),
+    previewProfileValidation: (request, signal) => call(request, workspaceProfileValidationPreviewRequestSchema, workspaceProfileValidationPreviewResponseSchema, service.previewProfileValidation.bind(service), signal),
     open: (request, signal) => call(request, workspaceOpenRequestSchema, workspaceOpenResponseSchema, service.open.bind(service), signal),
     list: (request, signal) =>
       call(request, workspaceListRequestSchema, workspaceListResponseSchema, service.list.bind(service), signal),
@@ -366,6 +374,10 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.search(envelope.payload as WorkspaceSearchRequest, controller.signal);
           case 'workspace/problems':
             return local.problems(envelope.payload as WorkspaceProblemsRequest, controller.signal);
+          case 'workspace/profiles':
+            return local.profiles(envelope.payload as WorkspaceProfilesRequest, controller.signal);
+          case 'workspace/profile-validation-preview':
+            return local.previewProfileValidation(envelope.payload as WorkspaceProfileValidationPreviewRequest, controller.signal);
           case 'workspace/plugins': return local.plugins(controller.signal);
           case 'workspace/plugin-set-enabled': return local.setPluginEnabled(envelope.payload as WorkspacePluginSetEnabledRequest, controller.signal);
           case 'workspace/plugins-reload': return local.reloadPlugins(controller.signal);
@@ -537,6 +549,8 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
   };
 
   return {
+    profiles: (value, signal) => request('workspace/profiles', value, workspaceProfilesRequestSchema, workspaceProfilesResponseSchema, signal),
+    previewProfileValidation: (value, signal) => request('workspace/profile-validation-preview', value, workspaceProfileValidationPreviewRequestSchema, workspaceProfileValidationPreviewResponseSchema, signal),
     open: (value, signal) => request('workspace/open', value, workspaceOpenRequestSchema, workspaceOpenResponseSchema, signal),
     list: (value, signal) => request('workspace/list', value, workspaceListRequestSchema, workspaceListResponseSchema, signal),
     read: (value, signal) => request('workspace/read', value, workspaceReadRequestSchema, workspaceReadResponseSchema, signal),

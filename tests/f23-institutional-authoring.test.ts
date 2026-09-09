@@ -6,7 +6,7 @@ import { applyMetadata, metadataFromSource } from '../apps/desktop/src/renderer/
 describe('F23/F25 — autoria institucional', () => {
   it('gera TCC institucional como Markdown normal com metadados aceitos pelo parser', () => {
     const source = templateSource('institutional-tcc');
-    expect(source).toContain('profile: abnt-tcc');
+    expect(source).toContain('profile: institutional-tcc');
     expect(source).toContain('tcc:institution: Instituição');
     expect(source).toContain('role: advisor');
   });

@@ -13,6 +13,7 @@ export type {
   CompilationSourceExpansion,
   CompilationSourceExpansionRequest,
   CompileDocumentSessionOptions,
+  ProfileEvaluation,
   DocumentSessionChangeOrigin,
   DocumentSessionEvent,
   DocumentSessionEventListener,

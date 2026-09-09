@@ -43,6 +43,7 @@ import {
   validarWorkspacePdfAnnotationRequest,
   validarWorkspaceSearchRequest,
   validarWorkspaceProblemsRequest,
+  validarWorkspaceProfileValidationPreviewRequest,
   validarWorkspacePluginSetEnabledRequest,
   validarWorkspacePluginCommandRequest,
   validarLanguageCompletionRequest,
@@ -70,6 +71,8 @@ import {
   workspaceOpenResponseSchema,
   workspaceSearchResponseSchema,
   workspaceProblemsResponseSchema,
+  workspaceProfilesResponseSchema,
+  workspaceProfileValidationPreviewResponseSchema,
   workspacePluginsResponseSchema,
   workspacePluginCommandResponseSchema,
   workspaceBacklinksResponseSchema,
@@ -200,6 +203,9 @@ import {
   type WorkspaceSearchResultDto,
   type WorkspaceProblemsRequest,
   type WorkspaceProblemDto,
+  type WorkspaceProfileManifestDto,
+  type WorkspaceProfileValidationPreviewRequest,
+  type WorkspaceProfileValidationPreviewDto,
 } from '@abnt/protocol';
 
 export const DESKTOP_CHANNELS = {
@@ -225,6 +231,8 @@ export const DESKTOP_CHANNELS = {
   renameDocument: 'abnt:workspace:rename-document',
   search: 'abnt:workspace:search',
   problems: 'abnt:workspace:problems',
+  profiles: 'abnt:workspace:profiles',
+  profileValidationPreview: 'abnt:workspace:profile-validation-preview',
   plugins: 'abnt:workspace:plugins',
   pluginSetEnabled: 'abnt:workspace:plugin-set-enabled',
   pluginsReload: 'abnt:workspace:plugins-reload',
@@ -291,6 +299,8 @@ export interface AcademicDesktopApi {
     list(request: WorkspaceListRequest): Promise<ProtocolResult<readonly WorkspaceFileDto[]>>;
     search(request: WorkspaceSearchRequest): Promise<ProtocolResult<readonly WorkspaceSearchResultDto[]>>;
     problems(request: WorkspaceProblemsRequest): Promise<ProtocolResult<readonly WorkspaceProblemDto[]>>;
+    profiles(): Promise<ProtocolResult<readonly WorkspaceProfileManifestDto[]>>;
+    previewProfileValidation(request: WorkspaceProfileValidationPreviewRequest): Promise<ProtocolResult<WorkspaceProfileValidationPreviewDto>>;
     plugins(): Promise<ProtocolResult<readonly WorkspacePluginDto[]>>;
     setPluginEnabled(request: WorkspacePluginSetEnabledRequest): Promise<ProtocolResult<readonly WorkspacePluginDto[]>>;
     reloadPlugins(): Promise<ProtocolResult<readonly WorkspacePluginDto[]>>;
@@ -406,6 +416,11 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
       problems: async (request) => {
         const checked = validarWorkspaceProblemsRequest(request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.problems, checked.value, workspaceProblemsResponseSchema) : checked;
+      },
+      profiles: () => invoke(bridge, DESKTOP_CHANNELS.profiles, {}, workspaceProfilesResponseSchema),
+      previewProfileValidation: async (request) => {
+        const checked = validarWorkspaceProfileValidationPreviewRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.profileValidationPreview, checked.value, workspaceProfileValidationPreviewResponseSchema) : checked;
       },
       plugins: () => invoke(bridge, DESKTOP_CHANNELS.plugins, undefined, workspacePluginsResponseSchema),
       setPluginEnabled: async (request) => { const checked = validarWorkspacePluginSetEnabledRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.pluginSetEnabled, checked.value, workspacePluginsResponseSchema) : checked; },

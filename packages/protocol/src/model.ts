@@ -221,8 +221,27 @@ export interface CompilerCompileRequest {
   readonly profileId?: string;
 }
 
+/** F96/F97: metadata declarativa de profile para hosts; sem funções normativas. */
+export interface PublicationProfileManifestDto {
+  readonly id: string;
+  readonly version: string;
+  readonly name: string;
+  readonly description?: string;
+  readonly documentKinds: readonly string[];
+  readonly citationSystem?: string;
+  readonly capabilities: readonly string[];
+  readonly requiredMetadata: readonly string[];
+  readonly optionalMetadata: readonly string[];
+  readonly rules: readonly { readonly id: string; readonly standard?: string; readonly description: string }[];
+  readonly pagePolicy: { readonly size: 'A4' | 'Letter'; readonly margin: { readonly top: string; readonly right: string; readonly bottom: string; readonly left: string }; readonly pageNumber?: 'top-right' | 'top-center' | 'bottom-center' | 'none' };
+  readonly composition?: { readonly baseProfileId: string; readonly overrides: readonly string[] };
+}
+
+export interface CompilerProfilesRequest {}
+
 /** Contrato comum a implementação em memória, worker e utility process. */
 export interface CompilerService {
+  profiles(request: CompilerProfilesRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly PublicationProfileManifestDto[]>>;
   prepare(
     request: CompilerPrepareRequest,
     signal?: AbortSignal,
@@ -303,6 +322,24 @@ export interface WorkspaceSearchRequest {
 
 /** F83: projeção vault-wide de diagnósticos já produzidos pelo host. */
 export interface WorkspaceProblemsRequest { readonly fileIds?: readonly string[]; }
+/** F96/F97: o Workspace Service repassa manifests do Compiler Service ao desktop. */
+export interface WorkspaceProfilesRequest {}
+export type WorkspaceProfileManifestDto = PublicationProfileManifestDto;
+/** F101: compilação seca de um profile sobre o draft vigente, sem alterar a sessão. */
+export interface WorkspaceProfileValidationPreviewRequest {
+  readonly fileId: string;
+  readonly expectedRevision: number;
+  readonly profileId: string;
+}
+export interface WorkspaceProfileValidationPreviewDto {
+  readonly revision: number;
+  readonly profileId: string;
+  readonly errors: number;
+  readonly warnings: number;
+  /** Diferença contra os diagnósticos publicados na mesma revisão. */
+  readonly errorDelta: number;
+  readonly warningDelta: number;
+}
 export interface WorkspacePluginDto { readonly id: string; readonly version?: string; readonly apiVersion?: number; readonly capabilities: readonly string[]; readonly enabled: boolean; readonly commands: readonly { readonly id: string; readonly title: string }[]; readonly views: readonly { readonly id: string; readonly title: string; readonly body: string }[]; readonly exports: readonly { readonly id: string; readonly title: string; readonly extension: string; readonly mimeType: string }[]; readonly error?: string; }
 export interface WorkspacePluginSetEnabledRequest { readonly id: string; readonly enabled: boolean; }
 export interface WorkspacePluginCommandRequest { readonly pluginId: string; readonly commandId: string; readonly activeFileId?: string; readonly activeRevision?: number; }
@@ -914,6 +951,8 @@ export type DesktopEventDto =
 
 /** Contrato da autoridade desktop. O renderer recebe esta superfície via preload. */
 export interface DesktopWorkspaceService {
+  profiles(request: WorkspaceProfilesRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceProfileManifestDto[]>>;
+  previewProfileValidation(request: WorkspaceProfileValidationPreviewRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceProfileValidationPreviewDto>>;
   open(request: WorkspaceOpenRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceOpenResponse>>;
   list(request: WorkspaceListRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceFileDto[]>>;
   read(request: WorkspaceReadRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceReadResponse>>;
@@ -985,9 +1024,11 @@ export interface DesktopWorkspaceService {
 // Envelope independente de plataforma para MessagePort/Worker/IPC.
 // ---------------------------------------------------------------------------
 
-export type CompilerMethod = 'compiler/prepare' | 'compiler/compile';
+export type CompilerMethod = 'compiler/profiles' | 'compiler/prepare' | 'compiler/compile';
 
 export type WorkspaceMethod =
+  | 'workspace/profiles'
+  | 'workspace/profile-validation-preview'
   | 'workspace/open'
   | 'workspace/list'
   | 'workspace/read'

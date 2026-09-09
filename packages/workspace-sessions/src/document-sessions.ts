@@ -26,6 +26,7 @@ import type {
   DocumentSessions,
   DocumentSessionsOptions,
   ExternalConflictResolution,
+  ProfileEvaluation,
 } from './model.js';
 
 interface ActiveCompilation {
@@ -249,6 +250,37 @@ export class DocumentSessionsService implements DocumentSessions {
         ? [...this.#sessions.values()]
         : [this.#session(fileId)].filter((session): session is MutableSession => session !== undefined);
     await Promise.all(sessions.map((session) => session.active?.promise));
+  }
+
+  /** Avalia profile candidato sobre a mesma revisão, sem publicar resultado na sessão. */
+  async evaluateProfile(fileId: WorkspaceFileId, profileId: string, signal?: AbortSignal): Promise<ProfileEvaluation | undefined> {
+    const session = this.#requiredSession(fileId);
+    const revision = session.revision;
+    const current = (): boolean => this.#sessions.get(String(session.id)) === session && session.revision === revision && signal?.aborted !== true;
+    const expansion = this.#environment.expandSource === undefined
+      ? { content: session.content, diagnostics: [] }
+      : await this.#environment.expandSource({ file: session.file, content: session.content }, signal);
+    if (!current()) return undefined;
+    const authoredHash = await this.#hashContent(session.content, signal);
+    if (!current()) return undefined;
+    const compilationHash = expansion.content === session.content ? authoredHash : await this.#hashContent(expansion.content, signal);
+    if (!current()) return undefined;
+    const source: SourceSnapshotDto = { documentId: String(session.file.documentId), revision, content: expansion.content, contentHash: compilationHash };
+    const prepared = await this.#compiler.prepare({ source }, signal);
+    if (!current() || !prepared.ok) return undefined;
+    const workspaceConfiguration = await this.#storage.configuration();
+    if (!current()) return undefined;
+    const environment = await this.#environment.resolve({ file: session.file, source, prepared: prepared.value, workspaceConfiguration }, signal);
+    if (!current() || !environment.ok) return undefined;
+    const result = await this.#compiler.compile({ prepared: prepared.value, environment: environment.value, profileId }, signal);
+    if (!current() || !result.ok) return undefined;
+    return {
+      revision,
+      profileId: result.value.profileId,
+      errors: result.value.validation.errors,
+      warnings: result.value.validation.warnings,
+      diagnostics: [...expansion.diagnostics, ...this.#remapDiagnostics(result.value.diagnostics, expansion, source.documentId)],
+    };
   }
 
   subscribe(listener: DocumentSessionEventListener): () => void {
