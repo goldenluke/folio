@@ -27,11 +27,13 @@ import { HistoryDialog } from './history-dialog.js';
 import { DocumentComparisonDialog } from './document-comparison.js';
 import { PluginManagerDialog } from './plugin-manager.js';
 import { ProfileInspectorDialog } from './profile-inspector.js';
+import { AutomationDialog } from './automation-dialog.js';
 import { ReviewWorkspaceDialog, readReviewComments } from './review-workflow.js';
 import { openWorkspaceProblem } from './workspace-problem-navigation.js';
 import { RemoteEditorController } from './remote-editor-controller.js';
 import { createCommandRegistry } from './shell/commands.js';
-import { registerKeybindings } from './shell/keybindings.js';
+import { executeAutomation, parseWorkspaceMacros, planAutomation, type WorkspaceMacro } from './shell/automation.js';
+import { mergeKeybindings, registerKeybindings, type CustomKeybindings, type KeyBindingMap } from './shell/keybindings.js';
 import { rankCommands, rankQuickOpenFiles, type QuickOpenFile } from './shell/palette.js';
 import { citationSource, editableCitationAt, type CitationDraft, type CitationEditMode, type CitationItemDraft, type CitationLocatorKind } from './shell/citation-source.js';
 import { applyMetadata, metadataFromSource, type MetadataDraft } from './shell/frontmatter.js';
@@ -48,6 +50,46 @@ import {
 } from './shell/views.js';
 
 const markdownFiles = (files: readonly WorkspaceFileDto[]) => files.filter((file) => file.path.toLowerCase().endsWith('.md'));
+
+const defaultKeybindings: KeyBindingMap = new Map([
+  ['mod+s', 'document.save'], ['mod+w', 'document.closeActiveTab'],
+  ['mod+p', 'palette.quickOpen'], ['mod+shift+p', 'palette.commands'],
+  ['mod+shift+f', 'search.openView'], ['mod+shift+r', 'review.open'],
+  ['mod+shift+d', 'document.compare'], ['mod+shift+c', 'citation.openPicker'],
+  ['mod+shift+i', 'figure.insert'], ['mod+shift+n', 'application.newWindow'],
+  ['alt+arrowleft', 'navigation.back'], ['alt+arrowright', 'navigation.forward'],
+]);
+
+const customKeybindingsStorageKey = (workspaceId: string): string => `folio.keybindings:${workspaceId}`;
+const macroStorageKey = (workspaceId: string): string => `folio.automation:${workspaceId}`;
+const loadCustomKeybindings = (workspaceId: string): CustomKeybindings => {
+  try {
+    const value: unknown = JSON.parse(window.localStorage.getItem(customKeybindingsStorageKey(workspaceId)) ?? '{}');
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+    return Object.fromEntries(Object.entries(value).filter(([chord, commandId]) => typeof commandId === 'string' && chord.trim() !== ''));
+  } catch { return {}; }
+};
+const loadWorkspaceMacros = (workspaceId: string): readonly WorkspaceMacro[] => {
+  try { return parseWorkspaceMacros(JSON.parse(window.localStorage.getItem(macroStorageKey(workspaceId)) ?? '[]')); } catch { return []; }
+};
+
+const collectionArguments = {
+  safeParse(value: unknown) {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value) && typeof (value as { collectionId?: unknown }).collectionId === 'string' && (value as { collectionId: string }).collectionId !== '') return { success: true as const, data: value };
+    return { success: false as const, message: 'A operação em lote exige collectionId.' };
+  },
+};
+
+const documentOpenArguments = {
+  safeParse(value: unknown) {
+    if (value === undefined) return { success: true as const, data: undefined };
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      const candidate = value as { fileId?: unknown; path?: unknown };
+      if (typeof candidate.fileId === 'string' && candidate.fileId !== '' && typeof candidate.path === 'string' && candidate.path !== '') return { success: true as const, data: { fileId: candidate.fileId, path: candidate.path } };
+    }
+    return { success: false as const, message: 'document.open exige { fileId, path }.' };
+  },
+};
 
 const withTimeout = async <T,>(operation: Promise<T>, timeoutMs: number): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -958,6 +1000,11 @@ export function App(): JSX.Element {
   const [knowledgeWorkspaceOpen, setKnowledgeWorkspaceOpen] = useState(false);
   const [researchWorkflowOpen, setResearchWorkflowOpen] = useState(false);
   const [researchProjectsOpen, setResearchProjectsOpen] = useState(false);
+  const [automationOpen, setAutomationOpen] = useState(false);
+  const [customKeybindings, setCustomKeybindings] = useState<CustomKeybindings>({});
+  const [customKeybindingsWorkspace, setCustomKeybindingsWorkspace] = useState<string | undefined>(undefined);
+  const [workspaceMacros, setWorkspaceMacros] = useState<readonly WorkspaceMacro[]>([]);
+  const [workspaceMacrosWorkspace, setWorkspaceMacrosWorkspace] = useState<string | undefined>(undefined);
   const [writingWorkflowOpen, setWritingWorkflowOpen] = useState(false);
   const [referenceMaintenanceOpen, setReferenceMaintenanceOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -985,6 +1032,7 @@ export function App(): JSX.Element {
 
   const activeView = views.find((view) => view.id === activeId);
   const paletteContext = commandContextForPalette(activeView);
+  const keybindings = useMemo(() => mergeKeybindings(defaultKeybindings, customKeybindings), [customKeybindings]);
   const activeEditorView = activeView?.type === 'editor' ? activeView : undefined;
   const splitEditorViews = editorSplit === undefined
     ? []
@@ -1004,6 +1052,26 @@ export function App(): JSX.Element {
     if (workspaceId === undefined) return;
     try { window.localStorage.setItem(`folio.recent:${workspaceId}`, JSON.stringify(recentFileIds)); } catch { /* armazenamento de UI é opcional */ }
   }, [recentFileIds, workspaceId]);
+
+  useEffect(() => {
+    setCustomKeybindings(workspaceId === undefined ? {} : loadCustomKeybindings(workspaceId));
+    setCustomKeybindingsWorkspace(workspaceId);
+  }, [workspaceId]);
+
+  useEffect(() => {
+    if (workspaceId === undefined || customKeybindingsWorkspace !== workspaceId) return;
+    window.localStorage.setItem(customKeybindingsStorageKey(workspaceId), JSON.stringify(customKeybindings));
+  }, [customKeybindings, customKeybindingsWorkspace, workspaceId]);
+
+  useEffect(() => {
+    setWorkspaceMacros(workspaceId === undefined ? [] : loadWorkspaceMacros(workspaceId));
+    setWorkspaceMacrosWorkspace(workspaceId);
+  }, [workspaceId]);
+
+  useEffect(() => {
+    if (workspaceId === undefined || workspaceMacrosWorkspace !== workspaceId) return;
+    window.localStorage.setItem(macroStorageKey(workspaceId), JSON.stringify(workspaceMacros));
+  }, [workspaceId, workspaceMacros, workspaceMacrosWorkspace]);
 
   useEffect(() => {
     if (workspaceId === undefined) { setPluginContributions([]); return; }
@@ -1411,6 +1479,65 @@ export function App(): JSX.Element {
         run() { setResearchProjectsOpen(true); },
       }),
       commandRegistry.register({
+        id: 'automation.open',
+        title: 'Abrir automação e atalhos',
+        isEnabled: () => workspaceId !== undefined,
+        run() { setAutomationOpen(true); },
+      }),
+      ...workspaceMacros.map((macro) => commandRegistry.register({
+        id: `macro.${macro.id}`,
+        title: `Macro: ${macro.name}`,
+        isEnabled: (context) => {
+          try { planAutomation(commandRegistry, context, macro.commands); return true; } catch { return false; }
+        },
+        automationPreview(context) {
+          const plan = planAutomation(commandRegistry, context, macro.commands);
+          return { summary: `Executar macro “${macro.name}” (${plan.steps.length} comando(s)).`, requiresConfirmation: plan.requiresConfirmation };
+        },
+        async run(context) {
+          const plan = planAutomation(commandRegistry, context, macro.commands);
+          if (plan.requiresConfirmation && !window.confirm(`Prévia da macro “${macro.name}”:\n${plan.steps.map((step) => `• ${step.preview.summary}`).join('\n')}\n\nContinuar?`)) return;
+          await executeAutomation(commandRegistry, context, plan);
+        },
+      })),
+      commandRegistry.register({
+        id: 'batch.addToCollection',
+        title: 'Adicionar documentos selecionados à collection',
+        arguments: collectionArguments,
+        isEnabled: (context, args) => context.selectedFiles !== undefined && context.selectedFiles.length > 0 && typeof (args as { collectionId?: unknown }).collectionId === 'string',
+        automationPreview(context, args) {
+          const collectionId = (args as { collectionId: string }).collectionId;
+          const collection = knowledgeWorkspaceRef.current.collections.find((item) => item.id === collectionId);
+          return { summary: `Adicionar ${context.selectedFiles?.length ?? 0} documento(s) à collection ${collection?.name ?? collectionId}.` };
+        },
+        run(context, args) {
+          const collectionId = (args as { collectionId: string }).collectionId;
+          const selected = context.selectedFiles ?? [];
+          const collection = knowledgeWorkspaceRef.current.collections.find((item) => item.id === collectionId);
+          if (collection === undefined) { setMessage('Collection não encontrada.'); return; }
+          setKnowledgeWorkspace((current) => ({
+            ...current,
+            collections: current.collections.map((item) => item.id !== collectionId ? item : { ...item, fileIds: [...new Set([...item.fileIds, ...selected.map((file) => file.fileId)])] }),
+          }));
+          setMessage(`${selected.length} documento(s) adicionados a ${collection.name}.`);
+        },
+      }),
+      commandRegistry.register({
+        id: 'batch.validateDocuments',
+        title: 'Validar documentos selecionados',
+        isEnabled: (context) => (context.selectedFiles?.length ?? 0) > 0,
+        automationPreview(context) { return { summary: `Atualizar diagnósticos de ${context.selectedFiles?.length ?? 0} documento(s) no Workspace Service.` }; },
+        async run(context) {
+          const selected = context.selectedFiles ?? [];
+          const result = await window.academic.workspace.projectDashboard({ fileIds: selected.map((file) => file.fileId) });
+          if (!result.ok) { setMessage(result.error.message); return; }
+          const errors = result.value.documents.reduce((total, document) => total + document.errors, 0);
+          const warnings = result.value.documents.reduce((total, document) => total + document.warnings, 0);
+          setMessage(`Validação: ${errors} erro(s) e ${warnings} aviso(s) em ${result.value.documents.length} documento(s).`);
+          setReviewMode(true);
+        },
+      }),
+      commandRegistry.register({
         id: 'writing.open',
         title: 'Abrir ferramentas de escrita acadêmica',
         isEnabled: () => activeEditorView !== undefined && writingStatistics !== undefined,
@@ -1495,10 +1622,12 @@ export function App(): JSX.Element {
       commandRegistry.register({
         id: 'document.open',
         title: 'Abrir documento',
-        isEnabled: (context) => context.targetFile !== undefined,
-        async run(context) {
-          if (context.targetFile === undefined) return;
-          await openDocument(context.targetFile.fileId, context.targetFile.path);
+        arguments: documentOpenArguments,
+        isEnabled: (context, args) => context.targetFile !== undefined || args !== undefined,
+        async run(context, args) {
+          const target = (args as { fileId: string; path: string } | undefined) ?? context.targetFile;
+          if (target === undefined) return;
+          await openDocument(target.fileId, target.path);
         },
       }),
       commandRegistry.register({
@@ -1532,6 +1661,7 @@ export function App(): JSX.Element {
         id: 'document.save',
         title: 'Salvar documento',
         isEnabled: (context) => context.activeViewId !== undefined,
+        automationPreview() { return { summary: 'Salvar o rascunho atual no vault.', requiresConfirmation: true }; },
         async run() {
           const active = viewsModel.active();
           if (active === undefined || active.type !== 'editor') return;
@@ -1591,10 +1721,13 @@ export function App(): JSX.Element {
       commandRegistry.register({
         id: 'publication.preview',
         title: 'Visualizar publicação',
-        isEnabled: (context) => context.targetFile !== undefined,
+        isEnabled: (context) => context.targetFile !== undefined || viewsModel.active()?.type === 'editor',
+        automationPreview() { return { summary: 'Atualizar a visualização da publicação atual.' }; },
         async run(context) {
-          if (context.targetFile === undefined) return;
-          await openPreview(context.targetFile.fileId, context.targetFile.path);
+          const active = viewsModel.active();
+          const target = context.targetFile ?? (active?.type === 'editor' ? { fileId: active.fileId, path: active.path } : undefined);
+          if (target === undefined) return;
+          await openPreview(target.fileId, target.path);
         },
       }),
       commandRegistry.register({
@@ -1611,6 +1744,7 @@ export function App(): JSX.Element {
         id: 'document.exportPdf',
         title: 'Exportar como PDF',
         isEnabled: (context) => context.activeViewId !== undefined,
+        automationPreview() { return { summary: 'Gerar PDF e pedir o destino no diálogo nativo.', requiresConfirmation: true }; },
         async run() {
           await exportActiveDocument('pdf');
         },
@@ -1619,6 +1753,7 @@ export function App(): JSX.Element {
         id: 'document.exportDocx',
         title: 'Exportar como DOCX',
         isEnabled: (context) => context.activeViewId !== undefined,
+        automationPreview() { return { summary: 'Gerar DOCX e pedir o destino no diálogo nativo.', requiresConfirmation: true }; },
         async run() {
           await exportActiveDocument('docx');
         },
@@ -1772,30 +1907,17 @@ export function App(): JSX.Element {
     return () => unregister.forEach((off) => off());
     // `files` só participa da disponibilidade do Quick Open; registrar de novo
     // quando o vault muda preserva o mesmo registry usado por menus/atalhos.
-  }, [commandRegistry, files, pluginContributions]);
+  }, [commandRegistry, files, pluginContributions, workspaceMacros]);
 
   useEffect(
     () =>
       registerKeybindings({
         registry: commandRegistry,
-        bindings: new Map([
-          ['mod+s', 'document.save'],
-          ['mod+w', 'document.closeActiveTab'],
-          ['mod+p', 'palette.quickOpen'],
-          ['mod+shift+p', 'palette.commands'],
-          ['mod+shift+f', 'search.openView'],
-          ['mod+shift+r', 'review.open'],
-          ['mod+shift+d', 'document.compare'],
-          ['mod+shift+c', 'citation.openPicker'],
-          ['mod+shift+i', 'figure.insert'],
-          ['mod+shift+n', 'application.newWindow'],
-          ['alt+arrowleft', 'navigation.back'],
-          ['alt+arrowright', 'navigation.forward'],
-        ]),
+        bindings: keybindings,
         context: () => commandContextForPalette(viewsModel.active()),
         target: window,
       }),
-    [commandRegistry, viewsModel],
+    [commandRegistry, keybindings, viewsModel],
   );
 
   const renderEditorDocument = (view: Extract<ViewState, { type: 'editor' }>): JSX.Element => (
@@ -2021,6 +2143,7 @@ export function App(): JSX.Element {
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('knowledge.open', {}); }}>Knowledge Workspace</button>
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('research.open', {}); }}>Fluxo de pesquisa</button>
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('projects.open', {}); }}>Projetos de pesquisa</button>
+          <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('automation.open', {}); }}>Automação e atalhos</button>
           <button type="button" role="menuitem" disabled={activeEditorView === undefined || writingStatistics === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('writing.open', {}); }}>Escrita acadêmica</button>
           <button type="button" role="menuitem" disabled={workspaceId === undefined} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40" onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('library.maintenance', {}); }}>Qualidade da biblioteca</button>
           <div className="my-1 border-t border-slate-100" />
@@ -2099,6 +2222,19 @@ export function App(): JSX.Element {
       {historyOpen && activeEditorView !== undefined && <HistoryDialog fileId={activeEditorView.fileId} path={activeEditorView.path} onClose={() => setHistoryOpen(false)} />}
       {documentComparisonOpen && <DocumentComparisonDialog files={files} {...(activeEditorView === undefined ? {} : { initialFileId: activeEditorView.fileId })} onClose={() => setDocumentComparisonOpen(false)} />}
       {pluginManagerOpen && <PluginManagerDialog onClose={() => setPluginManagerOpen(false)} onChanged={setPluginContributions} />}
+      {automationOpen && workspaceId !== undefined && <AutomationDialog
+        registry={commandRegistry}
+        context={paletteContext}
+        files={markdownFiles(files)}
+        collections={knowledgeWorkspace.collections}
+        macros={workspaceMacros}
+        onMacrosChange={setWorkspaceMacros}
+        defaultKeybindings={defaultKeybindings}
+        customKeybindings={customKeybindings}
+        onCustomKeybindingsChange={setCustomKeybindings}
+        onClose={() => setAutomationOpen(false)}
+        onMessage={setMessage}
+      />}
       {knowledgeWorkspaceOpen && <KnowledgeWorkspaceDialog
         state={knowledgeWorkspace}
         query={searchQuery}

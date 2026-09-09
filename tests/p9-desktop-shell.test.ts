@@ -4,7 +4,8 @@ import type { EditorController, EditorEvent, EditorEventListener, EditorSnapshot
 import type { WorkspaceFileId } from '@abnt/workspace-core';
 
 import { createCommandRegistry } from '../apps/desktop/src/renderer/shell/commands.js';
-import { chordFromEvent, registerKeybindings } from '../apps/desktop/src/renderer/shell/keybindings.js';
+import { executeAutomation, parseWorkspaceMacros, planAutomation } from '../apps/desktop/src/renderer/shell/automation.js';
+import { chordFromEvent, keybindingConflict, mergeKeybindings, normalizeChord, registerKeybindings } from '../apps/desktop/src/renderer/shell/keybindings.js';
 import { fuzzyScore, rankCommands, rankQuickOpenFiles } from '../apps/desktop/src/renderer/shell/palette.js';
 import { createPanelRegistry } from '../apps/desktop/src/renderer/shell/panels.js';
 import { asViewId, createViewsModel } from '../apps/desktop/src/renderer/shell/views.js';
@@ -83,6 +84,43 @@ describe('P9 — CommandRegistry', () => {
     registry.register({ id: 'x', title: 'X', run: () => {} });
     expect(() => registry.register({ id: 'x', title: 'X de novo', run: () => {} })).toThrow();
     await expect(registry.execute('inexistente', {})).rejects.toThrow();
+  });
+
+  it('valida argumentos antes de executar e não aceita objeto arbitrário sem schema', async () => {
+    const registry = createCommandRegistry();
+    const run = vi.fn();
+    registry.register({
+      id: 'document.open', title: 'Abrir',
+      arguments: { safeParse: (value) => typeof value === 'object' && value !== null && typeof (value as { fileId?: unknown }).fileId === 'string' ? { success: true as const, data: value } : { success: false as const, message: 'fileId obrigatório' } },
+      run,
+    });
+    registry.register({ id: 'without-args', title: 'Sem argumentos', run: () => {} });
+
+    await expect(registry.execute('document.open', {}, { nope: true })).rejects.toThrow('fileId obrigatório');
+    await expect(registry.execute('without-args', {}, { nope: true })).rejects.toThrow('não aceita argumentos');
+    await registry.execute('document.open', {}, { fileId: 'metodo' });
+    expect(run).toHaveBeenCalledWith({}, { fileId: 'metodo' });
+  });
+});
+
+describe('F110–F116 — automação declarativa', () => {
+  it('planeja e executa uma chain sequencial apenas por commands registrados', async () => {
+    const registry = createCommandRegistry();
+    const order: string[] = [];
+    registry.register({ id: 'document.save', title: 'Salvar', automationPreview: () => ({ summary: 'Salvar', requiresConfirmation: true }), run: () => { order.push('save'); } });
+    registry.register({ id: 'publication.preview', title: 'Preview', automationPreview: () => ({ summary: 'Preview' }), run: () => { order.push('preview'); } });
+    const plan = planAutomation(registry, {}, [{ commandId: 'document.save' }, { commandId: 'publication.preview' }]);
+
+    expect(plan.requiresConfirmation).toBe(true);
+    expect(plan.steps.map((step) => step.preview.summary)).toEqual(['Salvar', 'Preview']);
+    await executeAutomation(registry, {}, plan);
+    expect(order).toEqual(['save', 'preview']);
+    expect(() => planAutomation(registry, {}, [{ commandId: 'not-registered' }])).toThrow('não pode ser automatizado');
+  });
+
+  it('recusa macros malformadas e nunca transforma texto em código executável', () => {
+    expect(parseWorkspaceMacros([{ id: 'prepare', name: 'Preparar', commands: [{ commandId: 'document.save' }] }])).toEqual([{ id: 'prepare', name: 'Preparar', commands: [{ commandId: 'document.save' }] }]);
+    expect(parseWorkspaceMacros([{ id: 'bad', name: 'Ruim', commands: [{ commandId: 'x', args: () => {} }] }])).toEqual([]);
   });
 });
 
@@ -243,6 +281,15 @@ describe('P9 — Keybindings', () => {
   it('ignora teclas modificadoras sozinhas e é indiferente a maiúsculas', () => {
     expect(chordFromEvent({ key: 'Control', ctrlKey: true, metaKey: false, shiftKey: false, altKey: false }, false)).toBeUndefined();
     expect(chordFromEvent({ key: 'S', ctrlKey: true, metaKey: false, shiftKey: false, altKey: false }, false)).toBe('mod+s');
+  });
+
+  it('normaliza preferências e exige que o chamador resolva conflito antes de sobrescrever', () => {
+    const defaults = new Map([['mod+s', 'document.save']]);
+    const merged = mergeKeybindings(defaults, { ' MOD + ALT + P ': 'macro.prepare' });
+    expect(normalizeChord(' MOD + ALT + P ')).toBe('mod+alt+p');
+    expect(merged.get('mod+alt+p')).toBe('macro.prepare');
+    expect(keybindingConflict(merged, 'mod+s', 'macro.prepare')).toBe('document.save');
+    expect(keybindingConflict(merged, 'mod+alt+p', 'macro.prepare')).toBeUndefined();
   });
 
   it('despacha para o CommandRegistry só quando o chord está mapeado', async () => {

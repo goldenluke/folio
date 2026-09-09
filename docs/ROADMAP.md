@@ -1172,6 +1172,32 @@ Ver ADR 0060.
 
 Ver ADR 0061.
 
+### Onda V — Automation & Commands ✅
+
+- [x] **F110 — Command arguments**: commands podem declarar argumentos
+      runtime-validated; sem schema, nenhum objeto arbitrário é aceito. A
+      validação acontece antes da execução, inclusive quando o invocador é uma
+      macro local.
+- [x] **F111 — Custom keybindings**: preferência local por vault associa
+      chord normalizado a `CommandId`; colisões são apresentadas ao usuário e
+      só substituem o binding após confirmação explícita.
+- [x] **F112 — Command chains**: o planner constrói chains sequenciais a
+      partir de commands registrados e só chama o próprio `CommandRegistry`.
+- [x] **F113 — Macros**: macros locais guardam nome, `CommandId` e argumentos
+      JSON. Não aceitam JavaScript, shell, PowerShell, `eval` nem callbacks.
+- [x] **F114 — Workspace actions**: contexto de command carrega uma seleção
+      explícita de `WorkspaceFileId`s para ações sobre documentos, sem inferir
+      paths ou tocar filesystem no renderer.
+- [x] **F115 — Batch operations**: a superfície permite validar uma seleção
+      pelo Workspace Service e adicionar documentos a uma collection com alvo
+      explícito e argumentado.
+- [x] **F116 — Automation preview**: antes de uma macro/ação executar, o
+      usuário vê seus efeitos; salvar e exportar requerem confirmação. As
+      operações continuam passando pelos controllers, transações e serviços
+      já responsáveis por elas.
+
+Ver ADR 0062.
+
 Release operations (packaging, installers, signing, update e observabilidade).
 Nada disso deve alterar o núcleo semântico; é essa propriedade que o M4 existe
 para verificar.

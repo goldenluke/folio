@@ -8,7 +8,7 @@ incluindo Problems cross-file e diff estrutural no desktop); Ondas P concluída
 (F71–F75) e Q concluída em F76/F77/F79–F82 (F78 opcional adiado); Onda R concluída
 (F83–F89); Onda S concluída (F90–F95); Onda T concluída até F101
 (F96–F101; F102 aguarda escolha explícita de uma nova família acadêmica); Onda U
-concluída (F103–F109)** — artigo ABNT, segundo profile `web-article`,
+concluída (F103–F109); Onda V concluída (F110–F116)** — artigo ABNT, segundo profile `web-article`,
 TCC com elementos pré/pós-textuais, regressão visual PDF/PNG, compiler
 headless, vault local-first, índice SQLite/FTS5 descartável, shell desktop
 Electron multiprocesso, shell de produto (command registry, tabs, painéis),

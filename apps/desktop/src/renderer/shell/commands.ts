@@ -31,20 +31,44 @@ export interface CommandContext {
   };
   /** Consulta explícita para salvar/copiar; não depende do estado de um componente. */
   readonly targetSearchQuery?: string;
+  /** F114: alvo explícito de uma ação em lote; nunca é inferido pelo componente. */
+  readonly selectedFiles?: readonly { readonly fileId: string; readonly path: string }[];
+}
+
+/**
+ * A fronteira de argumentos de command é deliberadamente pequena. Commands do
+ * renderer não aceitam objetos arbitrários de macros/plugins: cada command que
+ * recebe argumentos opt-in valida sua forma antes de executar.
+ */
+export interface CommandArgumentSchema {
+  safeParse(value: unknown):
+    | { readonly success: true; readonly data: unknown }
+    | { readonly success: false; readonly message?: string };
+}
+
+export interface CommandAutomationPreview {
+  readonly summary: string;
+  /** Escrita/exportação pede confirmação antes de uma macro prosseguir. */
+  readonly requiresConfirmation?: boolean;
 }
 
 export interface Command {
   readonly id: string;
   readonly title: string;
+  /** Ausente significa que o command não aceita argumentos. */
+  readonly arguments?: CommandArgumentSchema;
+  /** Só commands declarados aqui podem participar de chains/macros locais. */
+  readonly automationPreview?: (context: CommandContext, args: unknown) => CommandAutomationPreview;
   /** Se ausente, o comando está sempre disponível para o contexto atual. */
-  isEnabled?(context: CommandContext): boolean;
-  run(context: CommandContext): void | Promise<void>;
+  isEnabled?(context: CommandContext, args: unknown): boolean;
+  run(context: CommandContext, args: unknown): void | Promise<void>;
 }
 
 export interface CommandRegistry {
   register(command: Command): () => void;
-  execute(id: string, context: CommandContext): Promise<void>;
-  isEnabled(id: string, context: CommandContext): boolean;
+  execute(id: string, context: CommandContext, args?: unknown): Promise<void>;
+  isEnabled(id: string, context: CommandContext, args?: unknown): boolean;
+  automationPreview(id: string, context: CommandContext, args?: unknown): CommandAutomationPreview | undefined;
   list(): readonly Command[];
 }
 
@@ -59,19 +83,35 @@ export function createCommandRegistry(): CommandRegistry {
       commands.set(command.id, command);
       return () => commands.delete(command.id);
     },
-    async execute(id, context) {
+    async execute(id, context, args) {
       const command = commands.get(id);
       if (command === undefined) throw new Error(`Comando desconhecido: ${id}`);
-      if (command.isEnabled?.(context) === false) return;
-      await command.run(context);
+      const parsed = parseArguments(command, args);
+      if (command.isEnabled?.(context, parsed) === false) return;
+      await command.run(context, parsed);
     },
-    isEnabled(id, context) {
+    isEnabled(id, context, args) {
       const command = commands.get(id);
       if (command === undefined) return false;
-      return command.isEnabled?.(context) ?? true;
+      try { return command.isEnabled?.(context, parseArguments(command, args)) ?? true; } catch { return false; }
+    },
+    automationPreview(id, context, args) {
+      const command = commands.get(id);
+      if (command?.automationPreview === undefined) return undefined;
+      return command.automationPreview(context, parseArguments(command, args));
     },
     list() {
       return [...commands.values()];
     },
   };
+}
+
+function parseArguments(command: Command, args: unknown): unknown {
+  if (command.arguments === undefined) {
+    if (args === undefined) return undefined;
+    throw new Error(`O comando ${command.id} não aceita argumentos.`);
+  }
+  const result = command.arguments.safeParse(args);
+  if (!result.success) throw new Error(result.message ?? `Argumentos inválidos para ${command.id}.`);
+  return result.data;
 }
