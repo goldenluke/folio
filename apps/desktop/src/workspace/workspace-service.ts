@@ -128,6 +128,7 @@ import { suggestReferenceKey } from './reference-key.js';
 import { structuralDiff } from '@abnt/structural-diff';
 
 import { WorkspaceHistory, lineDiff } from './history.js';
+import { WorkspacePluginCatalog } from './plugins.js';
 
 type DesktopEventListener = (event: DesktopEventDto) => void;
 
@@ -246,6 +247,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
   #editors: EditorWorkspaceService | undefined;
   #language: WorkspaceLanguageService | undefined;
   #history: WorkspaceHistory | undefined;
+  #plugins: WorkspacePluginCatalog | undefined;
   #rootPath: string | undefined;
   #openResponse: WorkspaceOpenResponse | undefined;
   #unsubscribeWorkspace: (() => void) | undefined;
@@ -300,6 +302,8 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       this.#editors = editors;
       this.#language = language;
       this.#history = new WorkspaceHistory(request.rootPath);
+      this.#plugins = new WorkspacePluginCatalog(request.rootPath);
+      await this.#plugins.discover();
       this.#rootPath = request.rootPath;
       this.#unsubscribeWorkspace = storage.subscribe((event) => {
         const dto = this.#workspaceEventDto(event);
@@ -1490,6 +1494,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
     this.#editors = undefined;
     this.#language = undefined;
     this.#history = undefined;
+    this.#plugins = undefined;
     await this.#sessions?.dispose();
     this.#sessions = undefined;
     await this.#index?.close();

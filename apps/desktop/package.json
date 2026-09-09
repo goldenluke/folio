@@ -24,6 +24,8 @@
     "@abnt/editor-codemirror": "workspace:*",
     "@abnt/editor-core": "workspace:*",
     "@abnt/language-service": "workspace:*",
+    "@abnt/plugin-api": "workspace:*",
+    "@abnt/plugin-host": "workspace:*",
     "@abnt/protocol": "workspace:*",
     "@abnt/renderer-docx": "workspace:*",
     "@abnt/renderer-html": "workspace:*",
@@ -43,7 +45,6 @@
     "yaml": "^2.9.0"
   },
   "devDependencies": {
-    "@abnt/plugin-api": "workspace:*",
     "@electron/rebuild": "^4.0.3",
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^19.2.2",
