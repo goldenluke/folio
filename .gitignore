@@ -21,6 +21,17 @@ tmp/
 # Configuração local do Claude Code (permissões por usuário, não compartilhada)
 .claude/settings.local.json
 
+# Artefatos locais de assistentes de IA — nunca são fonte do produto.
+.claude/
+.cursor/
+.codex/
+.aider*
+.continue/
+*.prompt.md
+*.chat.md
+
 # Dump de código gerado localmente para colar em chat (tudo.py); não é fonte
 codigo_completo.txt
+codigo_completo*.txt
 output/
+tudo.py
