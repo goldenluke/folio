@@ -16,6 +16,14 @@ o trabalho sem depender de uma plataforma online.
 - Exportação para PDF, DOCX e HTML.
 - Workspace local com busca, histórico e sincronização por pasta espelho.
 
+## Telas
+
+![Visão geral do workspace](landing/Screenshot_20260910_150703.png)
+
+![Biblioteca de referências](landing/Screenshot_20260910_150752.png)
+
+![Editor acadêmico](landing/Screenshot_20260910_151014.png)
+
 ## Rodar localmente
 
 Requer Node 20.19 e pnpm.
