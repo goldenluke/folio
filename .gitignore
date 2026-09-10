@@ -29,6 +29,10 @@ tmp/
 .continue/
 *.prompt.md
 *.chat.md
+AGENTS.md
+CLAUDE.md
+**/AGENTS.md
+**/CLAUDE.md
 
 # Dump de código gerado localmente para colar em chat (tudo.py); não é fonte
 codigo_completo.txt
