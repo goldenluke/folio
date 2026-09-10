@@ -454,6 +454,10 @@ export class SqliteWorkspaceIndex implements WorkspaceIndex {
     const database = this.#database();
     database.transaction(() => {
       this.#deleteFile(String(file.id));
+      // Um path só pertence a um file_id por vez. Se o storage reatribuiu o id
+      // deste path (registro reconstruído após perda de estado), a linha antiga
+      // sob o id anterior fica órfã aqui e colidiria com o UNIQUE de path.
+      this.#deletePath(String(file.path));
       database
         .prepare(
           `INSERT INTO indexed_files
@@ -593,6 +597,12 @@ export class SqliteWorkspaceIndex implements WorkspaceIndex {
     const id = String(fileId);
     database.prepare('DELETE FROM document_fts WHERE file_id = ?').run(id);
     database.prepare('DELETE FROM indexed_files WHERE file_id = ?').run(id);
+  }
+
+  #deletePath(path: string): void {
+    const database = this.#database();
+    database.prepare('DELETE FROM document_fts WHERE path = ?').run(path);
+    database.prepare('DELETE FROM indexed_files WHERE path = ?').run(path);
   }
 
   #headingFromRow(row: Record<string, unknown>): IndexedHeading {

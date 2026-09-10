@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "views": [
+    {
+      "version": 1,
+      "id": "7fc99b07-2127-4ab0-aade-29a69f347ddb",
+      "name": "Referências em leitura",
+      "source": "references",
+      "layout": "calendar",
+      "columns": [
+        {
+          "field": "title",
+          "label": "Título"
+        },
+        {
+          "field": "authors",
+          "label": "Autores"
+        },
+        {
+          "field": "year",
+          "label": "Ano"
+        },
+        {
+          "field": "readingState",
+          "label": "Leitura"
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "9f716938-4fcf-4bc0-9be8-9f538722c231",
+      "name": "Referências em leitura",
+      "source": "references",
+      "layout": "table",
+      "columns": [
+        {
+          "field": "title",
+          "label": "Título"
+        },
+        {
+          "field": "authors",
+          "label": "Autores"
+        },
+        {
+          "field": "year",
+          "label": "Ano"
+        },
+        {
+          "field": "readingState",
+          "label": "Leitura"
+        }
+      ]
+    }
+  ]
+}

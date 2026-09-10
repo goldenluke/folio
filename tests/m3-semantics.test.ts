@@ -10,7 +10,7 @@ import {
   resolverDocumento,
   TEXTO_DA_REFERENCIA_CRUZADA,
 } from '@abnt/semantics';
-import { perfilArtigoAbnt, validarArtigoAbnt } from '@abnt/standards';
+import { perfilArtigoAbnt, perfilArtigoApa, validarArtigoAbnt, validarArtigoApa } from '@abnt/standards';
 
 const reference = (id: string): DocumentAst['references'][string] => ({
   id: asReferenceId(id),
@@ -161,5 +161,22 @@ describe('M3 — catálogo ABNT', () => {
         'abnt:nbr-6028@2021',
       ]),
     );
+  });
+});
+
+describe('F102 — APA 7', () => {
+  it('publica citações autor-data e referências APA sem contaminar a AST', () => {
+    const parsed = parseMarkdown('Pesquisa anterior [@fonte].', { documentId: 'apa.md' });
+    const ast: DocumentAst = { ...parsed, references: { fonte: reference('fonte') } };
+    const publication = compilarPublicacao(resolverDocumento(ast), perfilArtigoApa);
+    const output = JSON.stringify(publication.documento);
+    expect(output).toContain('(Silva, 2024)');
+    expect(output).toContain('References');
+    expect(output).toContain('Silva, A.');
+  });
+  it('valida os metadados essenciais sem reaplicar regras ABNT', () => {
+    const parsed = parseMarkdown('Texto sem frontmatter.', { documentId: 'apa-incompleto.md' });
+    const report = validarArtigoApa(resolverDocumento(parsed));
+    expect(report.diagnostics.map((diagnostic) => diagnostic.id)).toEqual(expect.arrayContaining(['APA7-META-001', 'APA7-META-002']));
   });
 });

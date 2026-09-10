@@ -29,7 +29,7 @@ const withVault = async (run: (root: string) => Promise<void>): Promise<void> =>
   try {
     await mkdir(join(root, 'referencias'), { recursive: true });
     await writeFile(join(root, 'artigo.md'), ARTICLE, 'utf8');
-    await writeFile(join(root, 'notas.md'), '# Notas\n\nConhecimento relacionado em @tanenbaum2017.\n', 'utf8');
+    await writeFile(join(root, 'notas.md'), '# Notas\n\nConhecimento relacionado em @tanenbaum2017.\n^conhecimento\n', 'utf8');
     await writeFile(join(root, 'referencias', 'referencias.bib'), '@book{tanenbaum2017, title={Distributed Systems}}\n', 'utf8');
     await run(root);
   } finally {
@@ -159,6 +159,14 @@ describe('P5 — language service headless', () => {
           language.completions({ fileId: article.id, offset: linkDraft.length }),
         ).resolves.toMatchObject({
           items: [expect.objectContaining({ kind: 'document', label: 'notas.md', insertText: 'notas.md' })],
+        });
+
+        const blockDraft = `${ARTICLE}\n[[notas.md#^con`;
+        sessions.replaceContent(article.id, blockDraft);
+        await expect(
+          language.completions({ fileId: article.id, offset: blockDraft.length }),
+        ).resolves.toMatchObject({
+          items: [expect.objectContaining({ kind: 'block', label: '^conhecimento', insertText: 'conhecimento', detail: 'notas.md' })],
         });
 
         const updated = `${ARTICLE}\n# Resultados\n\nTexto.`;

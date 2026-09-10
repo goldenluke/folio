@@ -16,6 +16,9 @@
 export { perfilArtigoAbnt, perfilArtigoAbntNumerico } from './abnt/artigo.js';
 export { perfilTccAbnt } from './abnt/tcc.js';
 export { perfilArtigoWeb } from './web/article.js';
+export { perfilArtigoApa } from './apa/article.js';
+export { motorAutorDataApa } from './apa/citacoes.js';
+export { REGRAS_DO_ARTIGO_APA, validarArtigoApa } from './apa/validation.js';
 export { motorAutorDataAbnt, motorNumericoAbnt, textoDaCitacao } from './abnt/citacoes.js';
 export {
   LIMITES_PADRAO_DO_RESUMO_DE_ARTIGO,

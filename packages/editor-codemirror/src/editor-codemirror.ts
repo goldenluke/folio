@@ -1,9 +1,12 @@
 import { autocompletion, type CompletionSource } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { lintGutter, setDiagnostics, type Diagnostic } from '@codemirror/lint';
+import { openSearchPanel as openCodeMirrorSearchPanel, search, searchKeymap } from '@codemirror/search';
 import { EditorSelection, EditorState, Transaction, type Extension } from '@codemirror/state';
 import { drawSelection, EditorView, hoverTooltip, keymap, type ViewUpdate } from '@codemirror/view';
+import { tags } from '@lezer/highlight';
 
 import type {
   EditorController,
@@ -66,6 +69,20 @@ export const toCodeMirrorDiagnostics: ToCodeMirrorDiagnostics = (diagnostics, do
 
 const asLintDiagnostics = (diagnostics: readonly CodeMirrorDiagnostic[]): readonly Diagnostic[] => diagnostics;
 
+/** Realce Markdown do Folio: sem tema escuro e sem mudar a tipografia do shell. */
+const folioMarkdownHighlighting = syntaxHighlighting(HighlightStyle.define([
+  { tag: tags.heading, color: '#3730a3', fontWeight: '700' },
+  { tag: tags.emphasis, color: '#7c3aed', fontStyle: 'italic' },
+  { tag: tags.strong, color: '#312e81', fontWeight: '700' },
+  { tag: [tags.link, tags.url], color: '#0369a1', textDecoration: 'underline' },
+  { tag: tags.quote, color: '#64748b', fontStyle: 'italic' },
+  { tag: tags.list, color: '#4f46e5', fontWeight: '600' },
+  { tag: [tags.monospace, tags.meta], color: '#9a3412', fontFamily: '"SFMono-Regular", Consolas, monospace' },
+  { tag: [tags.keyword, tags.operator, tags.punctuation], color: '#475569' },
+  { tag: tags.string, color: '#047857' },
+  { tag: tags.comment, color: '#94a3b8', fontStyle: 'italic' },
+]));
+
 const completionSource = (language: LanguageService, fileId: EditorController['fileId']): CompletionSource =>
   async (context) => {
     const result = await language.completions({ fileId, offset: context.pos });
@@ -78,6 +95,44 @@ const completionSource = (language: LanguageService, fileId: EditorController['f
         ...(item.detail !== undefined ? { detail: item.detail } : {}),
         type: item.kind === 'citation' ? 'reference' : item.kind === 'math' ? 'keyword' : 'link',
         apply: item.insertText,
+      })),
+    };
+  };
+
+/**
+ * F326–F330: `/` só dispara como primeiro caractere não-espaço da linha —
+ * mesmo raciocínio que evita casar caminhos como `chapters/metodo.md` no
+ * meio da linha. Função pura (strings/números, sem tipo do CodeMirror) para
+ * poder ser testada diretamente.
+ */
+export function matchSlashTrigger(lineTextBeforeCursor: string): { readonly triggerOffset: number; readonly query: string } | undefined {
+  const match = /^(\s*)\/(\S*)$/u.exec(lineTextBeforeCursor);
+  return match === null ? undefined : { triggerOffset: match[1]!.length, query: match[2]! };
+}
+
+const slashCompletionSource = (slashCommands: NonNullable<CodeMirrorEditorAdapterOptions['slashCommands']>): CompletionSource =>
+  (context) => {
+    const line = context.state.doc.lineAt(context.pos);
+    const trigger = matchSlashTrigger(line.text.slice(0, context.pos - line.from));
+    if (trigger === undefined) return null;
+    const items = slashCommands.list(trigger.query);
+    if (items.length === 0) return null;
+    const from = line.from + trigger.triggerOffset;
+    return {
+      from,
+      to: context.pos,
+      filter: false,
+      options: items.map((item) => ({
+        label: item.label,
+        type: 'keyword',
+        apply: (view: EditorView, _completion, applyFrom: number, applyTo: number) => {
+          // A remoção do texto digitado precisa acontecer ANTES de executar o
+          // comando: o dispatch do controller é otimista/síncrono, então
+          // run() de figure.insert/table.insert etc. já lê a seleção
+          // pós-remoção ao ler `active.snapshot.selection`.
+          view.dispatch({ changes: { from: applyFrom, to: applyTo, insert: '' }, selection: { anchor: applyFrom, head: applyFrom } });
+          slashCommands.execute(item.id);
+        },
       })),
     };
   };
@@ -150,23 +205,37 @@ export class CodeMirrorEditorAdapterService implements CodeMirrorEditorAdapter {
     const snapshot = this.controller.snapshot();
     const extensions: Extension[] = [
       history(),
-      keymap.of([...historyKeymap, ...defaultKeymap]),
+      // top: true renderiza o painel de busca/substituição dentro do próprio
+      // editor, não como popup separado — mesmo find/replace oficial do
+      // CodeMirror (regex, case-sensitive, replace/replace all).
+      search({ top: true }),
+      keymap.of([...searchKeymap, ...historyKeymap, ...defaultKeymap]),
       drawSelection(),
       // Em uma view estreita (split editor/preview), Markdown continua legível
       // sem criar uma linha horizontal interminável. Offsets seguem UTF-16,
       // portanto o wrapping é puramente visual e não toca o documento.
       EditorView.lineWrapping,
       markdown(),
+      folioMarkdownHighlighting,
       lintGutter(),
-      autocompletion({ override: [completionSource(options.language, this.controller.fileId)] }),
+      autocompletion({ override: [completionSource(options.language, this.controller.fileId), ...(options.slashCommands === undefined ? [] : [slashCompletionSource(options.slashCommands)])] }),
       hoverExtension(options.language, this.controller.fileId),
       languageNavigation(options.language, this.controller.fileId, options.onDefinition, options.onReferences, this.#onError),
       EditorView.domEventHandlers({
-        mousedown: (event, view) => {
-          if (options.onCitationClick === undefined) return false;
+        contextmenu: (event, view) => {
+          if (options.onContextMenu === undefined) return false;
           const position = view.posAtCoords({ x: event.clientX, y: event.clientY });
-          if (position !== null) options.onCitationClick(position);
-          return false;
+          if (position === null) return false;
+          const selection = view.state.selection.main;
+          const start = Math.min(selection.anchor, selection.head);
+          const end = Math.max(selection.anchor, selection.head);
+          options.onContextMenu({
+            offset: position,
+            x: event.clientX,
+            y: event.clientY,
+            selection: position >= start && position <= end ? { anchor: selection.anchor, head: selection.head } : { anchor: position, head: position },
+          });
+          return true;
         },
       }),
       EditorView.updateListener.of((update) => this.#handleViewUpdate(update)),
@@ -198,6 +267,12 @@ export class CodeMirrorEditorAdapterService implements CodeMirrorEditorAdapter {
   focus(): void {
     this.#requireActive();
     this.view.focus();
+  }
+
+  openSearchPanel(): void {
+    this.#requireActive();
+    this.view.focus();
+    openCodeMirrorSearchPanel(this.view);
   }
 
   destroy(): void {

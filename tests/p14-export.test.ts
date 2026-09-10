@@ -128,6 +128,37 @@ describe('P14 — exportação PDF/DOCX sobre a Publication AST da sessão', () 
     });
   });
 
+  it('Export Service gera HTML a partir da mesma Publication AST', async () => {
+    await withVault(async (root) => {
+      const host = DesktopWorkspaceServiceHost.create({
+        compiler: createInProcessCompilerClient(criarServicoDeCompiler()),
+      });
+      const workspaceChannel = new MessageChannel();
+      const stopWorkspace = serveWorkspaceOverMessagePort(workspaceChannel.port1, host);
+      const workspaceClient = createWorkspaceMessagePortClient(workspaceChannel.port2);
+      const exportChannel = new MessageChannel();
+      const stopExport = serveExportOverMessagePort(exportChannel.port1, createExportService());
+      const exportClient = createExportMessagePortClient(exportChannel.port2);
+      try {
+        const opened = await workspaceClient.open({ rootPath: root });
+        if (!opened.ok) throw new Error('Vault deveria abrir.');
+        const article = opened.value.files[0];
+        if (article === undefined) throw new Error('Arquivo inicial ausente.');
+        await workspaceClient.openEditor({ fileId: article.fileId });
+        const exported = await waitForExport(workspaceClient, article.fileId);
+        if (!exported.ok || exported.value === undefined) throw new Error('Export deveria existir.');
+        const html = await exportClient.export({ publication: exported.value.publication, format: 'html' });
+        expect(html.ok).toBe(true);
+        if (!html.ok) return;
+        expect(Buffer.from(html.value.bytes).toString('utf8')).toContain('<!doctype html>');
+      } finally {
+        workspaceClient.dispose(); stopWorkspace(); workspaceChannel.port1.close(); workspaceChannel.port2.close();
+        exportClient.dispose(); stopExport(); exportChannel.port1.close(); exportChannel.port2.close();
+        await host.dispose();
+      }
+    });
+  });
+
   it('Export Service gera PDF real via Paged.js/Chromium a partir da mesma Publication AST', async () => {
     await withVault(async (root) => {
       const host = DesktopWorkspaceServiceHost.create({

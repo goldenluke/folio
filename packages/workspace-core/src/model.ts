@@ -104,6 +104,13 @@ export interface CreateWorkspaceBinaryFileRequest {
   readonly bytes: Uint8Array;
 }
 
+/** Overwrite atômico de recurso binário revisionado. */
+export interface WriteWorkspaceBinaryFileRequest {
+  readonly fileId: WorkspaceFileId;
+  readonly bytes: Uint8Array;
+  readonly expectedRevision: number;
+}
+
 export interface RenameWorkspaceFileRequest {
   readonly fileId: WorkspaceFileId;
   readonly path: WorkspacePath;

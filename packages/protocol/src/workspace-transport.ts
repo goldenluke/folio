@@ -32,6 +32,8 @@ import {
   type WorkspaceHistoryDiffRequest,
   type WorkspaceDocumentComparisonRequest,
   type WorkspaceCreateLiteratureNoteRequest,
+  type WorkspaceJournalOpenRequest,
+  type WorkspaceJournalCaptureRequest,
   type WorkspaceCitationExplorerRequest,
   type WorkspaceResearchOverviewRequest,
   type WorkspaceProjectDashboardRequest,
@@ -40,6 +42,7 @@ import {
   type WorkspaceLibraryRemoveRequest,
   type WorkspaceLibraryFormatRequest,
   type WorkspaceLibraryResolveDoiRequest,
+  type WorkspaceWebCaptureExtractRequest,
   type WorkspaceLibraryImportRequest,
   type WorkspaceLibraryIntakePreviewRequest,
   type WorkspaceLibraryDuplicatesRequest,
@@ -47,16 +50,43 @@ import {
   type WorkspaceLibraryKeyPreviewRequest,
   type WorkspaceLibraryRenameKeyRequest,
   type WorkspaceReferenceHealthRequest,
+  type WorkspaceLibraryMaintenanceRequest,
+  type WorkspaceReferenceRelationsRequest,
+  type WorkspaceAddReferenceRelationRequest,
+  type WorkspaceRemoveReferenceRelationRequest,
+  type WorkspaceAddLiteratureSubscriptionRequest,
+  type WorkspaceRemoveLiteratureSubscriptionRequest,
+  type WorkspacePollLiteratureSubscriptionRequest,
+  type WorkspaceDismissFeedInboxItemRequest,
+  type WorkspaceImportFeedInboxItemRequest,
   type WorkspaceReferenceAttachmentsRequest,
   type WorkspaceAttachReferencePdfRequest,
   type WorkspaceReferenceAttachmentRequest,
   type WorkspaceCreatePdfAnnotationRequest,
   type WorkspacePdfAnnotationRequest,
+  type WorkspaceAnnotationsRequest,
+  type WorkspaceSetAnnotationColorSemanticsRequest,
+  type WorkspaceSynthesizeAnnotationsRequest,
+  type WorkspaceAttachmentsRequest,
+  type WorkspaceAddAttachmentRequest,
+  type WorkspaceAddAttachmentVersionRequest,
+  type WorkspaceAttachmentRequest,
+  type WorkspaceRenameAttachmentFileRequest,
+  type WorkspaceAttachmentHealthRequest,
   type WorkspaceImportAssetRequest,
+  type WorkspaceAssetPreviewRequest,
   type WorkspaceCreateDocumentRequest,
   type WorkspaceRenameRequest,
   type WorkspaceListRequest,
   type WorkspaceOpenRequest,
+  type WorkspaceConfigureSyncRequest,
+  type WorkspaceResolveSyncConflictRequest,
+  type WorkspaceSetCollaborationRequest,
+  type WorkspaceSetAcademicViewsRequest,
+  type WorkspaceSetBookmarksRequest,
+  type WorkspaceSetCaptureInboxRequest,
+  type WorkspaceSetResearchCanvasesRequest,
+  type WorkspacePeekRequest,
   type WorkspaceReadRequest,
   type WorkspaceReferencesRequest,
   type WorkspaceSearchRequest,
@@ -91,8 +121,40 @@ import {
   workspaceListResponseSchema,
   workspaceOpenRequestSchema,
   workspaceOpenResponseSchema,
+  workspaceConfigureSyncRequestSchema,
+  workspaceSyncStatusResponseSchema,
+  workspaceResolveSyncConflictRequestSchema,
+  workspaceCollaborationResponseSchema,
+  workspaceSetCollaborationRequestSchema,
+  workspaceAcademicViewsResponseSchema,
+  workspaceAcademicRelationsResponseSchema,
+  workspaceReferenceRelationsRequestSchema,
+  workspaceReferenceRelationsResponseSchema,
+  literatureSubscriptionDtoSchema,
+  workspaceLiteratureSubscriptionsResponseSchema,
+  workspaceAddLiteratureSubscriptionRequestSchema,
+  workspaceRemoveLiteratureSubscriptionRequestSchema,
+  workspaceLiteratureFeedInboxResponseSchema,
+  workspacePollLiteratureSubscriptionRequestSchema,
+  workspacePollLiteratureSubscriptionResponseSchema,
+  workspaceDismissFeedInboxItemRequestSchema,
+  workspaceImportFeedInboxItemRequestSchema,
+  workspaceAddReferenceRelationRequestSchema,
+  referenceRelationDtoSchema,
+  workspaceRemoveReferenceRelationRequestSchema,
+  workspaceBookmarksResponseSchema,
+  workspaceSetBookmarksRequestSchema,
+  workspaceCaptureInboxResponseSchema,
+  workspaceSetCaptureInboxRequestSchema,
+  workspaceResearchCanvasesResponseSchema,
+  workspaceSetResearchCanvasesRequestSchema,
+  workspacePeekRequestSchema,
+  workspacePeekResponseSchema,
+  workspaceSetAcademicViewsRequestSchema,
   workspaceReadRequestSchema,
   workspaceReadResponseSchema,
+  workspaceAssetPreviewRequestSchema,
+  workspaceAssetPreviewResponseSchema,
   workspaceReferencesRequestSchema,
   workspaceReferencesResponseSchema,
   workspaceGraphRequestSchema,
@@ -108,6 +170,8 @@ import {
   workspaceDocumentComparisonResponseSchema,
   workspaceCreateLiteratureNoteRequestSchema,
   workspaceCreateLiteratureNoteResponseSchema,
+  workspaceJournalOpenRequestSchema,
+  workspaceJournalCaptureRequestSchema,
   workspaceCitationExplorerRequestSchema,
   workspaceCitationExplorerResponseSchema,
   workspaceResearchOverviewRequestSchema,
@@ -122,6 +186,8 @@ import {
   workspaceLibraryFormatRequestSchema,
   workspaceLibraryFormatResponseSchema,
   workspaceLibraryResolveDoiRequestSchema,
+  workspaceWebCaptureExtractRequestSchema,
+  workspaceWebCaptureExtractResponseSchema,
   workspaceLibraryImportRequestSchema,
   workspaceLibraryImportResponseSchema,
   workspaceLibraryIntakePreviewRequestSchema,
@@ -136,6 +202,8 @@ import {
   workspaceLibraryRenameKeyResponseSchema,
   workspaceReferenceHealthRequestSchema,
   workspaceReferenceHealthResponseSchema,
+  workspaceLibraryMaintenanceRequestSchema,
+  workspaceLibraryMaintenanceResponseSchema,
   workspaceReferenceAttachmentsRequestSchema,
   workspaceReferenceAttachmentsResponseSchema,
   workspaceAttachReferencePdfRequestSchema,
@@ -148,6 +216,21 @@ import {
   workspaceCreatePdfAnnotationRequestSchema,
   workspacePdfAnnotationRequestSchema,
   workspacePdfAnnotationLinkResponseSchema,
+  workspaceAnnotationsRequestSchema,
+  workspaceAnnotationColorSemanticsResponseSchema,
+  workspaceSetAnnotationColorSemanticsRequestSchema,
+  workspaceSynthesizeAnnotationsRequestSchema,
+  workspaceSynthesizeAnnotationsResponseSchema,
+  workspaceAttachmentsRequestSchema,
+  workspaceAttachmentsResponseSchema,
+  workspaceAddAttachmentRequestSchema,
+  workspaceAddAttachmentVersionRequestSchema,
+  workspaceAttachmentRequestSchema,
+  workspaceAttachmentResponseSchema,
+  workspaceRenameAttachmentFileRequestSchema,
+  workspaceAttachmentLocalPathResponseSchema,
+  workspaceAttachmentHealthRequestSchema,
+  workspaceAttachmentHealthResponseSchema,
   workspaceImportAssetRequestSchema,
   workspaceAssetDtoSchema,
   workspaceFileDtoSchema,
@@ -219,10 +302,39 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
     profiles: (request, signal) => call(request, workspaceProfilesRequestSchema, workspaceProfilesResponseSchema, service.profiles.bind(service), signal),
     previewProfileValidation: (request, signal) => call(request, workspaceProfileValidationPreviewRequestSchema, workspaceProfileValidationPreviewResponseSchema, service.previewProfileValidation.bind(service), signal),
     open: (request, signal) => call(request, workspaceOpenRequestSchema, workspaceOpenResponseSchema, service.open.bind(service), signal),
+    configureSync: (request, signal) => call(request, workspaceConfigureSyncRequestSchema, workspaceSyncStatusResponseSchema, service.configureSync.bind(service), signal),
+    syncStatus: (signal) => call(undefined, emptyResponseSchema, workspaceSyncStatusResponseSchema, (_request, currentSignal) => service.syncStatus(currentSignal), signal),
+    syncNow: (signal) => call(undefined, emptyResponseSchema, workspaceSyncStatusResponseSchema, (_request, currentSignal) => service.syncNow(currentSignal), signal),
+    recoverFromSync: (signal) => call(undefined, emptyResponseSchema, workspaceSyncStatusResponseSchema, (_request, currentSignal) => service.recoverFromSync(currentSignal), signal),
+    resolveSyncConflict: (request, signal) => call(request, workspaceResolveSyncConflictRequestSchema, workspaceSyncStatusResponseSchema, service.resolveSyncConflict.bind(service), signal),
+    collaboration: (signal) => call(undefined, emptyResponseSchema, workspaceCollaborationResponseSchema, (_request, currentSignal) => service.collaboration(currentSignal), signal),
+    setCollaboration: (request, signal) => call(request, workspaceSetCollaborationRequestSchema, workspaceCollaborationResponseSchema, service.setCollaboration.bind(service), signal),
+    academicViews: (signal) => call(undefined, emptyResponseSchema, workspaceAcademicViewsResponseSchema, (_request, currentSignal) => service.academicViews(currentSignal), signal),
+    setAcademicViews: (request, signal) => call(request, workspaceSetAcademicViewsRequestSchema, workspaceAcademicViewsResponseSchema, service.setAcademicViews.bind(service), signal),
+    academicRelations: (signal) => call(undefined, emptyResponseSchema, workspaceAcademicRelationsResponseSchema, (_request, currentSignal) => service.academicRelations(currentSignal), signal),
+    referenceRelations: (request, signal) => call(request, workspaceReferenceRelationsRequestSchema, workspaceReferenceRelationsResponseSchema, service.referenceRelations.bind(service), signal),
+    addReferenceRelation: (request, signal) => call(request, workspaceAddReferenceRelationRequestSchema, referenceRelationDtoSchema, service.addReferenceRelation.bind(service), signal),
+    removeReferenceRelation: (request, signal) => call(request, workspaceRemoveReferenceRelationRequestSchema, emptyResponseSchema, service.removeReferenceRelation.bind(service), signal),
+    literatureSubscriptions: (signal) => call(undefined, emptyResponseSchema, workspaceLiteratureSubscriptionsResponseSchema, (_request, currentSignal) => service.literatureSubscriptions(currentSignal), signal),
+    addLiteratureSubscription: (request, signal) => call(request, workspaceAddLiteratureSubscriptionRequestSchema, literatureSubscriptionDtoSchema, service.addLiteratureSubscription.bind(service), signal),
+    removeLiteratureSubscription: (request, signal) => call(request, workspaceRemoveLiteratureSubscriptionRequestSchema, emptyResponseSchema, service.removeLiteratureSubscription.bind(service), signal),
+    literatureFeedInbox: (signal) => call(undefined, emptyResponseSchema, workspaceLiteratureFeedInboxResponseSchema, (_request, currentSignal) => service.literatureFeedInbox(currentSignal), signal),
+    pollLiteratureSubscription: (request, signal) => call(request, workspacePollLiteratureSubscriptionRequestSchema, workspacePollLiteratureSubscriptionResponseSchema, service.pollLiteratureSubscription.bind(service), signal),
+    dismissFeedInboxItem: (request, signal) => call(request, workspaceDismissFeedInboxItemRequestSchema, emptyResponseSchema, service.dismissFeedInboxItem.bind(service), signal),
+    importFeedInboxItem: (request, signal) => call(request, workspaceImportFeedInboxItemRequestSchema, workspaceLibraryEntryResponseSchema, service.importFeedInboxItem.bind(service), signal),
+    bookmarks: (signal) => call(undefined, emptyResponseSchema, workspaceBookmarksResponseSchema, (_request, currentSignal) => service.bookmarks(currentSignal), signal),
+    setBookmarks: (request, signal) => call(request, workspaceSetBookmarksRequestSchema, workspaceBookmarksResponseSchema, service.setBookmarks.bind(service), signal),
+    captureInbox: (signal) => call(undefined, emptyResponseSchema, workspaceCaptureInboxResponseSchema, (_request, currentSignal) => service.captureInbox(currentSignal), signal),
+    setCaptureInbox: (request, signal) => call(request, workspaceSetCaptureInboxRequestSchema, workspaceCaptureInboxResponseSchema, service.setCaptureInbox.bind(service), signal),
+    researchCanvases: (signal) => call(undefined, emptyResponseSchema, workspaceResearchCanvasesResponseSchema, (_request, currentSignal) => service.researchCanvases(currentSignal), signal),
+    setResearchCanvases: (request, signal) => call(request, workspaceSetResearchCanvasesRequestSchema, workspaceResearchCanvasesResponseSchema, service.setResearchCanvases.bind(service), signal),
+    peek: (request, signal) => call(request, workspacePeekRequestSchema, workspacePeekResponseSchema, service.peek.bind(service), signal),
     list: (request, signal) =>
       call(request, workspaceListRequestSchema, workspaceListResponseSchema, service.list.bind(service), signal),
     read: (request, signal) =>
       call(request, workspaceReadRequestSchema, workspaceReadResponseSchema, service.read.bind(service), signal),
+    assetPreview: (request, signal) =>
+      call(request, workspaceAssetPreviewRequestSchema, workspaceAssetPreviewResponseSchema, service.assetPreview.bind(service), signal),
     openEditor: (request, signal) =>
       call(request, editorOpenRequestSchema, editorSnapshotDtoSchema, service.openEditor.bind(service), signal),
     editorSnapshot: (request, signal) =>
@@ -267,6 +379,8 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
         service.createLiteratureNote.bind(service),
         signal,
       ),
+    journalOpen: (request, signal) => call(request, workspaceJournalOpenRequestSchema, workspaceFileDtoSchema, service.journalOpen.bind(service), signal),
+    journalCapture: (request, signal) => call(request, workspaceJournalCaptureRequestSchema, workspaceFileDtoSchema, service.journalCapture.bind(service), signal),
     citationExplorer: (request, signal) =>
       call(
         request,
@@ -301,6 +415,8 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
       call(request, workspaceLibraryFormatRequestSchema, workspaceLibraryFormatResponseSchema, service.libraryFormat.bind(service), signal),
     libraryResolveDoi: (request, signal) =>
       call(request, workspaceLibraryResolveDoiRequestSchema, workspaceLibraryEntryResponseSchema, service.libraryResolveDoi.bind(service), signal),
+    webCaptureExtract: (request, signal) =>
+      call(request, workspaceWebCaptureExtractRequestSchema, workspaceWebCaptureExtractResponseSchema, service.webCaptureExtract.bind(service), signal),
     libraryImport: (request, signal) =>
       call(request, workspaceLibraryImportRequestSchema, workspaceLibraryImportResponseSchema, service.libraryImport.bind(service), signal),
     libraryIntakePreview: (request, signal) =>
@@ -311,6 +427,8 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
     libraryRenameKey: (request, signal) => call(request, workspaceLibraryRenameKeyRequestSchema, workspaceLibraryRenameKeyResponseSchema, service.libraryRenameKey.bind(service), signal),
     referenceHealth: (request, signal) =>
       call(request, workspaceReferenceHealthRequestSchema, workspaceReferenceHealthResponseSchema, service.referenceHealth.bind(service), signal),
+    libraryMaintenanceOverview: (request, signal) =>
+      call(request, workspaceLibraryMaintenanceRequestSchema, workspaceLibraryMaintenanceResponseSchema, service.libraryMaintenanceOverview.bind(service), signal),
     referenceAttachments: (request, signal) => call(request, workspaceReferenceAttachmentsRequestSchema, workspaceReferenceAttachmentsResponseSchema, service.referenceAttachments.bind(service), signal),
     attachReferencePdf: (request, signal) => call(request, workspaceAttachReferencePdfRequestSchema, workspaceReferenceAttachmentResponseSchema, service.attachReferencePdf.bind(service), signal),
     removeReferenceAttachment: (request, signal) => call(request, workspaceReferenceAttachmentRequestSchema, emptyResponseSchema, service.removeReferenceAttachment.bind(service), signal),
@@ -320,6 +438,17 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
     createPdfAnnotation: (request, signal) => call(request, workspaceCreatePdfAnnotationRequestSchema, workspacePdfAnnotationDtoSchema, service.createPdfAnnotation.bind(service), signal),
     removePdfAnnotation: (request, signal) => call(request, workspacePdfAnnotationRequestSchema, emptyResponseSchema, service.removePdfAnnotation.bind(service), signal),
     linkPdfAnnotation: (request, signal) => call(request, workspacePdfAnnotationRequestSchema, workspacePdfAnnotationLinkResponseSchema, service.linkPdfAnnotation.bind(service), signal),
+    annotations: (request, signal) => call(request, workspaceAnnotationsRequestSchema, workspacePdfAnnotationsResponseSchema, service.annotations.bind(service), signal),
+    annotationColorSemantics: (signal) => call(undefined, emptyResponseSchema, workspaceAnnotationColorSemanticsResponseSchema, (_request, currentSignal) => service.annotationColorSemantics(currentSignal), signal),
+    setAnnotationColorSemantics: (request, signal) => call(request, workspaceSetAnnotationColorSemanticsRequestSchema, workspaceAnnotationColorSemanticsResponseSchema, service.setAnnotationColorSemantics.bind(service), signal),
+    synthesizeAnnotations: (request, signal) => call(request, workspaceSynthesizeAnnotationsRequestSchema, workspaceSynthesizeAnnotationsResponseSchema, service.synthesizeAnnotations.bind(service), signal),
+    attachments: (request, signal) => call(request, workspaceAttachmentsRequestSchema, workspaceAttachmentsResponseSchema, service.attachments.bind(service), signal),
+    addAttachment: (request, signal) => call(request, workspaceAddAttachmentRequestSchema, workspaceAttachmentResponseSchema, service.addAttachment.bind(service), signal),
+    addAttachmentVersion: (request, signal) => call(request, workspaceAddAttachmentVersionRequestSchema, workspaceAttachmentResponseSchema, service.addAttachmentVersion.bind(service), signal),
+    removeAttachment: (request, signal) => call(request, workspaceAttachmentRequestSchema, emptyResponseSchema, service.removeAttachment.bind(service), signal),
+    renameAttachmentFile: (request, signal) => call(request, workspaceRenameAttachmentFileRequestSchema, workspaceAttachmentResponseSchema, service.renameAttachmentFile.bind(service), signal),
+    attachmentLocalPath: (request, signal) => call(request, workspaceAttachmentRequestSchema, workspaceAttachmentLocalPathResponseSchema, service.attachmentLocalPath.bind(service), signal),
+    attachmentHealth: (request, signal) => call(request, workspaceAttachmentHealthRequestSchema, workspaceAttachmentHealthResponseSchema, service.attachmentHealth.bind(service), signal),
     importAsset: (request, signal) =>
       call(request, workspaceImportAssetRequestSchema, workspaceAssetDtoSchema, service.importAsset.bind(service), signal),
     createDocument: (request, signal) =>
@@ -360,10 +489,66 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
         switch (envelope.method) {
           case 'workspace/open':
             return local.open(envelope.payload as WorkspaceOpenRequest, controller.signal);
+          case 'workspace/sync-configure':
+            return local.configureSync(envelope.payload as WorkspaceConfigureSyncRequest, controller.signal);
+          case 'workspace/sync-status':
+            return local.syncStatus(controller.signal);
+          case 'workspace/sync-now':
+            return local.syncNow(controller.signal);
+          case 'workspace/sync-recover':
+            return local.recoverFromSync(controller.signal);
+          case 'workspace/sync-resolve-conflict':
+            return local.resolveSyncConflict(envelope.payload as WorkspaceResolveSyncConflictRequest, controller.signal);
+          case 'workspace/collaboration':
+            return local.collaboration(controller.signal);
+          case 'workspace/collaboration-set':
+            return local.setCollaboration(envelope.payload as WorkspaceSetCollaborationRequest, controller.signal);
+          case 'workspace/academic-views':
+            return local.academicViews(controller.signal);
+          case 'workspace/academic-views-set':
+            return local.setAcademicViews(envelope.payload as WorkspaceSetAcademicViewsRequest, controller.signal);
+          case 'workspace/academic-relations':
+            return local.academicRelations(controller.signal);
+          case 'workspace/reference-relations':
+            return local.referenceRelations(envelope.payload as WorkspaceReferenceRelationsRequest, controller.signal);
+          case 'workspace/add-reference-relation':
+            return local.addReferenceRelation(envelope.payload as WorkspaceAddReferenceRelationRequest, controller.signal);
+          case 'workspace/remove-reference-relation':
+            return local.removeReferenceRelation(envelope.payload as WorkspaceRemoveReferenceRelationRequest, controller.signal);
+          case 'workspace/literature-subscriptions':
+            return local.literatureSubscriptions(controller.signal);
+          case 'workspace/add-literature-subscription':
+            return local.addLiteratureSubscription(envelope.payload as WorkspaceAddLiteratureSubscriptionRequest, controller.signal);
+          case 'workspace/remove-literature-subscription':
+            return local.removeLiteratureSubscription(envelope.payload as WorkspaceRemoveLiteratureSubscriptionRequest, controller.signal);
+          case 'workspace/literature-feed-inbox':
+            return local.literatureFeedInbox(controller.signal);
+          case 'workspace/poll-literature-subscription':
+            return local.pollLiteratureSubscription(envelope.payload as WorkspacePollLiteratureSubscriptionRequest, controller.signal);
+          case 'workspace/dismiss-feed-inbox-item':
+            return local.dismissFeedInboxItem(envelope.payload as WorkspaceDismissFeedInboxItemRequest, controller.signal);
+          case 'workspace/import-feed-inbox-item':
+            return local.importFeedInboxItem(envelope.payload as WorkspaceImportFeedInboxItemRequest, controller.signal);
+          case 'workspace/bookmarks':
+            return local.bookmarks(controller.signal);
+          case 'workspace/bookmarks-set':
+            return local.setBookmarks(envelope.payload as WorkspaceSetBookmarksRequest, controller.signal);
+          case 'workspace/capture-inbox':
+            return local.captureInbox(controller.signal);
+          case 'workspace/capture-inbox-set':
+            return local.setCaptureInbox(envelope.payload as WorkspaceSetCaptureInboxRequest, controller.signal);
+          case 'workspace/research-canvases':
+            return local.researchCanvases(controller.signal);
+          case 'workspace/research-canvases-set':
+            return local.setResearchCanvases(envelope.payload as WorkspaceSetResearchCanvasesRequest, controller.signal);
+          case 'workspace/peek':
+            return local.peek(envelope.payload as WorkspacePeekRequest, controller.signal);
           case 'workspace/list':
             return local.list(envelope.payload as WorkspaceListRequest, controller.signal);
           case 'workspace/read':
             return local.read(envelope.payload as WorkspaceReadRequest, controller.signal);
+          case 'workspace/asset-preview':
+            return local.assetPreview(envelope.payload as WorkspaceAssetPreviewRequest, controller.signal);
           case 'editor/open':
             return local.openEditor(envelope.payload as EditorOpenRequest, controller.signal);
           case 'editor/snapshot':
@@ -411,6 +596,10 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.compareDocuments(envelope.payload as WorkspaceDocumentComparisonRequest, controller.signal);
           case 'workspace/create-literature-note':
             return local.createLiteratureNote(envelope.payload as WorkspaceCreateLiteratureNoteRequest, controller.signal);
+          case 'workspace/journal-open':
+            return local.journalOpen(envelope.payload as WorkspaceJournalOpenRequest, controller.signal);
+          case 'workspace/journal-capture':
+            return local.journalCapture(envelope.payload as WorkspaceJournalCaptureRequest, controller.signal);
           case 'workspace/citation-explorer':
             return local.citationExplorer(envelope.payload as WorkspaceCitationExplorerRequest, controller.signal);
           case 'workspace/research-overview':
@@ -427,6 +616,8 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.libraryFormat(envelope.payload as WorkspaceLibraryFormatRequest, controller.signal);
           case 'workspace/library-resolve-doi':
             return local.libraryResolveDoi(envelope.payload as WorkspaceLibraryResolveDoiRequest, controller.signal);
+          case 'workspace/web-capture-extract':
+            return local.webCaptureExtract(envelope.payload as WorkspaceWebCaptureExtractRequest, controller.signal);
           case 'workspace/library-import':
             return local.libraryImport(envelope.payload as WorkspaceLibraryImportRequest, controller.signal);
           case 'workspace/library-intake-preview':
@@ -441,6 +632,8 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.libraryRenameKey(envelope.payload as WorkspaceLibraryRenameKeyRequest, controller.signal);
           case 'workspace/reference-health':
             return local.referenceHealth(envelope.payload as WorkspaceReferenceHealthRequest, controller.signal);
+          case 'workspace/library-maintenance-overview':
+            return local.libraryMaintenanceOverview(envelope.payload as WorkspaceLibraryMaintenanceRequest, controller.signal);
           case 'workspace/reference-attachments':
             return local.referenceAttachments(envelope.payload as WorkspaceReferenceAttachmentsRequest, controller.signal);
           case 'workspace/attach-reference-pdf':
@@ -459,6 +652,28 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.removePdfAnnotation(envelope.payload as WorkspacePdfAnnotationRequest, controller.signal);
           case 'workspace/link-pdf-annotation':
             return local.linkPdfAnnotation(envelope.payload as WorkspacePdfAnnotationRequest, controller.signal);
+          case 'workspace/annotations':
+            return local.annotations(envelope.payload as WorkspaceAnnotationsRequest, controller.signal);
+          case 'workspace/annotation-color-semantics':
+            return local.annotationColorSemantics(controller.signal);
+          case 'workspace/set-annotation-color-semantics':
+            return local.setAnnotationColorSemantics(envelope.payload as WorkspaceSetAnnotationColorSemanticsRequest, controller.signal);
+          case 'workspace/synthesize-annotations':
+            return local.synthesizeAnnotations(envelope.payload as WorkspaceSynthesizeAnnotationsRequest, controller.signal);
+          case 'workspace/attachments':
+            return local.attachments(envelope.payload as WorkspaceAttachmentsRequest, controller.signal);
+          case 'workspace/add-attachment':
+            return local.addAttachment(envelope.payload as WorkspaceAddAttachmentRequest, controller.signal);
+          case 'workspace/add-attachment-version':
+            return local.addAttachmentVersion(envelope.payload as WorkspaceAddAttachmentVersionRequest, controller.signal);
+          case 'workspace/remove-attachment':
+            return local.removeAttachment(envelope.payload as WorkspaceAttachmentRequest, controller.signal);
+          case 'workspace/rename-attachment-file':
+            return local.renameAttachmentFile(envelope.payload as WorkspaceRenameAttachmentFileRequest, controller.signal);
+          case 'workspace/attachment-local-path':
+            return local.attachmentLocalPath(envelope.payload as WorkspaceAttachmentRequest, controller.signal);
+          case 'workspace/attachment-health':
+            return local.attachmentHealth(envelope.payload as WorkspaceAttachmentHealthRequest, controller.signal);
           case 'workspace/import-asset':
             return local.importAsset(envelope.payload as WorkspaceImportAssetRequest, controller.signal);
           case 'workspace/create-document':
@@ -566,8 +781,36 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
     profiles: (value, signal) => request('workspace/profiles', value, workspaceProfilesRequestSchema, workspaceProfilesResponseSchema, signal),
     previewProfileValidation: (value, signal) => request('workspace/profile-validation-preview', value, workspaceProfileValidationPreviewRequestSchema, workspaceProfileValidationPreviewResponseSchema, signal),
     open: (value, signal) => request('workspace/open', value, workspaceOpenRequestSchema, workspaceOpenResponseSchema, signal),
+    configureSync: (value, signal) => request('workspace/sync-configure', value, workspaceConfigureSyncRequestSchema, workspaceSyncStatusResponseSchema, signal),
+    syncStatus: (signal) => request('workspace/sync-status', undefined, emptyResponseSchema, workspaceSyncStatusResponseSchema, signal),
+    syncNow: (signal) => request('workspace/sync-now', undefined, emptyResponseSchema, workspaceSyncStatusResponseSchema, signal),
+    recoverFromSync: (signal) => request('workspace/sync-recover', undefined, emptyResponseSchema, workspaceSyncStatusResponseSchema, signal),
+    resolveSyncConflict: (value, signal) => request('workspace/sync-resolve-conflict', value, workspaceResolveSyncConflictRequestSchema, workspaceSyncStatusResponseSchema, signal),
+    collaboration: (signal) => request('workspace/collaboration', undefined, emptyResponseSchema, workspaceCollaborationResponseSchema, signal),
+    setCollaboration: (value, signal) => request('workspace/collaboration-set', value, workspaceSetCollaborationRequestSchema, workspaceCollaborationResponseSchema, signal),
+    academicViews: (signal) => request('workspace/academic-views', undefined, emptyResponseSchema, workspaceAcademicViewsResponseSchema, signal),
+    setAcademicViews: (value, signal) => request('workspace/academic-views-set', value, workspaceSetAcademicViewsRequestSchema, workspaceAcademicViewsResponseSchema, signal),
+    academicRelations: (signal) => request('workspace/academic-relations', undefined, emptyResponseSchema, workspaceAcademicRelationsResponseSchema, signal),
+    referenceRelations: (value, signal) => request('workspace/reference-relations', value, workspaceReferenceRelationsRequestSchema, workspaceReferenceRelationsResponseSchema, signal),
+    addReferenceRelation: (value, signal) => request('workspace/add-reference-relation', value, workspaceAddReferenceRelationRequestSchema, referenceRelationDtoSchema, signal),
+    removeReferenceRelation: (value, signal) => request('workspace/remove-reference-relation', value, workspaceRemoveReferenceRelationRequestSchema, emptyResponseSchema, signal),
+    literatureSubscriptions: (signal) => request('workspace/literature-subscriptions', undefined, emptyResponseSchema, workspaceLiteratureSubscriptionsResponseSchema, signal),
+    addLiteratureSubscription: (value, signal) => request('workspace/add-literature-subscription', value, workspaceAddLiteratureSubscriptionRequestSchema, literatureSubscriptionDtoSchema, signal),
+    removeLiteratureSubscription: (value, signal) => request('workspace/remove-literature-subscription', value, workspaceRemoveLiteratureSubscriptionRequestSchema, emptyResponseSchema, signal),
+    literatureFeedInbox: (signal) => request('workspace/literature-feed-inbox', undefined, emptyResponseSchema, workspaceLiteratureFeedInboxResponseSchema, signal),
+    pollLiteratureSubscription: (value, signal) => request('workspace/poll-literature-subscription', value, workspacePollLiteratureSubscriptionRequestSchema, workspacePollLiteratureSubscriptionResponseSchema, signal),
+    dismissFeedInboxItem: (value, signal) => request('workspace/dismiss-feed-inbox-item', value, workspaceDismissFeedInboxItemRequestSchema, emptyResponseSchema, signal),
+    importFeedInboxItem: (value, signal) => request('workspace/import-feed-inbox-item', value, workspaceImportFeedInboxItemRequestSchema, workspaceLibraryEntryResponseSchema, signal),
+    bookmarks: (signal) => request('workspace/bookmarks', undefined, emptyResponseSchema, workspaceBookmarksResponseSchema, signal),
+    setBookmarks: (value, signal) => request('workspace/bookmarks-set', value, workspaceSetBookmarksRequestSchema, workspaceBookmarksResponseSchema, signal),
+    captureInbox: (signal) => request('workspace/capture-inbox', undefined, emptyResponseSchema, workspaceCaptureInboxResponseSchema, signal),
+    setCaptureInbox: (value, signal) => request('workspace/capture-inbox-set', value, workspaceSetCaptureInboxRequestSchema, workspaceCaptureInboxResponseSchema, signal),
+    researchCanvases: (signal) => request('workspace/research-canvases', undefined, emptyResponseSchema, workspaceResearchCanvasesResponseSchema, signal),
+    setResearchCanvases: (value, signal) => request('workspace/research-canvases-set', value, workspaceSetResearchCanvasesRequestSchema, workspaceResearchCanvasesResponseSchema, signal),
+    peek: (value, signal) => request('workspace/peek', value, workspacePeekRequestSchema, workspacePeekResponseSchema, signal),
     list: (value, signal) => request('workspace/list', value, workspaceListRequestSchema, workspaceListResponseSchema, signal),
     read: (value, signal) => request('workspace/read', value, workspaceReadRequestSchema, workspaceReadResponseSchema, signal),
+    assetPreview: (value, signal) => request('workspace/asset-preview', value, workspaceAssetPreviewRequestSchema, workspaceAssetPreviewResponseSchema, signal),
     openEditor: (value, signal) => request('editor/open', value, editorOpenRequestSchema, editorSnapshotDtoSchema, signal),
     editorSnapshot: (value, signal) => request('editor/snapshot', value, editorSnapshotRequestSchema, editorSnapshotDtoSchema, signal),
     dispatchEditor: (value, signal) => request('editor/dispatch', value, editorDispatchRequestSchema, editorSnapshotDtoSchema, signal),
@@ -607,6 +850,8 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
         workspaceCreateLiteratureNoteResponseSchema,
         signal,
       ),
+    journalOpen: (value, signal) => request('workspace/journal-open', value, workspaceJournalOpenRequestSchema, workspaceFileDtoSchema, signal),
+    journalCapture: (value, signal) => request('workspace/journal-capture', value, workspaceJournalCaptureRequestSchema, workspaceFileDtoSchema, signal),
     citationExplorer: (value, signal) =>
       request(
         'workspace/citation-explorer',
@@ -641,6 +886,8 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
       request('workspace/library-format', value, workspaceLibraryFormatRequestSchema, workspaceLibraryFormatResponseSchema, signal),
     libraryResolveDoi: (value, signal) =>
       request('workspace/library-resolve-doi', value, workspaceLibraryResolveDoiRequestSchema, workspaceLibraryEntryResponseSchema, signal),
+    webCaptureExtract: (value, signal) =>
+      request('workspace/web-capture-extract', value, workspaceWebCaptureExtractRequestSchema, workspaceWebCaptureExtractResponseSchema, signal),
     libraryImport: (value, signal) =>
       request('workspace/library-import', value, workspaceLibraryImportRequestSchema, workspaceLibraryImportResponseSchema, signal),
     libraryIntakePreview: (value, signal) =>
@@ -651,6 +898,8 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
     libraryRenameKey: (value, signal) => request('workspace/library-rename-key', value, workspaceLibraryRenameKeyRequestSchema, workspaceLibraryRenameKeyResponseSchema, signal),
     referenceHealth: (value, signal) =>
       request('workspace/reference-health', value, workspaceReferenceHealthRequestSchema, workspaceReferenceHealthResponseSchema, signal),
+    libraryMaintenanceOverview: (value, signal) =>
+      request('workspace/library-maintenance-overview', value, workspaceLibraryMaintenanceRequestSchema, workspaceLibraryMaintenanceResponseSchema, signal),
     referenceAttachments: (value, signal) => request('workspace/reference-attachments', value, workspaceReferenceAttachmentsRequestSchema, workspaceReferenceAttachmentsResponseSchema, signal),
     attachReferencePdf: (value, signal) => request('workspace/attach-reference-pdf', value, workspaceAttachReferencePdfRequestSchema, workspaceReferenceAttachmentResponseSchema, signal),
     removeReferenceAttachment: (value, signal) => request('workspace/remove-reference-attachment', value, workspaceReferenceAttachmentRequestSchema, emptyResponseSchema, signal),
@@ -660,6 +909,17 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
     createPdfAnnotation: (value, signal) => request('workspace/create-pdf-annotation', value, workspaceCreatePdfAnnotationRequestSchema, workspacePdfAnnotationDtoSchema, signal),
     removePdfAnnotation: (value, signal) => request('workspace/remove-pdf-annotation', value, workspacePdfAnnotationRequestSchema, emptyResponseSchema, signal),
     linkPdfAnnotation: (value, signal) => request('workspace/link-pdf-annotation', value, workspacePdfAnnotationRequestSchema, workspacePdfAnnotationLinkResponseSchema, signal),
+    annotations: (value, signal) => request('workspace/annotations', value, workspaceAnnotationsRequestSchema, workspacePdfAnnotationsResponseSchema, signal),
+    annotationColorSemantics: (signal) => request('workspace/annotation-color-semantics', undefined, emptyResponseSchema, workspaceAnnotationColorSemanticsResponseSchema, signal),
+    setAnnotationColorSemantics: (value, signal) => request('workspace/set-annotation-color-semantics', value, workspaceSetAnnotationColorSemanticsRequestSchema, workspaceAnnotationColorSemanticsResponseSchema, signal),
+    synthesizeAnnotations: (value, signal) => request('workspace/synthesize-annotations', value, workspaceSynthesizeAnnotationsRequestSchema, workspaceSynthesizeAnnotationsResponseSchema, signal),
+    attachments: (value, signal) => request('workspace/attachments', value, workspaceAttachmentsRequestSchema, workspaceAttachmentsResponseSchema, signal),
+    addAttachment: (value, signal) => request('workspace/add-attachment', value, workspaceAddAttachmentRequestSchema, workspaceAttachmentResponseSchema, signal),
+    addAttachmentVersion: (value, signal) => request('workspace/add-attachment-version', value, workspaceAddAttachmentVersionRequestSchema, workspaceAttachmentResponseSchema, signal),
+    removeAttachment: (value, signal) => request('workspace/remove-attachment', value, workspaceAttachmentRequestSchema, emptyResponseSchema, signal),
+    renameAttachmentFile: (value, signal) => request('workspace/rename-attachment-file', value, workspaceRenameAttachmentFileRequestSchema, workspaceAttachmentResponseSchema, signal),
+    attachmentLocalPath: (value, signal) => request('workspace/attachment-local-path', value, workspaceAttachmentRequestSchema, workspaceAttachmentLocalPathResponseSchema, signal),
+    attachmentHealth: (value, signal) => request('workspace/attachment-health', value, workspaceAttachmentHealthRequestSchema, workspaceAttachmentHealthResponseSchema, signal),
     importAsset: (value, signal) =>
       request('workspace/import-asset', value, workspaceImportAssetRequestSchema, workspaceAssetDtoSchema, signal),
     createDocument: (value, signal) =>

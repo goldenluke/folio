@@ -1,0 +1,117 @@
+{
+  "schema": "abnt-workspace-state",
+  "version": 1,
+  "workspaceId": "workspace_fb171ffb-e9b8-43a5-8607-afa6acf52923",
+  "files": {
+    "file_7e91dcda-bc14-42f1-be05-31f4391615b7": {
+      "id": "file_7e91dcda-bc14-42f1-be05-31f4391615b7",
+      "documentId": "document_515dad68-5ee4-40c9-b009-0199e3a6f199",
+      "path": "artigos/artigo-abnt.md",
+      "revision": 1,
+      "contentHash": "sha256:a298e0a65c2223c5bd2ddd9b874ce3d2cf6b2beac109d6f4e3fc5aca56dad8e0",
+      "mediaType": "text/markdown"
+    },
+    "file_aa54e9f3-8a7f-4dc3-9705-ddb6107314dd": {
+      "id": "file_aa54e9f3-8a7f-4dc3-9705-ddb6107314dd",
+      "documentId": "document_08df246c-def9-4a52-9c32-87c57fbbb04f",
+      "path": "artigos/artigo-apa.md",
+      "revision": 1,
+      "contentHash": "sha256:c4cc780e09db102d301e0d0e74c8e83a2e74b87655055aec86acc747f66d3c02",
+      "mediaType": "text/markdown"
+    },
+    "file_4dc42318-910f-47e4-9f84-28a2537839b4": {
+      "id": "file_4dc42318-910f-47e4-9f84-28a2537839b4",
+      "documentId": "document_7ab1ec03-51c0-4420-ab8a-8934907cc624",
+      "path": "artigos/artigo-numerico.md",
+      "revision": 1,
+      "contentHash": "sha256:eed523ccab7c24fd542a99cc18f0bea7d74e799e11794cd85d85e89c3ea0245b",
+      "mediaType": "text/markdown"
+    },
+    "file_592fe831-4c0c-4cc1-92d2-e96005ba0803": {
+      "id": "file_592fe831-4c0c-4cc1-92d2-e96005ba0803",
+      "documentId": "document_d917d90e-1bfc-4b59-9bd3-57a376c48e1d",
+      "path": "artigos/artigo-web.md",
+      "revision": 1,
+      "contentHash": "sha256:9d59bcb44a79ec36458d486b0124fd9811a9750933749f77af280f8f2e9f8fa9",
+      "mediaType": "text/markdown"
+    },
+    "file_bb505b01-cf17-4194-a6b0-c6904d4c3f23": {
+      "id": "file_bb505b01-cf17-4194-a6b0-c6904d4c3f23",
+      "path": "assets/pipeline.svg",
+      "revision": 1,
+      "contentHash": "sha256:3b27dcac3241dbef56e282c6ba22d338501abe5d84513ad8cfa7be07b33572eb",
+      "mediaType": "image/svg+xml"
+    },
+    "file_17cefaf1-81d6-4222-8e7f-29be5a96229d": {
+      "id": "file_17cefaf1-81d6-4222-8e7f-29be5a96229d",
+      "documentId": "document_a35208a0-2972-4f42-b10e-f6b44fddd310",
+      "path": "notas/fichamento-silva.md",
+      "revision": 1,
+      "contentHash": "sha256:38a3910c80b59f40f05da8b2b93afdc2850edee75367577ac8d641bb9e3ee451",
+      "mediaType": "text/markdown"
+    },
+    "file_2b841e68-b6e9-406c-9f7c-4bd13a44ea63": {
+      "id": "file_2b841e68-b6e9-406c-9f7c-4bd13a44ea63",
+      "documentId": "document_bde53c91-f930-4c1d-96e1-e1017752d88b",
+      "path": "pesquisa/projeto.md",
+      "revision": 1,
+      "contentHash": "sha256:2d3be5aea4f798cde6b679b9103dd8476ad81c23fab091ca52d18624e8210b77",
+      "mediaType": "text/markdown"
+    },
+    "file_5fb55b0a-772d-4ac3-867f-b3da69813fd2": {
+      "id": "file_5fb55b0a-772d-4ac3-867f-b3da69813fd2",
+      "documentId": "document_f13c84c6-01c1-43cf-a28c-c62d676e0594",
+      "path": "README.md",
+      "revision": 1,
+      "contentHash": "sha256:26e866cf9d69bd389e6b2f0fee011f4e458f97d7ad097706b5da2c69c51fa792",
+      "mediaType": "text/markdown"
+    },
+    "file_e6a68e8e-9710-46ac-8b38-d09cef2497e2": {
+      "id": "file_e6a68e8e-9710-46ac-8b38-d09cef2497e2",
+      "path": "referencias.bib",
+      "revision": 1,
+      "contentHash": "sha256:a50c2622ee1fa826d186fbae9e1dc6a83dafa1c292f5cadd32f8c67f33f9cdf3",
+      "mediaType": "application/x-bibtex"
+    },
+    "file_31232fe7-a9b2-40b9-a80a-ef07ab94a5b7": {
+      "id": "file_31232fe7-a9b2-40b9-a80a-ef07ab94a5b7",
+      "documentId": "document_7512ae1d-21f3-4122-a59e-f50e1a3200ff",
+      "path": "tcc/capitulos/01-introducao.md",
+      "revision": 1,
+      "contentHash": "sha256:3fc609f710eb6a2924907929b1f164106e266777ec716177173c94e84fbf4ead",
+      "mediaType": "text/markdown"
+    },
+    "file_44058309-4b5b-4e9d-bb75-3391f1d8c4c3": {
+      "id": "file_44058309-4b5b-4e9d-bb75-3391f1d8c4c3",
+      "documentId": "document_d8fd93e6-c80f-4de5-80b8-b9040546c640",
+      "path": "tcc/capitulos/02-metodo.md",
+      "revision": 1,
+      "contentHash": "sha256:a44b478d22ab611f72e1676fae8b1121674d175387a4eddbbcf2669a6da26dc5",
+      "mediaType": "text/markdown"
+    },
+    "file_3448e685-9475-42c3-8ccf-99eb7bad4688": {
+      "id": "file_3448e685-9475-42c3-8ccf-99eb7bad4688",
+      "documentId": "document_e33c4334-903d-4270-bcfc-8dd32499b3d3",
+      "path": "tcc/capitulos/03-resultados.md",
+      "revision": 1,
+      "contentHash": "sha256:3ca471564a4709e5e3cab4b7d68d08b661ff49bce1f41d3e5013cd4893480520",
+      "mediaType": "text/markdown"
+    },
+    "file_1689f66a-6973-41ec-85e7-c7f88f086341": {
+      "id": "file_1689f66a-6973-41ec-85e7-c7f88f086341",
+      "documentId": "document_708f5d66-7b53-4a33-a7d4-1c59afae7685",
+      "path": "tcc/capitulos/04-conclusao.md",
+      "revision": 1,
+      "contentHash": "sha256:4fb173ff0cbaf92c850fbb747f5b9da0e9c4a0c0cf505d9227c359e0675f8257",
+      "mediaType": "text/markdown"
+    },
+    "file_e04e5f2b-f191-42d0-9b8f-59f9d8f620aa": {
+      "id": "file_e04e5f2b-f191-42d0-9b8f-59f9d8f620aa",
+      "documentId": "document_dffa3f8d-06f8-4664-9465-da23c7683fa1",
+      "path": "tcc/index.md",
+      "revision": 2,
+      "contentHash": "sha256:786b7309cd902d299fd0df24410f51c2148c31fa897dd0b5c5190d4018538972",
+      "mediaType": "text/markdown"
+    }
+  }
+}

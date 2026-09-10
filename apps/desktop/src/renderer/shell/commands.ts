@@ -33,6 +33,8 @@ export interface CommandContext {
   readonly targetSearchQuery?: string;
   /** F114: alvo explícito de uma ação em lote; nunca é inferido pelo componente. */
   readonly selectedFiles?: readonly { readonly fileId: string; readonly path: string }[];
+  /** F312–F318: alvo explícito para `bookmark.remove`. */
+  readonly targetBookmark?: { readonly id: string };
 }
 
 /**
@@ -55,6 +57,9 @@ export interface CommandAutomationPreview {
 export interface Command {
   readonly id: string;
   readonly title: string;
+  /** F145: metadados de descoberta; não criam um segundo registry. */
+  readonly category?: string;
+  readonly aliases?: readonly string[];
   /** Ausente significa que o command não aceita argumentos. */
   readonly arguments?: CommandArgumentSchema;
   /** Só commands declarados aqui podem participar de chains/macros locais. */

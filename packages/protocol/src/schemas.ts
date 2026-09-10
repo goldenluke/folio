@@ -23,12 +23,49 @@ import {
   type SourceSnapshotDto,
   type SystemInformationDto,
   type WorkspaceFileDto,
+  type WorkspaceCollaborationDto,
+  type WorkspaceSetCollaborationRequest,
+  type WorkspaceAcademicViewsDto,
+  type WorkspaceSetAcademicViewsRequest,
+  type WorkspaceAcademicDerivedColumnDto,
+  type WorkspaceAcademicRelationsDto,
+  type ReferenceRelationKindDto,
+  type ReferenceRelationDto,
+  type WorkspaceReferenceRelationsRequest,
+  type WorkspaceReferenceRelationsDto,
+  type WorkspaceAddReferenceRelationRequest,
+  type WorkspaceRemoveReferenceRelationRequest,
+  type LiteratureSubscriptionDto,
+  type WorkspaceLiteratureSubscriptionsDto,
+  type WorkspaceAddLiteratureSubscriptionRequest,
+  type WorkspaceRemoveLiteratureSubscriptionRequest,
+  type LiteratureFeedInboxItemDto,
+  type WorkspaceLiteratureFeedInboxDto,
+  type WorkspacePollLiteratureSubscriptionRequest,
+  type WorkspacePollLiteratureSubscriptionResponseDto,
+  type WorkspaceDismissFeedInboxItemRequest,
+  type WorkspaceImportFeedInboxItemRequest,
+  type BookmarkTargetDto,
+  type WorkspaceBookmarksDto,
+  type WorkspaceSetBookmarksRequest,
+  type WorkspaceCaptureInboxDto,
+  type WorkspaceSetCaptureInboxRequest,
+  type WorkspaceBrowserCaptureDto,
+  type WorkspaceResearchCanvasNodeDto,
+  type WorkspaceResearchCanvasDto,
+  type WorkspaceResearchCanvasesDto,
+  type WorkspaceSetResearchCanvasesRequest,
+  type PeekEntityDto,
+  type WorkspacePeekRequest,
+  type WorkspacePeekResponseDto,
   type WorkspaceEvent,
   type WorkspaceBacklinkDto,
   type WorkspaceBacklinksRequest,
   type WorkspaceListRequest,
   type WorkspaceReadRequest,
   type WorkspaceReadResponse,
+  type WorkspaceAssetPreviewRequest,
+  type WorkspaceAssetPreviewResponse,
   type WorkspaceReferenceDto,
   type WorkspaceReferencesRequest,
   type WorkspaceRenameRequest,
@@ -60,6 +97,8 @@ import {
   type WorkspaceDocumentComparisonRequest,
   type WorkspaceDocumentComparisonDto,
   type WorkspaceCreateLiteratureNoteRequest,
+  type WorkspaceJournalOpenRequest,
+  type WorkspaceJournalCaptureRequest,
   type WorkspaceCitationExplorerRequest,
   type WorkspaceCitationExplorerResponseDto,
   type CitationExplorerEntryDto,
@@ -75,6 +114,11 @@ import {
   type WorkspaceLibraryRemoveRequest,
   type WorkspaceLibraryFormatRequest,
   type WorkspaceLibraryResolveDoiRequest,
+  type WebCaptureFieldsDto,
+  type WebCaptureAttachmentCandidateDto,
+  type WebCaptureCandidateDto,
+  type WorkspaceWebCaptureExtractRequest,
+  type WorkspaceWebCaptureExtractResponseDto,
   type WorkspaceLibraryImportRequest,
   type WorkspaceLibraryImportResponseDto,
   type WorkspaceLibraryIntakePreviewRequest,
@@ -93,6 +137,9 @@ import {
   type EditorImportAssetRequest,
   type WorkspaceCreateDocumentRequest,
   type WorkspaceReferenceHealthDto,
+  type WorkspaceReferenceAuditCode,
+  type WorkspaceLibraryMaintenanceRequest,
+  type WorkspaceLibraryMaintenanceOverviewDto,
   type WorkspaceReferenceAttachmentDto,
   type WorkspaceReferenceAttachmentsRequest,
   type WorkspaceAttachReferencePdfRequest,
@@ -102,15 +149,39 @@ import {
   type WorkspaceCreatePdfAnnotationRequest,
   type WorkspacePdfAnnotationRequest,
   type WorkspacePdfAnnotationLinkDto,
+  type WorkspaceAnnotationsRequest,
+  type WorkspaceAnnotationColorSemanticsDto,
+  type WorkspaceSetAnnotationColorSemanticsRequest,
+  type AnnotationSynthesisTemplateDto,
+  type WorkspaceSynthesisTargetDto,
+  type WorkspaceSynthesizeAnnotationsRequest,
+  type WorkspaceSynthesizeAnnotationsResponseDto,
+  type AttachmentRoleDto,
+  type AttachmentKindDto,
+  type AttachmentVersionDto,
+  type AttachmentDto,
+  type WorkspaceAttachmentsRequest,
+  type WorkspaceAddAttachmentRequest,
+  type WorkspaceAddAttachmentVersionRequest,
+  type WorkspaceAttachmentRequest,
+  type WorkspacePickAttachmentRequest,
+  type WorkspaceRenameAttachmentFileRequest,
+  type WorkspaceAttachmentHealthRequest,
+  type AttachmentHealthCodeDto,
+  type AttachmentHealthIssueDto,
   type WorkspaceWriteRequest,
   type WorkspaceOpenRequest,
   type WorkspaceOpenResponse,
+  type WorkspaceConfigureSyncRequest,
+  type WorkspaceSyncStatusDto,
+  type WorkspaceResolveSyncConflictRequest,
   type DesktopExportRequest,
   type EditorCloseRequest,
   type EditorDispatchRequest,
   type EditorExportDto,
   type EditorExportRequest,
   type EditorExportResultDto,
+  type DesktopExportFormat,
   type EditorOpenRequest,
   type EditorPreviewDto,
   type EditorPreviewRequest,
@@ -542,10 +613,38 @@ const requestEnvelopeSchema = z.object({
     'compiler/prepare',
     'compiler/compile',
     'workspace/open',
+    'workspace/sync-configure',
+    'workspace/sync-status',
+    'workspace/sync-now',
+    'workspace/sync-recover',
+    'workspace/sync-resolve-conflict',
+    'workspace/collaboration',
+    'workspace/collaboration-set',
+    'workspace/academic-views',
+    'workspace/academic-views-set',
+    'workspace/academic-relations',
+    'workspace/reference-relations',
+    'workspace/add-reference-relation',
+    'workspace/remove-reference-relation',
+    'workspace/literature-subscriptions',
+    'workspace/add-literature-subscription',
+    'workspace/remove-literature-subscription',
+    'workspace/literature-feed-inbox',
+    'workspace/poll-literature-subscription',
+    'workspace/dismiss-feed-inbox-item',
+    'workspace/import-feed-inbox-item',
+    'workspace/bookmarks',
+    'workspace/bookmarks-set',
+    'workspace/capture-inbox',
+    'workspace/capture-inbox-set',
+    'workspace/research-canvases',
+    'workspace/research-canvases-set',
+    'workspace/peek',
     'workspace/profiles',
     'workspace/profile-validation-preview',
     'workspace/list',
     'workspace/read',
+    'workspace/asset-preview',
     'editor/open',
     'editor/snapshot',
     'editor/dispatch',
@@ -570,6 +669,8 @@ const requestEnvelopeSchema = z.object({
     'workspace/history-structural-diff',
     'workspace/compare-documents',
     'workspace/create-literature-note',
+    'workspace/journal-open',
+    'workspace/journal-capture',
     'workspace/citation-explorer',
     'workspace/research-overview',
     'workspace/project-dashboard',
@@ -578,6 +679,7 @@ const requestEnvelopeSchema = z.object({
     'workspace/library-remove',
     'workspace/library-format',
     'workspace/library-resolve-doi',
+    'workspace/web-capture-extract',
     'workspace/library-import',
     'workspace/library-intake-preview',
     'workspace/library-duplicates',
@@ -585,6 +687,7 @@ const requestEnvelopeSchema = z.object({
     'workspace/library-key-preview',
     'workspace/library-rename-key',
     'workspace/reference-health',
+    'workspace/library-maintenance-overview',
     'workspace/reference-attachments',
     'workspace/attach-reference-pdf',
     'workspace/remove-reference-attachment',
@@ -594,6 +697,17 @@ const requestEnvelopeSchema = z.object({
     'workspace/create-pdf-annotation',
     'workspace/remove-pdf-annotation',
     'workspace/link-pdf-annotation',
+    'workspace/annotations',
+    'workspace/annotation-color-semantics',
+    'workspace/set-annotation-color-semantics',
+    'workspace/synthesize-annotations',
+    'workspace/attachments',
+    'workspace/add-attachment',
+    'workspace/add-attachment-version',
+    'workspace/remove-attachment',
+    'workspace/rename-attachment-file',
+    'workspace/attachment-local-path',
+    'workspace/attachment-health',
     'workspace/import-asset',
     'workspace/create-document',
     'workspace/rename-document',
@@ -645,6 +759,136 @@ const workspaceFileSchema = z.object({
 /** Exportado já na P1 para que P2 não crie contratos informais. */
 export const workspaceFileDtoSchema = workspaceFileSchema;
 
+export const workspaceConfigureSyncRequestSchema = z.object({
+  mirrorRootPath: nonEmptyString,
+}) as z.ZodType<WorkspaceConfigureSyncRequest>;
+
+export const workspaceSyncStatusResponseSchema = z.object({
+  configured: z.boolean(),
+  provider: z.object({ id: nonEmptyString, label: nonEmptyString }).optional(),
+  status: z.enum(['synced', 'pending', 'conflict', 'offline', 'error']),
+  pending: nonNegativeInteger,
+  conflicts: z.array(z.object({
+    id: nonEmptyString,
+    key: nonEmptyString,
+    kind: z.enum(['text', 'binary', 'workspace-state']),
+    createdAt: nonEmptyString,
+  })),
+}) as z.ZodType<WorkspaceSyncStatusDto>;
+
+export const workspaceResolveSyncConflictRequestSchema = z.object({
+  conflictId: nonEmptyString,
+  resolution: z.enum(['keep-local', 'use-mirror']),
+}) as z.ZodType<WorkspaceResolveSyncConflictRequest>;
+
+const workspaceCollaboratorSchema = z.object({ id: nonEmptyString, name: nonEmptyString, role: z.enum(['owner', 'editor', 'reviewer', 'viewer']) });
+const workspaceReviewReplySchema = z.object({ id: nonEmptyString, message: nonEmptyString, authorId: nonEmptyString.optional(), createdAt: nonNegativeInteger });
+const workspaceReviewCommentSchema = z.object({ id: nonEmptyString, fileId: nonEmptyString, path: nonEmptyString, revision: nonNegativeInteger, range: z.object({ start: nonNegativeInteger, end: nonNegativeInteger }), message: nonEmptyString, authorId: nonEmptyString.optional(), createdAt: nonNegativeInteger, resolvedAt: nonNegativeInteger.optional(), replies: z.array(workspaceReviewReplySchema).optional() });
+const workspaceCollaborationMilestoneSchema = z.object({ id: nonEmptyString, title: nonEmptyString, dueDate: z.string().optional(), completedAt: z.string().optional() });
+const workspaceReviewAssignmentSchema = z.object({ id: nonEmptyString, target: z.object({ kind: z.enum(['document', 'reference', 'screening-item']), id: nonEmptyString }), reviewerIds: z.array(nonEmptyString) });
+const workspaceScreeningDecisionSchema = z.object({ reviewerId: nonEmptyString, itemId: nonEmptyString, decision: z.enum(['include', 'exclude', 'maybe']), at: nonEmptyString });
+const workspacePresenceSchema = z.object({ collaboratorId: nonEmptyString, location: nonEmptyString, observedAt: nonEmptyString });
+const workspaceCollaborationMentionSchema = z.object({ id: nonEmptyString, authorId: nonEmptyString, collaboratorId: nonEmptyString, context: nonEmptyString, createdAt: nonEmptyString });
+export const workspaceCollaborationResponseSchema = z.object({ projectId: nonEmptyString, title: nonEmptyString, collaborators: z.array(workspaceCollaboratorSchema), comments: z.array(workspaceReviewCommentSchema).optional(), milestones: z.array(workspaceCollaborationMilestoneSchema).optional(), assignments: z.array(workspaceReviewAssignmentSchema).optional(), screening: z.object({ phase: z.enum(['independent', 'reconciliation']), decisions: z.array(workspaceScreeningDecisionSchema) }).optional(), presence: z.array(workspacePresenceSchema).optional(), mentions: z.array(workspaceCollaborationMentionSchema).optional(), concurrentEditing: z.literal('undecided').optional() }) as z.ZodType<WorkspaceCollaborationDto>;
+export const workspaceSetCollaborationRequestSchema = workspaceCollaborationResponseSchema as z.ZodType<WorkspaceSetCollaborationRequest>;
+
+const workspaceAcademicRelationKindSchema = z.enum(['cites', 'annotates', 'belongs-to-project', 'uses-dataset', 'evidence-for']);
+const workspaceAcademicDerivedColumnSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('rollup'), relationKind: workspaceAcademicRelationKindSchema, operation: z.enum(['count', 'unique-count']) }),
+  z.object({ kind: z.literal('formula'), expression: nonEmptyString, inputs: z.record(z.string(), nonEmptyString) }),
+  z.object({ kind: z.literal('relation'), targetKind: z.string().optional() }),
+]) as z.ZodType<WorkspaceAcademicDerivedColumnDto>;
+const workspaceDashboardBlockSchema = z.object({ id: nonEmptyString, viewId: nonEmptyString, title: nonEmptyString, kind: z.enum(['metric', 'chart', 'table']) });
+const workspaceAcademicViewColumnSchema = z.object({ field: nonEmptyString, label: z.string().optional(), width: z.number().positive().finite().optional(), visible: z.boolean().optional(), derived: workspaceAcademicDerivedColumnSchema.optional() });
+const workspaceAcademicViewSchema = z.object({ version: z.literal(1), id: nonEmptyString, name: nonEmptyString, source: z.enum(['documents', 'references', 'literature-notes', 'projects', 'datasets', 'review-studies', 'annotations']), layout: z.enum(['table', 'list', 'cards', 'board', 'calendar', 'timeline', 'chart']), filterQuery: z.string().min(1).optional(), sort: z.array(z.object({ field: nonEmptyString, direction: z.enum(['ascending', 'descending']) })).optional(), group: z.object({ field: nonEmptyString, direction: z.enum(['ascending', 'descending']).optional() }).optional(), columns: z.array(workspaceAcademicViewColumnSchema).optional() });
+export const workspaceAcademicViewsResponseSchema = z.object({ version: z.literal(1), views: z.array(workspaceAcademicViewSchema), dashboards: z.array(workspaceDashboardBlockSchema).optional() }) as z.ZodType<WorkspaceAcademicViewsDto>;
+export const workspaceSetAcademicViewsRequestSchema = workspaceAcademicViewsResponseSchema as z.ZodType<WorkspaceSetAcademicViewsRequest>;
+const workspaceAcademicRelationEndpointSchema = z.object({ kind: nonEmptyString, id: nonEmptyString });
+const workspaceAcademicRelationSchema = z.object({ from: workspaceAcademicRelationEndpointSchema, to: workspaceAcademicRelationEndpointSchema, kind: workspaceAcademicRelationKindSchema });
+export const workspaceAcademicRelationsResponseSchema = z.object({ relations: z.array(workspaceAcademicRelationSchema) }) as z.ZodType<WorkspaceAcademicRelationsDto>;
+
+const referenceRelationKindSchema = z.enum(['version-of', 'extension-of', 'replica-of', 'revision-of', 'correction-of']) as z.ZodType<ReferenceRelationKindDto>;
+export const referenceRelationDtoSchema = z.object({
+  id: nonEmptyString, kind: referenceRelationKindSchema, fromId: nonEmptyString, toId: nonEmptyString,
+  note: z.string().optional(), createdAt: nonEmptyString,
+}) as z.ZodType<ReferenceRelationDto>;
+export const workspaceReferenceRelationsRequestSchema = z.object({ referenceId: nonEmptyString.optional() }) as z.ZodType<WorkspaceReferenceRelationsRequest>;
+export const workspaceReferenceRelationsResponseSchema = z.object({ relations: z.array(referenceRelationDtoSchema) }) as z.ZodType<WorkspaceReferenceRelationsDto>;
+export const workspaceAddReferenceRelationRequestSchema = z.object({
+  kind: referenceRelationKindSchema, fromId: nonEmptyString, toId: nonEmptyString, note: z.string().optional(),
+}) as z.ZodType<WorkspaceAddReferenceRelationRequest>;
+export const workspaceRemoveReferenceRelationRequestSchema = z.object({ id: nonEmptyString }) as z.ZodType<WorkspaceRemoveReferenceRelationRequest>;
+
+export const literatureSubscriptionDtoSchema = z.object({
+  id: nonEmptyString, url: nonEmptyString, title: nonEmptyString,
+  projectId: z.string().optional(), keywords: z.array(nonEmptyString).optional(),
+}) as z.ZodType<LiteratureSubscriptionDto>;
+export const workspaceLiteratureSubscriptionsResponseSchema = z.object({ subscriptions: z.array(literatureSubscriptionDtoSchema) }) as z.ZodType<WorkspaceLiteratureSubscriptionsDto>;
+export const workspaceAddLiteratureSubscriptionRequestSchema = z.object({
+  url: nonEmptyString, title: nonEmptyString, projectId: z.string().optional(), keywords: z.array(nonEmptyString).optional(),
+}) as z.ZodType<WorkspaceAddLiteratureSubscriptionRequest>;
+export const workspaceRemoveLiteratureSubscriptionRequestSchema = z.object({ id: nonEmptyString }) as z.ZodType<WorkspaceRemoveLiteratureSubscriptionRequest>;
+export const literatureFeedInboxItemDtoSchema = z.object({
+  id: nonEmptyString, subscriptionId: nonEmptyString, title: nonEmptyString, link: nonEmptyString,
+  publishedAt: z.string().optional(), summary: z.string().optional(), discoveredAt: nonEmptyString,
+}) as z.ZodType<LiteratureFeedInboxItemDto>;
+export const workspaceLiteratureFeedInboxResponseSchema = z.object({ items: z.array(literatureFeedInboxItemDtoSchema) }) as z.ZodType<WorkspaceLiteratureFeedInboxDto>;
+export const workspacePollLiteratureSubscriptionRequestSchema = z.object({ id: nonEmptyString }) as z.ZodType<WorkspacePollLiteratureSubscriptionRequest>;
+export const workspacePollLiteratureSubscriptionResponseSchema = z.object({ added: nonNegativeInteger }) as z.ZodType<WorkspacePollLiteratureSubscriptionResponseDto>;
+export const workspaceDismissFeedInboxItemRequestSchema = z.object({ id: nonEmptyString }) as z.ZodType<WorkspaceDismissFeedInboxItemRequest>;
+export const workspaceImportFeedInboxItemRequestSchema = z.object({ id: nonEmptyString }) as z.ZodType<WorkspaceImportFeedInboxItemRequest>;
+
+const bookmarkTargetSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('document'), fileId: nonEmptyString, path: nonEmptyString }),
+  z.object({ kind: z.literal('section'), fileId: nonEmptyString, path: nonEmptyString, offset: nonNegativeInteger }),
+  z.object({ kind: z.literal('reference'), referenceId: nonEmptyString }),
+  z.object({ kind: z.literal('annotation'), referenceId: nonEmptyString, annotationId: nonEmptyString }),
+  z.object({ kind: z.literal('project'), projectId: nonEmptyString }),
+  z.object({ kind: z.literal('view'), viewId: nonEmptyString }),
+  z.object({ kind: z.literal('search'), query: nonEmptyString }),
+  z.object({ kind: z.literal('dataset'), datasetId: nonEmptyString }),
+]) as z.ZodType<BookmarkTargetDto>;
+const workspaceBookmarkSchema = z.object({ version: z.literal(1), id: nonEmptyString, label: nonEmptyString, target: bookmarkTargetSchema, createdAt: nonEmptyString });
+export const workspaceBookmarksResponseSchema = z.object({ version: z.literal(1), bookmarks: z.array(workspaceBookmarkSchema) }) as z.ZodType<WorkspaceBookmarksDto>;
+export const workspaceSetBookmarksRequestSchema = workspaceBookmarksResponseSchema as z.ZodType<WorkspaceSetBookmarksRequest>;
+
+const workspaceCaptureInboxItemSchema = z.object({ id: nonEmptyString, capturedAt: nonEmptyString, title: z.string().optional(), url: z.string().url().refine((value) => /^https?:\/\//iu.test(value), 'URL deve ser HTTP(S).').optional(), selection: z.string().optional(), note: z.string().optional() });
+export const workspaceCaptureInboxResponseSchema = z.object({ version: z.literal(1), items: z.array(workspaceCaptureInboxItemSchema) }) as z.ZodType<WorkspaceCaptureInboxDto>;
+export const workspaceSetCaptureInboxRequestSchema = workspaceCaptureInboxResponseSchema as z.ZodType<WorkspaceSetCaptureInboxRequest>;
+export const workspaceBrowserCaptureSchema = z.object({ version: z.literal(1), url: z.string().url().refine((value) => /^https?:\/\//iu.test(value), 'URL deve ser HTTP(S).'), title: z.string().optional(), selection: z.string().optional(), capturedAt: nonEmptyString }) as z.ZodType<WorkspaceBrowserCaptureDto>;
+
+const canvasPosition = { x: z.number().finite(), y: z.number().finite() };
+const workspaceResearchCanvasNodeSchema = z.discriminatedUnion('type', [
+  z.object({ id: nonEmptyString, type: z.literal('document'), fileId: nonEmptyString, path: nonEmptyString, ...canvasPosition }),
+  z.object({ id: nonEmptyString, type: z.literal('literature-note'), fileId: nonEmptyString, path: nonEmptyString, ...canvasPosition }),
+  z.object({ id: nonEmptyString, type: z.literal('section'), fileId: nonEmptyString, path: nonEmptyString, offset: nonNegativeInteger, ...canvasPosition }),
+  z.object({ id: nonEmptyString, type: z.literal('reference'), referenceId: nonEmptyString, ...canvasPosition }),
+  z.object({ id: nonEmptyString, type: z.literal('pdf-annotation'), referenceId: nonEmptyString, annotationId: nonEmptyString, ...canvasPosition }),
+  z.object({ id: nonEmptyString, type: z.literal('dataset'), datasetId: nonEmptyString, ...canvasPosition }),
+  z.object({ id: nonEmptyString, type: z.literal('project'), projectId: nonEmptyString, ...canvasPosition }),
+  z.object({ id: nonEmptyString, type: z.literal('text'), text: nonEmptyString, role: z.enum(['claim', 'evidence', 'counterargument']).optional(), ...canvasPosition }),
+]) as z.ZodType<WorkspaceResearchCanvasNodeDto>;
+const workspaceResearchCanvasSchema = z.object({ schema: z.literal('folio-research-canvas'), version: z.literal(1), id: nonEmptyString, title: nonEmptyString, nodes: z.array(workspaceResearchCanvasNodeSchema), edges: z.array(z.object({ id: nonEmptyString, from: nonEmptyString, to: nonEmptyString, kind: z.enum(['related-to', 'supports', 'contradicts', 'derived-from']), label: z.string().optional() })), groups: z.array(z.object({ id: nonEmptyString, label: nonEmptyString, nodeIds: z.array(nonEmptyString) })) }) as z.ZodType<WorkspaceResearchCanvasDto>;
+export const workspaceResearchCanvasesResponseSchema = z.object({ version: z.literal(1), canvases: z.array(workspaceResearchCanvasSchema) }) as z.ZodType<WorkspaceResearchCanvasesDto>;
+export const workspaceSetResearchCanvasesRequestSchema = workspaceResearchCanvasesResponseSchema as z.ZodType<WorkspaceSetResearchCanvasesRequest>;
+
+/**
+ * `PeekEntityDto` combina `dataset|project|view|search` num só braço TS, mas
+ * `z.discriminatedUnion` exige um literal por branch — as 4 branches abaixo
+ * são estruturalmente compatíveis com o tipo combinado, sem adapter extra.
+ */
+const peekEntitySchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('document'), id: nonEmptyString, title: nonEmptyString, excerpt: z.string().optional() }),
+  z.object({ kind: z.literal('reference'), id: nonEmptyString, title: nonEmptyString, authors: z.string().optional() }),
+  z.object({ kind: z.literal('annotation'), id: nonEmptyString, title: nonEmptyString, excerpt: nonEmptyString }),
+  z.object({ kind: z.literal('dataset'), id: nonEmptyString, title: nonEmptyString, excerpt: z.string().optional() }),
+  z.object({ kind: z.literal('project'), id: nonEmptyString, title: nonEmptyString, excerpt: z.string().optional() }),
+  z.object({ kind: z.literal('view'), id: nonEmptyString, title: nonEmptyString, excerpt: z.string().optional() }),
+  z.object({ kind: z.literal('search'), id: nonEmptyString, title: nonEmptyString, excerpt: z.string().optional() }),
+]) as z.ZodType<PeekEntityDto>;
+export const workspacePeekRequestSchema = z.object({ target: bookmarkTargetSchema }) as z.ZodType<WorkspacePeekRequest>;
+export const workspacePeekResponseSchema = z.object({ entity: peekEntitySchema.optional() }) as z.ZodType<WorkspacePeekResponseDto>;
+
 export const workspaceReadRequestSchema = z.object({
   fileId: nonEmptyString,
 }) as z.ZodType<WorkspaceReadRequest>;
@@ -653,6 +897,8 @@ export const workspaceReadResponseSchema = z.object({
   file: workspaceFileSchema,
   content: z.string(),
 }) as z.ZodType<WorkspaceReadResponse>;
+export const workspaceAssetPreviewRequestSchema = z.object({ fileId: nonEmptyString }) as z.ZodType<WorkspaceAssetPreviewRequest>;
+export const workspaceAssetPreviewResponseSchema = z.object({ dataUrl: z.string().regex(/^data:image\//u), mediaType: nonEmptyString }) as z.ZodType<WorkspaceAssetPreviewResponse>;
 
 export const workspaceWriteRequestSchema = z.object({
   fileId: nonEmptyString,
@@ -731,6 +977,10 @@ export const workspaceReferenceDtoSchema = z.object({
   sourceLabel: z.string(),
   sourceUri: z.string().optional(),
   sourceFileId: nonEmptyString.optional(),
+  citationCount: nonNegativeInteger,
+  narrativeAuthor: z.string(),
+  parentheticalAuthor: z.string(),
+  year: z.string(),
 }) as z.ZodType<WorkspaceReferenceDto>;
 export const workspaceReferencesResponseSchema = z.array(workspaceReferenceDtoSchema) as z.ZodType<
   readonly WorkspaceReferenceDto[]
@@ -753,7 +1003,7 @@ export const workspaceGraphNodeDtoSchema = z.object({
   identityState: z.enum(['resolved', 'possible-match', 'ambiguous']).optional(),
 }) as z.ZodType<WorkspaceGraphNodeDto>;
 export const workspaceGraphEdgeDtoSchema = z.object({
-  kind: z.enum(['links-to', 'cites', 'embeds', 'authored-by', 'tagged-with']),
+  kind: z.enum(['links-to', 'cites', 'embeds', 'authored-by', 'tagged-with', 'version-of', 'extension-of', 'replica-of', 'revision-of', 'correction-of']),
   from: nonEmptyString,
   to: nonEmptyString,
   sourceFileId: nonEmptyString.optional(),
@@ -778,6 +1028,9 @@ export const workspaceCreateLiteratureNoteRequestSchema = z.object({
   activeFileId: nonEmptyString.optional(),
 }) as z.ZodType<WorkspaceCreateLiteratureNoteRequest>;
 export const workspaceCreateLiteratureNoteResponseSchema = workspaceFileSchema;
+
+export const workspaceJournalOpenRequestSchema = z.object({ date: nonEmptyString.optional() }) as z.ZodType<WorkspaceJournalOpenRequest>;
+export const workspaceJournalCaptureRequestSchema = z.object({ date: nonEmptyString.optional(), text: nonEmptyString }) as z.ZodType<WorkspaceJournalCaptureRequest>;
 
 export const workspaceCitationExplorerRequestSchema = z.object({}) as z.ZodType<WorkspaceCitationExplorerRequest>;
 const citationExplorerLocationDtoSchema = z.object({
@@ -820,7 +1073,7 @@ export const workspaceResearchOverviewResponseSchema = z.object({
 }) as z.ZodType<WorkspaceResearchOverviewDto>;
 export const workspaceProjectDashboardRequestSchema = z.object({ fileIds: z.array(nonEmptyString) }) as z.ZodType<WorkspaceProjectDashboardRequest>;
 export const workspaceProjectDashboardResponseSchema = z.object({
-  documents: z.array(z.object({ fileId: nonEmptyString, path: nonEmptyString, revision: nonNegativeInteger, words: nonNegativeInteger, errors: nonNegativeInteger, warnings: nonNegativeInteger })),
+  documents: z.array(z.object({ fileId: nonEmptyString, path: nonEmptyString, revision: nonNegativeInteger, contentHash: nonEmptyString, words: nonNegativeInteger, citations: nonNegativeInteger, figures: nonNegativeInteger, tables: nonNegativeInteger, errors: nonNegativeInteger, warnings: nonNegativeInteger, unresolvedCrossReferences: nonNegativeInteger })),
 }) as z.ZodType<WorkspaceProjectDashboardDto>;
 
 export const workspaceLibraryListRequestSchema = z.object({}) as z.ZodType<WorkspaceLibraryListRequest>;
@@ -841,6 +1094,26 @@ export const workspaceLibraryFormatResponseSchema = z.string();
 export const workspaceLibraryResolveDoiRequestSchema = z.object({
   doi: nonEmptyString,
 }) as z.ZodType<WorkspaceLibraryResolveDoiRequest>;
+/** Reaproveita o schema canônico CSL-JSON sem `id`/campos obrigatórios — o candidato ainda não é uma referência. */
+export const webCaptureFieldsDtoSchema = cslBibliographicEntityV1.omit({ id: true }).partial() as z.ZodType<WebCaptureFieldsDto>;
+export const webCaptureAttachmentCandidateDtoSchema = z.object({
+  kind: z.literal('link'),
+  role: z.enum(['snapshot', 'supplementary', 'dataset']),
+  url: nonEmptyString,
+  label: z.string().optional(),
+}) as z.ZodType<WebCaptureAttachmentCandidateDto>;
+export const webCaptureCandidateDtoSchema = z.object({
+  extractorId: nonEmptyString,
+  fields: webCaptureFieldsDtoSchema,
+  attachments: z.array(webCaptureAttachmentCandidateDtoSchema),
+  quality: z.number().min(0).max(1),
+}) as z.ZodType<WebCaptureCandidateDto>;
+export const workspaceWebCaptureExtractRequestSchema = z.object({
+  url: z.string().url().refine((value) => /^https?:\/\//iu.test(value), 'URL deve ser HTTP(S).'),
+}) as z.ZodType<WorkspaceWebCaptureExtractRequest>;
+export const workspaceWebCaptureExtractResponseSchema = z.object({
+  candidates: z.array(webCaptureCandidateDtoSchema),
+}) as z.ZodType<WorkspaceWebCaptureExtractResponseDto>;
 export const workspaceLibraryImportRequestSchema = z.object({
   format: z.enum(['bibtex', 'ris', 'csl-json']),
   content: z.string(),
@@ -885,6 +1158,7 @@ export const workspacePdfAnnotationDtoSchema = z.object({
   page: z.number().int().positive(),
   quote: nonEmptyString,
   comment: z.string().optional(),
+  color: z.string().optional(),
   createdAt: nonEmptyString,
   literatureNoteFileId: nonEmptyString.optional(),
 }) as z.ZodType<WorkspacePdfAnnotationDto>;
@@ -894,6 +1168,7 @@ export const workspaceCreatePdfAnnotationRequestSchema = z.object({
   page: z.number().int().positive(),
   quote: nonEmptyString,
   comment: z.string().optional(),
+  color: z.string().optional(),
 }) as z.ZodType<WorkspaceCreatePdfAnnotationRequest>;
 export const workspacePdfAnnotationRequestSchema = z.object({
   referenceId: nonEmptyString,
@@ -903,6 +1178,79 @@ export const workspacePdfAnnotationLinkResponseSchema = z.object({
   annotation: workspacePdfAnnotationDtoSchema,
   literatureNote: workspaceFileDtoSchema,
 }) as z.ZodType<WorkspacePdfAnnotationLinkDto>;
+
+export const workspaceAnnotationsRequestSchema = z.object({ referenceId: nonEmptyString.optional() }) as z.ZodType<WorkspaceAnnotationsRequest>;
+export const workspaceAnnotationColorSemanticsResponseSchema = z.record(z.string(), nonEmptyString) as z.ZodType<WorkspaceAnnotationColorSemanticsDto>;
+export const workspaceSetAnnotationColorSemanticsRequestSchema = z.object({ colors: workspaceAnnotationColorSemanticsResponseSchema }) as z.ZodType<WorkspaceSetAnnotationColorSemanticsRequest>;
+const annotationSynthesisTemplateSchema = z.enum(['quote-list', 'grouped-by-source', 'grouped-by-color']) as z.ZodType<AnnotationSynthesisTemplateDto>;
+const workspaceSynthesisTargetSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('reference'), referenceId: nonEmptyString }),
+  z.object({ kind: z.literal('file'), fileId: nonEmptyString }),
+]) as z.ZodType<WorkspaceSynthesisTargetDto>;
+export const workspaceSynthesizeAnnotationsRequestSchema = z.object({
+  annotationIds: z.array(nonEmptyString).min(1),
+  template: annotationSynthesisTemplateSchema,
+  target: workspaceSynthesisTargetSchema,
+}) as z.ZodType<WorkspaceSynthesizeAnnotationsRequest>;
+export const workspaceSynthesizeAnnotationsResponseSchema = z.object({
+  file: workspaceFileDtoSchema,
+  insertedIds: z.array(nonEmptyString),
+  skippedIds: z.array(nonEmptyString),
+}) as z.ZodType<WorkspaceSynthesizeAnnotationsResponseDto>;
+
+const attachmentRoleSchema = z.enum(['primary', 'supplementary', 'dataset', 'snapshot']) as z.ZodType<AttachmentRoleDto>;
+const attachmentKindSchema = z.enum(['file', 'link']) as z.ZodType<AttachmentKindDto>;
+export const attachmentVersionDtoSchema = z.object({
+  versionId: nonEmptyString,
+  createdAt: nonEmptyString,
+  path: z.string().optional(),
+  uri: z.string().optional(),
+  snapshotText: z.string().optional(),
+  note: z.string().optional(),
+  file: workspaceFileDtoSchema.optional(),
+}) as z.ZodType<AttachmentVersionDto>;
+export const attachmentDtoSchema = z.object({
+  id: nonEmptyString,
+  referenceId: nonEmptyString,
+  kind: attachmentKindSchema,
+  role: attachmentRoleSchema,
+  mediaType: nonEmptyString,
+  displayTitle: z.string().optional(),
+  suggestedFilename: z.string().optional(),
+  versions: z.array(attachmentVersionDtoSchema),
+}) as z.ZodType<AttachmentDto>;
+export const workspaceAttachmentsRequestSchema = z.object({ referenceId: nonEmptyString.optional() }) as z.ZodType<WorkspaceAttachmentsRequest>;
+export const workspaceAttachmentsResponseSchema = z.array(attachmentDtoSchema) as z.ZodType<readonly AttachmentDto[]>;
+export const workspaceAddAttachmentRequestSchema = z.object({
+  referenceId: nonEmptyString,
+  role: attachmentRoleSchema,
+  kind: attachmentKindSchema,
+  mediaType: nonEmptyString,
+  displayTitle: z.string().optional(),
+  name: z.string().optional(),
+  base64: z.string().optional(),
+  uri: z.string().optional(),
+  snapshotHtml: z.string().optional(),
+}) as z.ZodType<WorkspaceAddAttachmentRequest>;
+export const workspaceAddAttachmentVersionRequestSchema = z.object({
+  attachmentId: nonEmptyString,
+  name: z.string().optional(),
+  base64: z.string().optional(),
+  uri: z.string().optional(),
+  snapshotHtml: z.string().optional(),
+  note: z.string().optional(),
+}) as z.ZodType<WorkspaceAddAttachmentVersionRequest>;
+export const workspaceAttachmentRequestSchema = z.object({ attachmentId: nonEmptyString }) as z.ZodType<WorkspaceAttachmentRequest>;
+export const workspacePickAttachmentRequestSchema = z.object({ referenceId: nonEmptyString, role: attachmentRoleSchema, displayTitle: z.string().optional() }) as z.ZodType<WorkspacePickAttachmentRequest>;
+export const workspaceAttachmentResponseSchema = attachmentDtoSchema as z.ZodType<AttachmentDto>;
+export const workspaceRenameAttachmentFileRequestSchema = z.object({ attachmentId: nonEmptyString, filename: nonEmptyString }) as z.ZodType<WorkspaceRenameAttachmentFileRequest>;
+export const workspaceAttachmentLocalPathResponseSchema = z.string().optional() as z.ZodType<string | undefined>;
+export const workspaceAttachmentHealthRequestSchema = z.object({}) as z.ZodType<WorkspaceAttachmentHealthRequest>;
+const attachmentHealthCodeSchema = z.enum(['missing-file', 'broken-link', 'orphan-reference']) as z.ZodType<AttachmentHealthCodeDto>;
+export const workspaceAttachmentHealthResponseSchema = z.array(z.object({
+  attachmentId: nonEmptyString, referenceId: nonEmptyString, code: attachmentHealthCodeSchema, message: nonEmptyString,
+})) as z.ZodType<readonly AttachmentHealthIssueDto[]>;
+
 export const workspaceAssetDtoSchema = z.object({
   file: workspaceFileDtoSchema,
   authoredUri: nonEmptyString,
@@ -919,6 +1267,7 @@ export const editorImportAssetRequestSchema = z.object({
   directory: nonEmptyString.optional(),
 }) as z.ZodType<EditorImportAssetRequest>;
 export const workspaceCreateDocumentRequestSchema = z.object({ path: nonEmptyString, content: z.string() }) as z.ZodType<WorkspaceCreateDocumentRequest>;
+const workspaceReferenceAuditCodeSchema = z.enum(['invalid-doi', 'invalid-isbn', 'missing-url', 'missing-access-date', 'incomplete-author', 'missing-year', 'possible-duplicate', 'inconsistent-key', 'missing-pdf', 'missing-literature-note']) as z.ZodType<WorkspaceReferenceAuditCode>;
 export const workspaceReferenceHealthResponseSchema = z.object({
   total: nonNegativeInteger,
   cited: nonNegativeInteger,
@@ -927,10 +1276,34 @@ export const workspaceReferenceHealthResponseSchema = z.object({
   withoutDoi: nonNegativeInteger,
   audit: z.array(z.object({
     referenceId: nonEmptyString,
-    code: z.enum(['invalid-doi', 'invalid-isbn', 'missing-url', 'missing-access-date', 'incomplete-author', 'missing-year', 'possible-duplicate', 'inconsistent-key', 'missing-pdf', 'missing-literature-note']),
+    code: workspaceReferenceAuditCodeSchema,
     message: z.string(),
   })),
 }) as z.ZodType<WorkspaceReferenceHealthDto>;
+export const workspaceLibraryMaintenanceRequestSchema = z.object({}) as z.ZodType<WorkspaceLibraryMaintenanceRequest>;
+export const workspaceLibraryMaintenanceResponseSchema = z.object({
+  rows: z.array(z.object({
+    referenceId: nonEmptyString,
+    title: z.string(),
+    cited: z.boolean(),
+    citationCount: nonNegativeInteger,
+    withoutDoi: z.boolean(),
+    auditCodes: z.array(workspaceReferenceAuditCodeSchema),
+    duplicateOf: z.array(nonEmptyString),
+    attachmentCount: nonNegativeInteger,
+    attachmentIssueCodes: z.array(attachmentHealthCodeSchema),
+    relationCount: nonNegativeInteger,
+  })),
+  totals: z.object({
+    total: nonNegativeInteger,
+    cited: nonNegativeInteger,
+    unused: nonNegativeInteger,
+    missing: z.array(nonEmptyString),
+    withoutDoi: nonNegativeInteger,
+    duplicatePairs: nonNegativeInteger,
+    attachmentIssues: nonNegativeInteger,
+  }),
+}) as z.ZodType<WorkspaceLibraryMaintenanceOverviewDto>;
 
 const languageRangeSchema = z.object({ start: nonNegativeInteger, end: nonNegativeInteger });
 const languageQueryRequestSchema = z.object({
@@ -946,7 +1319,7 @@ export const languageReferencesRequestSchema = languageQueryRequestSchema as z.Z
 export const languageCompletionDtoSchema = z.object({
   range: languageRangeSchema,
   items: z.array(z.object({
-    kind: z.enum(['citation', 'document', 'math']),
+    kind: z.enum(['citation', 'document', 'block', 'math']),
     label: z.string(),
     detail: z.string().optional(),
     insertText: z.string(),
@@ -1065,6 +1438,8 @@ export const editorExportRequestSchema = z.object({ fileId: nonEmptyString }) as
 export const editorExportDtoSchema = z.object({
   fileId: nonEmptyString,
   revision: nonNegativeInteger,
+  profileId: nonEmptyString,
+  contentHash: nonEmptyString,
   publication: publicationDocumentDtoSchema,
 }) as z.ZodType<EditorExportDto>;
 /** A resposta pode legitimamente não ter compilação ainda; ver EditorExportDto. */
@@ -1072,13 +1447,18 @@ export const editorExportResponseSchema = editorExportDtoSchema.optional() as z.
 
 export const editorExportResultDtoSchema = z.object({
   path: nonEmptyString,
+  revision: nonNegativeInteger.optional(),
+  profileId: nonEmptyString.optional(),
+  contentHash: nonEmptyString.optional(),
+  sha256: nonEmptyString.optional(),
   pages: z.number().int().nonnegative().optional(),
 }) as z.ZodType<EditorExportResultDto>;
 
-export const exportFormatSchema = z.enum(['pdf', 'docx']) as z.ZodType<ExportFormat>;
+export const exportFormatSchema = z.enum(['pdf', 'docx', 'html']) as z.ZodType<ExportFormat>;
+export const desktopExportFormatSchema = exportFormatSchema as z.ZodType<DesktopExportFormat>;
 export const desktopExportRequestSchema = z.object({
   fileId: nonEmptyString,
-  format: exportFormatSchema,
+  format: desktopExportFormatSchema,
 }) as z.ZodType<DesktopExportRequest>;
 export const exportRequestSchema = z.object({
   publication: publicationDocumentDtoSchema,
@@ -1123,6 +1503,7 @@ export const desktopEventDtoSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('desktop:editor-closed'), fileId: nonEmptyString }),
   z.object({ type: z.literal('desktop:workspace-event'), event: workspaceEventSchema }),
   z.object({ type: z.literal('desktop:operational-error'), operation: nonEmptyString, error: protocolErrorSchema }),
+  z.object({ type: z.literal('desktop:browser-capture'), capture: workspaceBrowserCaptureSchema }),
 ]) as z.ZodType<DesktopEventDto>;
 
 const problemasDeZod = (issues: readonly z.core.$ZodIssue[]): readonly ProtocolProblem[] =>
@@ -1241,17 +1622,39 @@ export const validarWorkspaceLibraryFormatRequest = (value: unknown): ProtocolRe
   validarDto(workspaceLibraryFormatRequestSchema, value);
 export const validarWorkspaceLibraryResolveDoiRequest = (value: unknown): ProtocolResult<WorkspaceLibraryResolveDoiRequest> =>
   validarDto(workspaceLibraryResolveDoiRequestSchema, value);
+export const validarWorkspaceWebCaptureExtractRequest = (value: unknown): ProtocolResult<WorkspaceWebCaptureExtractRequest> =>
+  validarDto(workspaceWebCaptureExtractRequestSchema, value);
 export const validarWorkspaceLibraryImportRequest = (value: unknown): ProtocolResult<WorkspaceLibraryImportRequest> =>
   validarDto(workspaceLibraryImportRequestSchema, value);
 export const validarWorkspaceLibraryIntakePreviewRequest = (value: unknown): ProtocolResult<WorkspaceLibraryIntakePreviewRequest> =>
   validarDto(workspaceLibraryIntakePreviewRequestSchema, value);
 export const validarWorkspaceReferenceHealthRequest = (value: unknown): ProtocolResult<WorkspaceReferenceHealthRequest> =>
   validarDto(workspaceReferenceHealthRequestSchema, value);
+export const validarWorkspaceLibraryMaintenanceRequest = (value: unknown): ProtocolResult<WorkspaceLibraryMaintenanceRequest> =>
+  validarDto(workspaceLibraryMaintenanceRequestSchema, value);
 export const validarWorkspaceReferenceAttachmentsRequest = (value: unknown): ProtocolResult<WorkspaceReferenceAttachmentsRequest> => validarDto(workspaceReferenceAttachmentsRequestSchema, value);
 export const validarWorkspaceReferenceAttachmentRequest = (value: unknown): ProtocolResult<WorkspaceReferenceAttachmentRequest> => validarDto(workspaceReferenceAttachmentRequestSchema, value);
 export const validarWorkspaceAttachReferencePdfRequest = (value: unknown): ProtocolResult<WorkspaceAttachReferencePdfRequest> => validarDto(workspaceAttachReferencePdfRequestSchema, value);
 export const validarWorkspaceCreatePdfAnnotationRequest = (value: unknown): ProtocolResult<WorkspaceCreatePdfAnnotationRequest> => validarDto(workspaceCreatePdfAnnotationRequestSchema, value);
 export const validarWorkspacePdfAnnotationRequest = (value: unknown): ProtocolResult<WorkspacePdfAnnotationRequest> => validarDto(workspacePdfAnnotationRequestSchema, value);
+export const validarWorkspaceAnnotationsRequest = (value: unknown): ProtocolResult<WorkspaceAnnotationsRequest> => validarDto(workspaceAnnotationsRequestSchema, value);
+export const validarWorkspaceSetAnnotationColorSemanticsRequest = (value: unknown): ProtocolResult<WorkspaceSetAnnotationColorSemanticsRequest> => validarDto(workspaceSetAnnotationColorSemanticsRequestSchema, value);
+export const validarWorkspaceSynthesizeAnnotationsRequest = (value: unknown): ProtocolResult<WorkspaceSynthesizeAnnotationsRequest> => validarDto(workspaceSynthesizeAnnotationsRequestSchema, value);
+export const validarWorkspaceAttachmentsRequest = (value: unknown): ProtocolResult<WorkspaceAttachmentsRequest> => validarDto(workspaceAttachmentsRequestSchema, value);
+export const validarWorkspaceAddAttachmentRequest = (value: unknown): ProtocolResult<WorkspaceAddAttachmentRequest> => validarDto(workspaceAddAttachmentRequestSchema, value);
+export const validarWorkspaceAddAttachmentVersionRequest = (value: unknown): ProtocolResult<WorkspaceAddAttachmentVersionRequest> => validarDto(workspaceAddAttachmentVersionRequestSchema, value);
+export const validarWorkspaceAttachmentRequest = (value: unknown): ProtocolResult<WorkspaceAttachmentRequest> => validarDto(workspaceAttachmentRequestSchema, value);
+export const validarWorkspacePickAttachmentRequest = (value: unknown): ProtocolResult<WorkspacePickAttachmentRequest> => validarDto(workspacePickAttachmentRequestSchema, value);
+export const validarWorkspaceRenameAttachmentFileRequest = (value: unknown): ProtocolResult<WorkspaceRenameAttachmentFileRequest> => validarDto(workspaceRenameAttachmentFileRequestSchema, value);
+export const validarWorkspaceAttachmentHealthRequest = (value: unknown): ProtocolResult<WorkspaceAttachmentHealthRequest> => validarDto(workspaceAttachmentHealthRequestSchema, value);
+export const validarWorkspaceReferenceRelationsRequest = (value: unknown): ProtocolResult<WorkspaceReferenceRelationsRequest> => validarDto(workspaceReferenceRelationsRequestSchema, value);
+export const validarWorkspaceAddReferenceRelationRequest = (value: unknown): ProtocolResult<WorkspaceAddReferenceRelationRequest> => validarDto(workspaceAddReferenceRelationRequestSchema, value);
+export const validarWorkspaceRemoveReferenceRelationRequest = (value: unknown): ProtocolResult<WorkspaceRemoveReferenceRelationRequest> => validarDto(workspaceRemoveReferenceRelationRequestSchema, value);
+export const validarWorkspaceAddLiteratureSubscriptionRequest = (value: unknown): ProtocolResult<WorkspaceAddLiteratureSubscriptionRequest> => validarDto(workspaceAddLiteratureSubscriptionRequestSchema, value);
+export const validarWorkspaceRemoveLiteratureSubscriptionRequest = (value: unknown): ProtocolResult<WorkspaceRemoveLiteratureSubscriptionRequest> => validarDto(workspaceRemoveLiteratureSubscriptionRequestSchema, value);
+export const validarWorkspacePollLiteratureSubscriptionRequest = (value: unknown): ProtocolResult<WorkspacePollLiteratureSubscriptionRequest> => validarDto(workspacePollLiteratureSubscriptionRequestSchema, value);
+export const validarWorkspaceDismissFeedInboxItemRequest = (value: unknown): ProtocolResult<WorkspaceDismissFeedInboxItemRequest> => validarDto(workspaceDismissFeedInboxItemRequestSchema, value);
+export const validarWorkspaceImportFeedInboxItemRequest = (value: unknown): ProtocolResult<WorkspaceImportFeedInboxItemRequest> => validarDto(workspaceImportFeedInboxItemRequestSchema, value);
 export const validarWorkspaceImportAssetRequest = (value: unknown): ProtocolResult<WorkspaceImportAssetRequest> =>
   validarDto(workspaceImportAssetRequestSchema, value);
 export const validarEditorImportAssetRequest = (value: unknown): ProtocolResult<EditorImportAssetRequest> =>

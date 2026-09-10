@@ -151,6 +151,19 @@ describe('P9 — Tab/View model', () => {
     expect(model.list()).toHaveLength(1);
   });
 
+  it('reordena tabs sem alterar a sessão ou qual tab está ativa', () => {
+    const model = createViewsModel();
+    const a = new FakeEditorController('a');
+    const b = new FakeEditorController('b');
+    const c = new FakeEditorController('c');
+    const idA = model.openEditor({ fileId: 'a', path: 'a.md', controller: a, snapshot: a.snapshot() });
+    model.openEditor({ fileId: 'b', path: 'b.md', controller: b, snapshot: b.snapshot() });
+    const idC = model.openEditor({ fileId: 'c', path: 'c.md', controller: c, snapshot: c.snapshot() });
+    model.reorder(idC, idA);
+    expect(model.list().map((view) => view.fileId)).toEqual(['c', 'a', 'b']);
+    expect(model.active()?.id).toBe(idC);
+  });
+
   it('pode abrir duas views do mesmo documento para split e atualiza ambas pelo snapshot da sessão única', () => {
     const model = createViewsModel();
     const left = new FakeEditorController('a');

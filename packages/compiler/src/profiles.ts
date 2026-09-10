@@ -4,6 +4,9 @@ import {
   perfilArtigoAbnt,
   perfilArtigoAbntNumerico,
   perfilArtigoWeb,
+  perfilArtigoApa,
+  REGRAS_DO_ARTIGO_APA,
+  validarArtigoApa,
   perfilTccAbnt,
   REGRAS_DO_ARTIGO_ABNT,
   REGRAS_DO_TCC_ABNT,
@@ -23,6 +26,7 @@ const definition = (
 
 const articleRules = REGRAS_DO_ARTIGO_ABNT.map((rule) => ({ id: rule.id, standard: `${rule.norma.id}@${rule.norma.version}`, description: `Validação editorial ${rule.id}.` }));
 const tccRules = REGRAS_DO_TCC_ABNT.map((rule) => ({ id: rule.id, standard: `${rule.norma.id}@${rule.norma.version}`, description: `Validação editorial ${rule.id}.` }));
+const apaRules = REGRAS_DO_ARTIGO_APA.map((rule) => ({ id: rule.id, standard: `${rule.norma.id}@${rule.norma.version}`, description: `Validação editorial ${rule.id}.` }));
 const articleCapabilities = ['abstract', 'keywords', 'numbered-sections', 'figures', 'tables', 'equations', 'bibliography', 'lists', 'posttextual'] as const;
 const tccCapabilities = [...articleCapabilities, 'toc', 'pretextual'] as const;
 
@@ -59,6 +63,7 @@ export const PERFIS_PADRAO: Readonly<Record<string, CompilationProfileDefinition
   'abnt-artigo-numerico': definition(perfilArtigoAbntNumerico, validarArtigoAbnt, { id: 'abnt-artigo-numerico', version: '2018.1', name: 'ABNT Artigo numérico', description: 'Artigo ABNT com sistema de citação numérico.', documentKinds: ['article'], citationSystem: 'ABNT numérico', capabilities: articleCapabilities, requiredMetadata: ['title', 'authors', 'abstract', 'keywords'], optionalMetadata: ['subtitle', 'language', 'bibliography'], rules: articleRules, pagePolicy: perfilArtigoAbntNumerico.page }),
   'abnt-tcc': definition(perfilTccAbnt, validarTccAbnt, { id: 'abnt-tcc', version: '2011.1', name: 'ABNT TCC', description: 'Trabalho acadêmico com elementos pré e pós-textuais.', documentKinds: ['tcc', 'dissertation', 'thesis'], citationSystem: 'ABNT autor-data', capabilities: tccCapabilities, requiredMetadata: ['title', 'authors', 'tcc:institution', 'tcc:course', 'tcc:place', 'tcc:year', 'tcc:nature'], optionalMetadata: ['abstract', 'keywords', 'tcc:advisor', 'tcc:approval-date'], rules: tccRules, pagePolicy: perfilTccAbnt.page }),
   'web-article': definition(perfilArtigoWeb, validarSemNorma, { id: 'web-article', version: '1.0.0', name: 'Web Article', description: 'Artigo para publicação web, sem validação normativa ABNT.', documentKinds: ['article', 'web'], citationSystem: 'Web author-date', capabilities: articleCapabilities, requiredMetadata: ['title'], optionalMetadata: ['authors', 'abstract', 'keywords', 'language'], rules: [], pagePolicy: perfilArtigoWeb.page }),
+  'apa-7': definition(perfilArtigoApa, validarArtigoApa, { id: 'apa-7', version: '7.0.0', name: 'APA 7', description: 'Artigo acadêmico conforme APA 7, com citações autor-data e referências em inglês.', documentKinds: ['article'], citationSystem: 'APA 7 author-date', capabilities: articleCapabilities, requiredMetadata: ['title', 'authors', 'abstract'], optionalMetadata: ['keywords', 'language', 'bibliography'], rules: apaRules, pagePolicy: perfilArtigoApa.page }),
 };
 
 const institutionalTcc = composeInstitutionalProfile(PERFIS_PADRAO['abnt-tcc']!, {

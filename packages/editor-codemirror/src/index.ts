@@ -5,7 +5,7 @@
  * aplicação. A autoridade do texto continua no editor-core/P4.
  */
 
-export { CodeMirrorEditorAdapterService, toCodeMirrorDiagnostics } from './editor-codemirror.js';
+export { CodeMirrorEditorAdapterService, matchSlashTrigger, toCodeMirrorDiagnostics } from './editor-codemirror.js';
 export type {
   CodeMirrorDiagnostic,
   CodeMirrorEditorAdapter,

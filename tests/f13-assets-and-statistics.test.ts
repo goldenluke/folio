@@ -6,6 +6,8 @@ import { MessageChannel } from 'node:worker_threads';
 import { describe, expect, it } from 'vitest';
 
 import { criarServicoDeCompiler } from '@abnt/compiler';
+import { parseMarkdown } from '@abnt/markdown';
+import { percorrer } from '@abnt/document-model';
 import { createInProcessCompilerClient, createWorkspaceMessagePortClient, serveWorkspaceOverMessagePort } from '@abnt/protocol';
 
 import { DesktopWorkspaceServiceHost } from '../apps/desktop/src/workspace/workspace-service.js';
@@ -24,6 +26,9 @@ describe('Onda D — recursos e autoria confortável', () => {
       expect(asset).toMatchObject({ ok: true, value: { file: { path: 'assets/gr-fico-final.png', mediaType: 'image/png' }, authoredUri: 'assets/gr-fico-final.png' } });
       if (!asset.ok) return;
       expect(figureSource({ uri: asset.value.authoredUri, alt: 'Gráfico', caption: 'Resultados', source: 'Autoria própria', identifier: 'resultado' })).toContain('![Gráfico](assets/gr-fico-final.png) {#resultado}');
+      expect(figureSource({ uri: asset.value.authoredUri, alt: 'Gráfico', caption: '', width: 65 })).toContain('{width=65%}');
+      const sizedFigure = [...percorrer(parseMarkdown('![Gráfico](assets/grafico.png) {#resultado width=65%}'))].find((node) => node.type === 'figure');
+      expect(sizedFigure).toMatchObject({ type: 'figure', attributes: { identifier: 'resultado', properties: { width: '65%' } } });
       expect(tableSource(2, 2)).toContain('| --- | --- |');
       expect(equationSource('E = mc^2', 'energia')).toContain('{#energia}');
     } finally { client.dispose(); stop(); channel.port1.close(); channel.port2.close(); await host.dispose(); await rm(root, { recursive: true, force: true }); }

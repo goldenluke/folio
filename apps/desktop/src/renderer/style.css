@@ -101,6 +101,160 @@ textarea:focus-visible {
     box-shadow: -16px 0 40px rgb(15 23 42 / 0.03);
   }
 
+  .folio-context-panel {
+    position: relative;
+    isolation: isolate;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.94), rgb(248 250 252 / 0.9)),
+      var(--folio-surface);
+  }
+
+  .folio-context-panel::before {
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 8.5rem;
+    content: "";
+    background: radial-gradient(circle at 82% 0%, rgb(199 210 254 / 0.5), transparent 66%);
+    pointer-events: none;
+  }
+
+  .folio-context-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 3.25rem;
+  }
+
+  .folio-context-mark {
+    color: #4338ca;
+    background: linear-gradient(135deg, #e0e7ff, #eef2ff);
+    box-shadow: inset 0 0 0 1px rgb(99 102 241 / 0.12), 0 5px 14px rgb(79 70 229 / 0.12);
+  }
+
+  .folio-context-live {
+    border: 1px solid #c7d2fe;
+    border-radius: 999px;
+    padding: 0.1rem 0.4rem;
+    color: #4338ca;
+    background: rgb(238 242 255 / 0.8);
+    font-size: 0.59rem;
+    font-weight: 800;
+    letter-spacing: 0.055em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .folio-context-live::before {
+    display: inline-block;
+    width: 0.35rem;
+    height: 0.35rem;
+    margin-right: 0.25rem;
+    border-radius: 99px;
+    content: "";
+    background: #6366f1;
+    box-shadow: 0 0 0 3px rgb(99 102 241 / 0.13);
+  }
+
+  .folio-context-collapse {
+    border-color: transparent;
+    background: rgb(255 255 255 / 0.66);
+    box-shadow: none;
+  }
+
+  .folio-context-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid rgb(203 213 225 / 0.65);
+    border-radius: 0.9rem;
+    background: rgb(241 245 249 / 0.72);
+  }
+
+  .folio-context-tab {
+    overflow: hidden;
+    min-height: 1.9rem;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid transparent;
+    border-radius: 0.65rem;
+    color: #64748b;
+    background: transparent;
+    font-size: 0.62rem;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    text-align: center;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .folio-context-tab:hover { color: #3730a3; background: rgb(255 255 255 / 0.72); }
+
+  .folio-context-tab-active {
+    border-color: rgb(199 210 254 / 0.8);
+    color: #3730a3;
+    background: #fff;
+    box-shadow: 0 2px 6px rgb(71 85 105 / 0.1);
+  }
+
+  .folio-context-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.6rem;
+    border: 1px solid rgb(226 232 240 / 0.86);
+    border-radius: 1rem;
+    background: rgb(255 255 255 / 0.72);
+    box-shadow: 0 9px 22px rgb(15 23 42 / 0.035), inset 0 1px 0 rgb(255 255 255 / 0.9);
+  }
+
+  .folio-context-content-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0 0.2rem 0.15rem;
+    color: #64748b;
+    font-size: 0.61rem;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .folio-context-content-label span:last-child { color: #94a3b8; font-size: 0.57rem; }
+
+  .folio-context-status {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    padding: 0.6rem 0.65rem;
+    border: 1px solid rgb(224 231 255 / 0.9);
+    border-radius: 0.8rem;
+    color: #475569;
+    background: linear-gradient(135deg, rgb(255 255 255 / 0.88), rgb(248 250 255 / 0.88));
+    box-shadow: 0 4px 10px rgb(15 23 42 / 0.035);
+    font-size: 0.7rem;
+    line-height: 1.35;
+  }
+
+  .folio-context-status-dot {
+    flex: none;
+    width: 0.42rem;
+    height: 0.42rem;
+    margin-top: 0.25rem;
+    border-radius: 999px;
+    background: #6366f1;
+    box-shadow: 0 0 0 3px rgb(99 102 241 / 0.13);
+  }
+
+  .folio-context-status-idle { color: #64748b; }
+  .folio-context-status-idle .folio-context-status-dot { background: #94a3b8; box-shadow: 0 0 0 3px rgb(148 163 184 / 0.12); }
+
   .folio-control {
     border: 1px solid var(--folio-border);
     background: var(--folio-surface);
@@ -166,6 +320,34 @@ textarea:focus-visible {
 #root .hover\:text-slate-100:hover,
 #root .hover\:text-white:hover { color: #312e81 !important; }
 
+/* O herói da Home usa os azuis do Folio sem voltar ao contraste pesado do
+   shell antigo. As regras globais não podem apagar os indicadores internos. */
+#root .folio-home-hero {
+  background: linear-gradient(135deg, #eef2ff 0%, #dbeafe 55%, #e0e7ff 100%) !important;
+  color: #172033 !important;
+}
+#root .folio-home-hero .bg-slate-950 { background-color: rgb(255 255 255 / 0.6) !important; }
+#root .folio-home-hero .bg-slate-800 { background-color: rgb(255 255 255 / 0.76) !important; }
+#root .folio-home-hero .border-slate-800 { border-color: rgb(99 102 241 / 0.2) !important; }
+#root .folio-home-hero .text-slate-300 { color: #475569 !important; }
+#root .folio-home-hero .text-slate-400 { color: #64748b !important; }
+
+/* Cartão de retomada usa uma superfície própria para não depender das
+   utilidades slate legadas normalizadas pelo tema claro. */
+#root .folio-home-resume {
+  border: 1px solid rgb(199 210 254 / 0.85);
+  background: linear-gradient(135deg, #fff 0%, #f8faff 56%, #eef2ff 100%) !important;
+  color: #172033 !important;
+}
+#root .folio-home-resume .text-white { color: #172033 !important; }
+#root .folio-home-resume .bg-indigo-500.text-white { color: #fff !important; }
+#root .folio-home-resume .text-indigo-300 { color: #4f46e5 !important; }
+#root .folio-home-resume .text-slate-300 { color: #475569 !important; }
+#root .folio-home-resume .text-slate-400 { color: #64748b !important; }
+#root .folio-home-resume .border-slate-800 { border-color: rgb(199 210 254 / 0.75) !important; }
+#root .folio-home-resume .hover\:bg-slate-800:hover { background-color: rgb(238 242 255 / 0.85) !important; color: #312e81 !important; }
+#root .folio-home-resume .hover\:text-white:hover { color: #312e81 !important; }
+
 #root button.bg-slate-700 {
   border-radius: 0.55rem;
   background: var(--folio-accent-soft) !important;
@@ -195,8 +377,8 @@ textarea:focus-visible {
   backdrop-filter: blur(5px);
 }
 
-/* O menu de reticências é flutuante, não um modal: não recebe overlay. */
-#root > main > div.folio-actions-menu {
+/* O menu de reticências é flutuante, não um modal: não recebe overlay. Descendente (não filho direto de main) porque o menu de contexto do explorador de arquivos vive dentro de aside > nav. */
+#root main div.folio-actions-menu {
   border-color: #e7edf5 !important;
   background: rgb(255 255 255 / 0.99) !important;
   color: var(--folio-text);
@@ -204,9 +386,75 @@ textarea:focus-visible {
   backdrop-filter: none;
 }
 
-#root > main > div.folio-actions-menu button:hover {
+#root main div.folio-actions-menu button:hover {
   background: #f5f7ff !important;
   color: #3730a3 !important;
+}
+
+/* Menu de documento: compacto, agrupado e visualmente separado dos diálogos. */
+#root main div.folio-file-menu {
+  width: 15.5rem;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  padding: 0.35rem;
+  border-radius: 0.7rem;
+}
+
+#root .folio-file-menu-title {
+  padding: 0.45rem 0.55rem 0.35rem;
+  color: var(--folio-text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#root .folio-file-menu-item {
+  display: flex;
+  width: 100%;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.55rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  padding: 0.38rem 0.55rem;
+  color: #334155;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  text-align: left;
+  box-shadow: none;
+}
+
+#root .folio-file-menu-item:disabled { color: #a8b3c3; }
+#root .folio-file-menu-item:disabled:hover { background: transparent !important; color: #a8b3c3 !important; }
+
+#root .folio-file-menu-icon {
+  display: grid;
+  width: 1rem;
+  flex: 0 0 1rem;
+  place-items: center;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+#root .folio-file-menu-separator {
+  height: 1px;
+  margin: 0.28rem 0.3rem;
+  background: #e8edf4;
+}
+
+/* Ao expandir o explorador, a árvore vira a superfície principal da sidebar. */
+#root .folio-file-explorer-expanded {
+  border-top-color: #dfe7f1;
+}
+
+#root .folio-file-explorer-expanded > ul {
+  padding: 0.15rem 0.1rem 0.35rem;
+}
+
+#root .folio-file-explorer-expanded li > button {
+  min-height: 2rem;
 }
 
 #root > main > div.fixed > section {
@@ -223,6 +471,44 @@ textarea:focus-visible {
   border: 1px solid var(--folio-border);
   background: #fff;
   color: var(--folio-text);
+}
+
+/* O editor de citações nasceu no shell escuro e contém controles aninhados.
+   Este escopo vence as utilidades legadas mesmo quando Tailwind recompila a
+   ordem de classes, mantendo a superfície realmente clara. */
+#root .folio-citation-dialog,
+#root .folio-citation-dialog .bg-slate-900,
+#root .folio-citation-dialog .bg-slate-800,
+#root .folio-citation-dialog .bg-slate-950 {
+  background-color: #fff !important;
+  color: var(--folio-text) !important;
+}
+
+#root .folio-citation-dialog li {
+  border-color: var(--folio-border) !important;
+  background: #f8fafc !important;
+}
+
+#root .folio-citation-dialog input,
+#root .folio-citation-dialog select {
+  border: 1px solid var(--folio-border) !important;
+  background: #fff !important;
+  color: var(--folio-text) !important;
+}
+
+#root .folio-citation-dialog button.bg-slate-700 {
+  background: #eef2ff !important;
+  color: #3730a3 !important;
+}
+
+#root .folio-citation-dialog button.bg-slate-800 {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+}
+
+#root .folio-citation-dialog p.bg-slate-950 {
+  border: 1px solid var(--folio-border);
+  background: #f8fafc !important;
 }
 
 /* Fechar tem alvo confortável sem tornar o glifo visualmente dominante. */
@@ -258,7 +544,7 @@ textarea:focus-visible {
   min-height: 0;
   overflow-x: auto !important;
   overflow-y: auto !important;
-  font-family: "SFMono-Regular", Consolas, monospace;
+  font-family: inherit;
 }
 
 /* F36: camada de texto sobre o canvas do PDF.js continua selecionável. */
@@ -285,6 +571,122 @@ textarea:focus-visible {
 .editor-pane .cm-selectionBackground,
 .editor-pane ::selection { background: #dbeafe !important; }
 
+/* O painel nativo de busca do CodeMirror entra no DOM do editor, não no JSX.
+   Mantemos a funcionalidade oficial, mas a superfície precisa parecer parte
+   do Folio — não um widget de navegador solto sobre o texto. */
+.editor-pane .cm-panels {
+  border-bottom: 1px solid var(--folio-border);
+  background: rgb(255 255 255 / 0.96);
+  box-shadow: 0 8px 20px rgb(15 23 42 / 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.editor-pane .cm-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0.6rem 0.9rem;
+  color: #475569;
+  font: 500 0.78rem/1.25 inherit;
+}
+
+.editor-pane .cm-search label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.editor-pane .cm-search input[type='checkbox'] {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin: 0;
+  accent-color: #4f46e5;
+}
+
+.editor-pane .cm-search br {
+  flex-basis: 100%;
+  width: 0;
+  height: 0;
+}
+
+.editor-pane .cm-search input.cm-textfield {
+  min-width: 11rem;
+  height: 2rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.45rem;
+  background: #f8fafc;
+  color: var(--folio-text);
+  outline: none;
+  box-shadow: inset 0 1px 1px rgb(15 23 42 / 0.03);
+}
+
+.editor-pane .cm-search input.cm-textfield:focus {
+  border-color: #6366f1;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.15);
+}
+
+.editor-pane .cm-search button {
+  display: inline-grid;
+  min-width: 2rem;
+  height: 2rem;
+  place-items: center;
+  padding: 0 0.5rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 0.45rem;
+  background: #fff;
+  color: #475569;
+  font: inherit;
+  cursor: pointer;
+}
+
+.editor-pane .cm-search button:hover {
+  border-color: #a5b4fc;
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.editor-pane .cm-search button[name='close'] {
+  position: static !important;
+  margin-left: auto;
+  border-color: transparent;
+  color: #94a3b8;
+  font-size: 1.15rem;
+}
+
+.editor-pane .cm-search button[name='close']:hover {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.editor-pane .cm-search .cm-button {
+  min-width: auto;
+  padding-inline: 0.65rem;
+}
+
+.editor-pane .cm-search .cm-searchMatch,
+.editor-pane .cm-search .cm-searchMatch-selected {
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.editor-pane .cm-content .cm-searchMatch {
+  border-radius: 0.2rem;
+  background: rgb(250 204 21 / 0.35) !important;
+}
+
+.editor-pane .cm-content .cm-searchMatch-selected {
+  background: rgb(129 140 248 / 0.38) !important;
+  box-shadow: inset 0 0 0 1px rgb(67 56 202 / 0.28);
+}
+
 .abnt-editor-hover {
   max-width: 24rem;
   padding: 0.5rem 0.65rem;
@@ -295,4 +697,368 @@ textarea:focus-visible {
   box-shadow: 0 12px 30px rgb(15 23 42 / 0.12);
   font-size: 0.8rem;
   white-space: pre-wrap;
+}
+
+/* O seletor de figuras é uma superfície de autoria e segue o shell claro. */
+#root [aria-labelledby="figure-title"] {
+  border-color: var(--folio-border) !important;
+  background: #fff !important;
+  color: var(--folio-text) !important;
+}
+
+#root [aria-labelledby="figure-title"] header,
+#root [aria-labelledby="figure-title"] footer {
+  border-color: var(--folio-border) !important;
+}
+
+#root [aria-labelledby="figure-title"] .bg-slate-900,
+#root [aria-labelledby="figure-title"] .bg-slate-950 {
+  background: #f8fafc !important;
+}
+
+#root [aria-labelledby="figure-title"] .border-slate-700,
+#root [aria-labelledby="figure-title"] .border-slate-800,
+#root [aria-labelledby="figure-title"] .border-slate-600 {
+  border-color: var(--folio-border) !important;
+}
+
+#root [aria-labelledby="figure-title"] .text-slate-400,
+#root [aria-labelledby="figure-title"] .text-slate-500 {
+  color: #64748b !important;
+}
+
+#root [aria-labelledby="figure-title"] input {
+  border: 1px solid var(--folio-border) !important;
+  background: #fff !important;
+  color: var(--folio-text) !important;
+}
+
+#root [aria-labelledby="figure-title"] button.bg-slate-700 {
+  background: #eef2ff !important;
+  color: #3730a3 !important;
+}
+
+#root [aria-labelledby="figure-title"] .bg-indigo-950 {
+  background: #eef2ff !important;
+  color: #312e81 !important;
+}
+
+/* A inbox é uma área de triagem: o conteúdo precisa respirar mais que um modal de confirmação. */
+#root [aria-label="Inbox de capturas"] {
+  padding: 1rem;
+  background: rgb(15 23 42 / 0.45);
+  backdrop-filter: blur(5px);
+}
+
+#root [aria-label="Inbox de capturas"] > section {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 56rem);
+  max-height: min(88vh, 56rem);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--folio-border);
+}
+
+#root [aria-label="Inbox de capturas"] > section > header {
+  flex: 0 0 auto;
+  padding: 1.35rem 1.6rem;
+  border-bottom: 1px solid var(--folio-border);
+}
+
+#root [aria-label="Inbox de capturas"] > section > header h2::before {
+  content: 'ENTRADA DE PESQUISA';
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #4f46e5;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+/* Fechamento é um ícone somente nas superfícies de trabalho; o botão continua acessível pelo texto original. */
+#root [aria-label="Inbox de capturas"] > section > header > button,
+#root [aria-label="Canvas de pesquisa"] > main > header > button:last-child {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 0.65rem;
+  font-size: 0 !important;
+}
+
+#root [aria-label="Inbox de capturas"] > section > header > button::before,
+#root [aria-label="Canvas de pesquisa"] > main > header > button:last-child::before {
+  content: '×';
+  color: #64748b;
+  font-size: 1.45rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+#root [aria-label="Inbox de capturas"] > section > header > button:hover,
+#root [aria-label="Canvas de pesquisa"] > main > header > button:last-child:hover {
+  background: #f1f5f9;
+}
+
+
+#root [aria-label="Inbox de capturas"] > section > :not(header) {
+  padding-inline: 1.6rem;
+}
+
+#root [aria-label="Inbox de capturas"] > section > ul {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding-bottom: 1.6rem;
+}
+
+#root [aria-label="Inbox de capturas"] > section > section {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #f8fafc;
+}
+
+#root [aria-label="Inbox de capturas"] > section > ul > li {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+#root [aria-label="Inbox de capturas"] > section > ul > li p {
+  padding-left: 0.75rem;
+  border-left: 2px solid #c7d2fe;
+  line-height: 1.55;
+}
+
+#root [aria-label="Inbox de capturas"] > section > ul > li button {
+  border-radius: 0.65rem;
+}
+
+/* O Canvas preserva a superfície ampla de trabalho, mas separa navegação, quadro e inspeção. */
+#root [aria-label="Canvas de pesquisa"] {
+  border-color: var(--folio-border);
+  box-shadow: 0 28px 72px rgb(15 23 42 / 0.22);
+}
+
+#root [aria-label="Canvas de pesquisa"] > aside:first-child,
+#root [aria-label="Canvas de pesquisa"] > aside:last-child {
+  background: #f8fafc;
+}
+
+#root [aria-label="Canvas de pesquisa"] > aside:first-child {
+  padding: 1rem;
+}
+
+#root [aria-label="Canvas de pesquisa"] > aside:first-child h2::before {
+  content: 'MAPA DE PESQUISA';
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #4f46e5;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+#root [aria-label="Canvas de pesquisa"] > aside:first-child > div > div > button {
+  border: 1px solid transparent;
+  border-radius: 0.85rem;
+}
+
+#root [aria-label="Canvas de pesquisa"] > aside:first-child > div > div > button.bg-indigo-100 {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+#root [aria-label="Canvas de pesquisa"] > main > header {
+  min-height: 4.5rem;
+  padding: 0.8rem 1.1rem;
+  background: #fff;
+}
+
+#root [aria-label="Canvas de pesquisa"] > main > header input {
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+#root [aria-label="Canvas de pesquisa"] > main > div {
+  background-color: #f8fafc;
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px) !important;
+  background-size: 22px 22px !important;
+}
+
+#root [aria-label="Canvas de pesquisa"] article {
+  border-radius: 1rem;
+  box-shadow: 0 3px 10px rgb(15 23 42 / 0.09);
+  transition: box-shadow 120ms ease, transform 120ms ease;
+}
+
+#root [aria-label="Canvas de pesquisa"] article:hover {
+  box-shadow: 0 8px 20px rgb(15 23 42 / 0.15);
+}
+
+#root [aria-label="Canvas de pesquisa"] > aside:last-child {
+  padding: 1rem;
+}
+
+#root [aria-label="Canvas de pesquisa"] > aside:last-child > section {
+  padding-top: 1rem;
+}
+
+#root [aria-label="Canvas de pesquisa"] > aside:last-child select,
+#root [aria-label="Canvas de pesquisa"] > aside:last-child input {
+  border-radius: 0.7rem;
+}
+
+/* Submissão é uma etapa de entrega: separa provedores, estado e ações críticas. */
+#root [aria-labelledby="submission-integrations-title"] {
+  max-width: 54rem;
+  padding: 0;
+  overflow: hidden;
+  border-color: var(--folio-border);
+}
+
+#root [aria-labelledby="submission-integrations-title"] > header {
+  padding: 1.4rem 1.6rem;
+  border-bottom: 1px solid var(--folio-border);
+  background: linear-gradient(110deg, #fff 0%, #f5f3ff 100%);
+}
+
+#root [aria-labelledby="submission-integrations-title"] > header h2 {
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+#root [aria-labelledby="submission-integrations-title"] > .mt-5 {
+  margin: 0;
+  padding: 1.35rem 1.6rem 1.6rem;
+  background: #f8fafc;
+}
+
+#root [aria-labelledby="submission-integrations-title"] > .mt-5 > section,
+#root [aria-labelledby="submission-integrations-title"] > .mt-5 > div > section {
+  border-radius: 1rem;
+  border-color: #e2e8f0;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+#root [aria-labelledby="submission-integrations-title"] > .mt-5 > div > section:first-child {
+  border-top: 3px solid #818cf8;
+}
+
+#root [aria-labelledby="submission-integrations-title"] > .mt-5 > div > section:last-child {
+  border-top: 3px solid #38bdf8;
+}
+
+#root [aria-labelledby="submission-integrations-title"] input {
+  border-radius: 0.7rem;
+  border-color: #cbd5e1;
+}
+
+#root [aria-labelledby="submission-integrations-title"] button.folio-primary {
+  border-radius: 0.7rem;
+  box-shadow: 0 2px 5px rgb(79 70 229 / 0.2);
+}
+
+#root [aria-labelledby="submission-integrations-title"] .rounded-full.bg-indigo-50 {
+  padding: 0.35rem 0.65rem;
+}
+
+/* Home: um ponto de continuação, decisões de trabalho no centro e contexto à direita. */
+#root main:has(.folio-home-resume) > header {
+  align-items: end;
+  padding-bottom: 1.5rem;
+}
+
+#root .folio-home-resume {
+  position: relative;
+  min-height: 17rem;
+  border: 1px solid rgb(99 102 241 / 0.25);
+  background:
+    radial-gradient(circle at 92% 16%, rgb(129 140 248 / 0.55), transparent 18rem),
+    linear-gradient(135deg, #172554 0%, #312e81 56%, #4338ca 100%);
+}
+
+#root .folio-home-resume::after {
+  content: '';
+  position: absolute;
+  right: -5rem;
+  bottom: -8rem;
+  width: 19rem;
+  height: 19rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+#root .folio-home-resume > div:first-child {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 13rem;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#root .folio-home-resume button > span:first-child {
+  max-width: 48rem;
+  overflow-wrap: anywhere;
+}
+
+#root main:has(.folio-home-resume) article.folio-home-resume + section {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+#root main:has(.folio-home-resume) article.folio-home-resume + section > button {
+  position: relative;
+  min-height: 9.5rem;
+  overflow: hidden;
+  border-radius: 1.25rem;
+}
+
+#root main:has(.folio-home-resume) article.folio-home-resume + section > button::after {
+  content: '→';
+  position: absolute;
+  right: 1.1rem;
+  bottom: 0.9rem;
+  color: #4f46e5;
+  font-size: 1.1rem;
+  font-weight: 700;
+  transition: transform 140ms ease;
+}
+
+#root main:has(.folio-home-resume) article.folio-home-resume + section > button:hover::after {
+  transform: translateX(0.25rem);
+}
+
+#root main:has(.folio-home-resume) aside > section {
+  border-radius: 1.25rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+#root main:has(.folio-home-resume) aside > section:first-child {
+  border-top: 3px solid #818cf8;
+}
+
+#root main:has(.folio-home-resume) aside > section:nth-child(2) {
+  border-top: 3px solid #f59e0b;
+}
+
+@media (max-width: 640px) {
+  #root main:has(.folio-home-resume) article.folio-home-resume + section {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* F153: o produto continua totalmente utilizável quando o sistema pede menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

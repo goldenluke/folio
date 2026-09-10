@@ -15,6 +15,9 @@ import { gerarPdf } from '@abnt/renderer-pdf';
  * verdade — mesmo motivo de `apps/lsp/src/create-server.ts` (P13).
  */
 async function exportar(request: ExportRequest): Promise<ProtocolResult<ExportResultDto>> {
+  if (request.format === 'html') {
+    return protocolOk({ bytes: new TextEncoder().encode(renderizarHtml(request.publication)) });
+  }
   if (request.format === 'docx') {
     const bytes = await renderizarDocx(request.publication);
     return protocolOk({ bytes: new Uint8Array(bytes) });

@@ -228,10 +228,11 @@ export function renderizarHtml(doc: PublicationDocument, opcoes: OpcoesDeHtml = 
 
       case 'figure': {
         const id = b.anchor === undefined ? '' : ` id="${escaparHtml(b.anchor)}"`;
+        const width = b.width !== undefined && /^(10|[1-9]\d|100)%$/u.test(b.width) ? ` style="width: ${b.width}"` : '';
         const acima = b.caption?.position === 'above' ? legenda(b.caption) : '';
         const abaixo = b.caption?.position === 'below' ? legenda(b.caption) : '';
         return `<figure${id} class="${classe}">
-${acima}<img src="${urlSegura(b.src)}" alt="${escaparHtml(b.alt)}">
+${acima}<img src="${urlSegura(b.src)}" alt="${escaparHtml(b.alt)}"${width}>
 ${abaixo}${legenda(b.attribution)}
 </figure>`;
       }
@@ -299,7 +300,7 @@ ${b.entries
     (entry) =>
       `<p class="publication-toc-entry toc-level-${entry.level}"><a href="#${escaparHtml(
         entry.target,
-      )}">${inline(entry.children)}</a></p>`,
+      )}"><span class="publication-toc-entry-text">${inline(entry.children)}</span><span class="publication-toc-leader" aria-hidden="true"></span></a></p>`,
   )
   .join('\n')}
 </nav>`;

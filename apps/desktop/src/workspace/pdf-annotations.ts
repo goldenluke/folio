@@ -10,6 +10,8 @@ export interface PdfAnnotation {
   readonly page: number;
   readonly quote: string;
   readonly comment?: string;
+  /** Onda BL: cor do destaque; o significado (`AnnotationColorSemantics`) é configurado pelo usuário, nunca fixo. */
+  readonly color?: string;
   readonly createdAt: string;
   readonly literatureNoteFileId?: string;
 }
@@ -26,6 +28,7 @@ const isAnnotation = (value: unknown): value is PdfAnnotation => {
     typeof entry.page === 'number' && Number.isInteger(entry.page) && entry.page > 0 &&
     typeof entry.quote === 'string' && entry.quote.trim() !== '' && typeof entry.createdAt === 'string' &&
     (entry.comment === undefined || typeof entry.comment === 'string') &&
+    (entry.color === undefined || typeof entry.color === 'string') &&
     (entry.literatureNoteFileId === undefined || typeof entry.literatureNoteFileId === 'string');
 };
 

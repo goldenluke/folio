@@ -35,6 +35,9 @@ import type {
   LanguageWorkspaceEdit,
 } from './model.js';
 
+/** Projeção mínima da sintaxe autoral para completion; não cria nem resolve arquivos. */
+const authoredBlockIds = (source: string): readonly string[] => [...source.matchAll(/^\^([A-Za-z][A-Za-z0-9_-]*)\s*$/gmu)].map((match) => match[1]!).filter((id, index, all) => all.indexOf(id) === index);
+
 interface ParsedWorkspaceDocument {
   readonly file: WorkspaceFile;
   readonly content: string;
@@ -340,6 +343,22 @@ export class WorkspaceLanguageService implements LanguageService {
         const items = await this.#documentCompletions(document.file, candidate, limit);
         return { range: { start, end: position.offset }, items };
       }
+    }
+    const block = /\[\[([^\]#]*)#\^([A-Za-z0-9_-]*)$/u.exec(before);
+    if (block !== null) {
+      const path = block[1] ?? '';
+      const query = block[2] ?? '';
+      const candidates = (await this.#storage.list())
+        .filter((file) => file.path !== document.file.path && String(file.path).endsWith('.md'))
+        .filter((file) => path === '' || String(file.path).includes(path));
+      const items: LanguageCompletionItem[] = [];
+      for (const file of candidates) {
+        const content = await this.#storage.read(file.id);
+        for (const id of authoredBlockIds(content.content)) {
+          if (id.startsWith(query)) items.push({ kind: 'block', label: `^${id}`, detail: String(file.path), insertText: id });
+        }
+      }
+      return { range: { start: position.offset - query.length, end: position.offset }, items: items.slice(0, Math.max(1, limit)) };
     }
     return undefined;
   }

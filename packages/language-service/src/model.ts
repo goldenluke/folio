@@ -104,7 +104,7 @@ export interface LanguageWorkspaceEdit {
   }[];
 }
 
-export type LanguageCompletionKind = 'citation' | 'document' | 'math';
+export type LanguageCompletionKind = 'citation' | 'document' | 'block' | 'math';
 
 export interface LanguageCompletionItem {
   readonly kind: LanguageCompletionKind;

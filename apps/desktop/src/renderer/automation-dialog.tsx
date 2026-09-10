@@ -5,6 +5,7 @@ import type { WorkspaceFileDto } from '@abnt/protocol';
 import { executeAutomation, planAutomation, type WorkspaceMacro } from './shell/automation.js';
 import type { CommandContext, CommandRegistry } from './shell/commands.js';
 import { keybindingConflict, mergeKeybindings, normalizeChord, type CustomKeybindings, type KeyBindingMap } from './shell/keybindings.js';
+import { requestConfirmation, requestText } from './text-prompt.js';
 
 type Collection = { readonly id: string; readonly name: string };
 
@@ -37,22 +38,22 @@ export function AutomationDialog({ registry, context, files, collections, macros
     try {
       const plan = planAutomation(registry, batchContext, commands);
       const description = plan.steps.map((step) => `• ${step.preview.summary}`).join('\n');
-      if (plan.requiresConfirmation && !window.confirm(`Prévia da automação:\n${description}\n\nContinuar?`)) return;
+      if (plan.requiresConfirmation && !await requestConfirmation({ title: 'Executar automação?', description, confirmLabel: 'Executar', destructive: false })) return;
       await executeAutomation(registry, batchContext, plan);
       onMessage(`Automação concluída: ${plan.steps.length} comando(s).`);
     } catch (error) { onMessage(error instanceof Error ? error.message : 'Não foi possível executar a automação.'); }
   };
-  const addMacro = (): void => {
-    const name = window.prompt('Nome da macro:', 'Preparar submissão');
+  const addMacro = async (): Promise<void> => {
+    const name = await requestText('Nome da macro', 'Preparar submissão');
     if (name === null || name.trim() === '') return;
     setMacros((current) => [...current, { id: crypto.randomUUID(), name: name.trim(), commands: [] }]);
   };
   const addStep = (macroId: string, step: string): void => setMacros((current) => current.map((macro) => macro.id !== macroId ? macro : { ...macro, commands: [...macro.commands, { commandId: step }] }));
-  const assignKeybinding = (): void => {
+  const assignKeybinding = async (): Promise<void> => {
     const chord = normalizeChord(newChord);
     if (chord === undefined || commandId === '') { onMessage('Informe um atalho e um comando válidos.'); return; }
     const conflict = keybindingConflict(bindings, chord, commandId);
-    if (conflict !== undefined && !window.confirm(`${chord} já executa ${conflict}. Substituir?`)) return;
+    if (conflict !== undefined && !await requestConfirmation({ title: 'Substituir atalho?', description: `${chord} já executa ${conflict}.`, confirmLabel: 'Substituir', destructive: false })) return;
     onCustomKeybindingsChange({ ...customKeybindings, [chord]: commandId });
     setNewChord(''); onMessage(`Atalho ${chord} atribuído a ${commandId}.`);
   };

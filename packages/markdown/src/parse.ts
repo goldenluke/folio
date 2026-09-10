@@ -262,10 +262,15 @@ export function parseMarkdown(fonte: string, opcoes: OpcoesDeParse = {}): Docume
       (c) => !(c.type === 'text' && c.value.trim() === ''),
     );
     const unica = relevantes[0];
-    const identifier = relevantes.length === 2 && relevantes[1]?.type === 'text'
-      ? /^\s*\{#([^{}\s]+)\}\s*$/u.exec(relevantes[1].value)?.[1]
+    const attributeMatch = relevantes.length === 2 && relevantes[1]?.type === 'text'
+      ? /^\s*\{(?:#([^{}\s]+))?(?:\s+width=(10|[1-9]\d|100)%)?\}\s*$/u.exec(relevantes[1].value)
       : undefined;
-    if (unica === undefined || unica.type !== 'image' || relevantes.length > (identifier === undefined ? 1 : 2)) return undefined;
+    const identifier = attributeMatch?.[1];
+    const width = attributeMatch?.[2];
+    const attributes = identifier === undefined && width === undefined
+      ? undefined
+      : { ...(identifier === undefined ? {} : { identifier }), ...(width === undefined ? {} : { properties: { width: `${width}%` } }) };
+    if (unica === undefined || unica.type !== 'image' || relevantes.length > (attributes === undefined ? 1 : 2)) return undefined;
 
     const resourceId = registrarRecurso(unica.url);
     const alt = unica.alt ?? '';
@@ -290,7 +295,7 @@ export function parseMarkdown(fonte: string, opcoes: OpcoesDeParse = {}): Docume
               },
           }
           : {}),
-        ...(identifier === undefined ? {} : { attributes: { identifier } }),
+        ...(attributes === undefined ? {} : { attributes }),
       },
       no,
     );

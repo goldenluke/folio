@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "Folio Browser Bridge",
+  "version": "0.1.0",
+  "description": "Envia páginas e seleções para revisão no Folio local.",
+  "permissions": ["activeTab", "contextMenus", "scripting"],
+  "host_permissions": ["http://127.0.0.1:38373/*"],
+  "background": { "service_worker": "service-worker.js", "type": "module" }
+}

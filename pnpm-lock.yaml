@@ -137,9 +137,27 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@abnt/academic-forms':
+        specifier: workspace:*
+        version: link:../../packages/academic-forms
+      '@abnt/academic-views':
+        specifier: workspace:*
+        version: link:../../packages/academic-views
+      '@abnt/annotation-synthesis':
+        specifier: workspace:*
+        version: link:../../packages/annotation-synthesis
+      '@abnt/attachment-model':
+        specifier: workspace:*
+        version: link:../../packages/attachment-model
       '@abnt/bibliography':
         specifier: workspace:*
         version: link:../../packages/bibliography
+      '@abnt/block-composition':
+        specifier: workspace:*
+        version: link:../../packages/block-composition
+      '@abnt/collaboration':
+        specifier: workspace:*
+        version: link:../../packages/collaboration
       '@abnt/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
@@ -155,9 +173,24 @@ importers:
       '@abnt/language-service':
         specifier: workspace:*
         version: link:../../packages/language-service
+      '@abnt/literature-monitoring':
+        specifier: workspace:*
+        version: link:../../packages/literature-monitoring
+      '@abnt/pdf-reconciliation':
+        specifier: workspace:*
+        version: link:../../packages/pdf-reconciliation
+      '@abnt/plugin-api':
+        specifier: workspace:*
+        version: link:../../packages/plugin-api
+      '@abnt/plugin-host':
+        specifier: workspace:*
+        version: link:../../packages/plugin-host
       '@abnt/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@abnt/reference-relations':
+        specifier: workspace:*
+        version: link:../../packages/reference-relations
       '@abnt/renderer-docx':
         specifier: workspace:*
         version: link:../../packages/renderer-docx
@@ -167,9 +200,21 @@ importers:
       '@abnt/renderer-pdf':
         specifier: workspace:*
         version: link:../../packages/renderer-pdf
+      '@abnt/research-canvas':
+        specifier: workspace:*
+        version: link:../../packages/research-canvas
+      '@abnt/scholarly-identifiers':
+        specifier: workspace:*
+        version: link:../../packages/scholarly-identifiers
       '@abnt/structural-diff':
         specifier: workspace:*
         version: link:../../packages/structural-diff
+      '@abnt/submission-integrations':
+        specifier: workspace:*
+        version: link:../../packages/submission-integrations
+      '@abnt/web-capture':
+        specifier: workspace:*
+        version: link:../../packages/web-capture
       '@abnt/workspace-core':
         specifier: workspace:*
         version: link:../../packages/workspace-core
@@ -182,9 +227,18 @@ importers:
       '@abnt/workspace-local':
         specifier: workspace:*
         version: link:../../packages/workspace-local
+      '@abnt/workspace-navigation':
+        specifier: workspace:*
+        version: link:../../packages/workspace-navigation
+      '@abnt/workspace-polish':
+        specifier: workspace:*
+        version: link:../../packages/workspace-polish
       '@abnt/workspace-sessions':
         specifier: workspace:*
         version: link:../../packages/workspace-sessions
+      '@abnt/workspace-sync':
+        specifier: workspace:*
+        version: link:../../packages/workspace-sync
       better-sqlite3:
         specifier: ^12.11.1
         version: 12.11.1
@@ -207,9 +261,6 @@ importers:
         specifier: ^2.9.0
         version: 2.9.0
     devDependencies:
-      '@abnt/plugin-api':
-        specifier: workspace:*
-        version: link:../../packages/plugin-api
       '@electron/rebuild':
         specifier: ^4.0.3
         version: 4.2.0
@@ -280,6 +331,25 @@ importers:
         specifier: ^3.1.0
         version: 3.2.0
 
+  packages/academic-forms: {}
+
+  packages/academic-relations: {}
+
+  packages/academic-views:
+    dependencies:
+      '@abnt/academic-relations':
+        specifier: workspace:*
+        version: link:../academic-relations
+      '@abnt/language-service':
+        specifier: workspace:*
+        version: link:../language-service
+
+  packages/ai: {}
+
+  packages/annotation-synthesis: {}
+
+  packages/attachment-model: {}
+
   packages/bibliography:
     dependencies:
       '@abnt/document-model':
@@ -291,6 +361,10 @@ importers:
       zod:
         specifier: ^4.5.4
         version: 4.5.4
+
+  packages/block-composition: {}
+
+  packages/collaboration: {}
 
   packages/compiler:
     dependencies:
@@ -336,15 +410,24 @@ importers:
       '@codemirror/lang-markdown':
         specifier: ^6.3.0
         version: 6.5.2
+      '@codemirror/language':
+        specifier: ^6.11.0
+        version: 6.12.4
       '@codemirror/lint':
         specifier: ^6.8.5
         version: 6.9.7
+      '@codemirror/search':
+        specifier: ^6.5.11
+        version: 6.7.2
       '@codemirror/state':
         specifier: ^6.5.2
         version: 6.7.4
       '@codemirror/view':
         specifier: ^6.36.5
         version: 6.43.11
+      '@lezer/highlight':
+        specifier: ^1.2.1
+        version: 1.2.3
 
   packages/editor-core:
     dependencies:
@@ -357,6 +440,8 @@ importers:
       '@abnt/workspace-sessions':
         specifier: workspace:*
         version: link:../workspace-sessions
+
+  packages/full-text-discovery: {}
 
   packages/language-service:
     dependencies:
@@ -375,6 +460,8 @@ importers:
       '@abnt/workspace-sessions':
         specifier: workspace:*
         version: link:../workspace-sessions
+
+  packages/literature-monitoring: {}
 
   packages/markdown:
     dependencies:
@@ -406,6 +493,12 @@ importers:
       '@types/mdast':
         specifier: ^4.0.4
         version: 4.0.4
+
+  packages/pdf-reconciliation:
+    dependencies:
+      '@abnt/scholarly-identifiers':
+        specifier: workspace:*
+        version: link:../scholarly-identifiers
 
   packages/plugin-api:
     dependencies:
@@ -449,6 +542,15 @@ importers:
         specifier: workspace:*
         version: link:../semantics
 
+  packages/reference-relations:
+    dependencies:
+      '@abnt/bibliography':
+        specifier: workspace:*
+        version: link:../bibliography
+      '@abnt/document-model':
+        specifier: workspace:*
+        version: link:../document-model
+
   packages/renderer-docx:
     dependencies:
       '@abnt/publication':
@@ -475,6 +577,12 @@ importers:
       puppeteer-core:
         specifier: ^25.10.0
         version: 25.10.0(yauzl@2.10.0)
+
+  packages/research-canvas: {}
+
+  packages/research-data: {}
+
+  packages/scholarly-identifiers: {}
 
   packages/semantics:
     dependencies:
@@ -510,6 +618,22 @@ importers:
       '@abnt/markdown':
         specifier: workspace:*
         version: link:../markdown
+
+  packages/submission-integrations: {}
+
+  packages/systematic-review: {}
+
+  packages/web-capture:
+    dependencies:
+      '@abnt/document-model':
+        specifier: workspace:*
+        version: link:../document-model
+      '@abnt/pdf-reconciliation':
+        specifier: workspace:*
+        version: link:../pdf-reconciliation
+      '@abnt/scholarly-identifiers':
+        specifier: workspace:*
+        version: link:../scholarly-identifiers
 
   packages/workspace-core: {}
 
@@ -580,6 +704,10 @@ importers:
         specifier: workspace:*
         version: link:../workspace-core
 
+  packages/workspace-navigation: {}
+
+  packages/workspace-polish: {}
+
   packages/workspace-sessions:
     dependencies:
       '@abnt/protocol':
@@ -588,6 +716,12 @@ importers:
       '@abnt/source-composition':
         specifier: workspace:*
         version: link:../source-composition
+      '@abnt/workspace-core':
+        specifier: workspace:*
+        version: link:../workspace-core
+
+  packages/workspace-sync:
+    dependencies:
       '@abnt/workspace-core':
         specifier: workspace:*
         version: link:../workspace-core
@@ -711,6 +845,9 @@ packages:
 
   '@codemirror/lint@6.9.7':
     resolution: {integrity: sha512-28/+iWLYxKxsvGYhSYL7zaCZqLz5+FFFDq9tVsvGv9kv8RY4fFAchJ5WX9M3YrrRlTIsECjsXPqeNgnSmNP2dg==}
+
+  '@codemirror/search@6.7.2':
+    resolution: {integrity: sha512-gUYkYhT2+n/+VGZ+8EzE5WFkYZUZYm1VOKDudIsNqh42uRVQJ0a6Yss9sdKT3MeOYfuL1N6AZA57oza0Oyr0LA==}
 
   '@codemirror/state@6.7.4':
     resolution: {integrity: sha512-QhQIVRY+xHZDxwOSFrJ1eUMapJBUID3IdeAjf7dHO7zBUzSkyooHiodnalz5MG3iHzwixKMlAAyn7244y537EA==}
@@ -4042,6 +4179,12 @@ snapshots:
       style-mod: 4.1.3
 
   '@codemirror/lint@6.9.7':
+    dependencies:
+      '@codemirror/state': 6.7.4
+      '@codemirror/view': 6.43.11
+      crelt: 1.0.7
+
+  '@codemirror/search@6.7.2':
     dependencies:
       '@codemirror/state': 6.7.4
       '@codemirror/view': 6.43.11

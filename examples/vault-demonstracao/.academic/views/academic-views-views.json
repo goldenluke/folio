@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "views": [
+    {
+      "version": 1,
+      "id": "referencias-por-ano",
+      "name": "Bibliografia por ano",
+      "source": "references",
+      "layout": "table",
+      "columns": [
+        { "field": "title", "label": "Título" },
+        { "field": "authors", "label": "Autores" },
+        { "field": "year", "label": "Ano" },
+        { "field": "citations", "label": "Citações", "kind": "rollup", "relationKind": "cites", "operation": "count" }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "documentos-por-profile",
+      "name": "Documentos por profile",
+      "source": "documents",
+      "layout": "chart",
+      "columns": [
+        { "field": "profile", "label": "Profile" },
+        { "field": "wordCount", "label": "Palavras" }
+      ]
+    }
+  ]
+}

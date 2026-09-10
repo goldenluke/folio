@@ -115,6 +115,8 @@ export interface PublicationFigure {
   /** URI já resolvida pelo compilador; o renderer não consulta registry. */
   readonly src: string;
   readonly alt: string;
+  /** Largura autoral validada, por exemplo `65%`. */
+  readonly width?: string;
   readonly caption?: PublicationCaption;
   readonly attribution?: PublicationCaption;
 }

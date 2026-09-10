@@ -17,6 +17,9 @@ export {
   type PluginReadyMessage,
   FOLIO_PLUGIN_API_VERSION,
   type FolioPluginCapability,
+  type FolioPluginSetting,
+  type FolioPluginProjectContribution,
+  type FolioPluginIntakeContribution,
   type FolioPluginManifest,
   type FolioPluginViewContribution,
   type FolioPluginCommandContribution,
@@ -30,5 +33,6 @@ export {
   type PluginExportRequestMessage,
   type PluginExportResponseMessage,
 } from './model.js';
+export { compatibleWithFolio, defaultSettings, packageDescriptor, pluginDataPath, requestedPermissions } from './ecosystem.js';
 export { folioPluginManifestSchema, pluginCommandRequestMessageSchema, pluginCommandResponseMessageSchema, pluginExportRequestMessageSchema, pluginExportResponseMessageSchema, pluginLintRequestMessageSchema, pluginLintResponseMessageSchema, pluginReadyMessageSchema } from './schemas.js';
 export { runFolioPlugin, runLintPlugin } from './runtime.js';

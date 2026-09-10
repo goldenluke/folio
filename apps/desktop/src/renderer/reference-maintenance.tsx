@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type JSX } from 'react';
 
 import type { BibliographicEntityDto, WorkspaceLibraryDuplicateDto } from '@abnt/protocol';
 
+import { requestConfirmation } from './text-prompt.js';
+
 const reasonLabel: Record<WorkspaceLibraryDuplicateDto['reasons'][number], string> = { doi: 'mesmo DOI', isbn: 'mesmo ISBN', title: 'título semelhante', 'author-year': 'autor e ano' };
 
 const mergeEntry = (canonical: BibliographicEntityDto, duplicate: BibliographicEntityDto, fields: ReadonlySet<'title' | 'authors' | 'doi' | 'url'>): BibliographicEntityDto => ({
@@ -36,8 +38,14 @@ export function ReferenceMaintenanceDialog({ onClose }: { readonly onClose: () =
   const duplicate = selected === undefined || canonicalId === undefined ? undefined : entryById.get(selected.leftId === canonicalId ? selected.rightId : selected.leftId);
   const reviewed = canonical === undefined || duplicate === undefined ? undefined : mergeEntry(canonical, duplicate, fields);
   const toggleField = (field: 'title' | 'authors' | 'doi' | 'url'): void => setFields((current) => { const next = new Set(current); if (next.has(field)) next.delete(field); else next.add(field); return next; });
-  const merge = (): void => {
+  const merge = async (): Promise<void> => {
     if (canonical === undefined || duplicate === undefined || reviewed === undefined) return;
+    const confirmed = await requestConfirmation({
+      title: 'Mesclar referências?',
+      description: `“${duplicate.id}” será incorporada a “${canonical.id}”. As citações em todo o vault serão atualizadas; esta operação não pode ser desfeita automaticamente.`,
+      confirmLabel: 'Mesclar referências',
+    });
+    if (!confirmed) return;
     void window.academic.library.merge({ canonicalId: canonical.id, duplicateId: duplicate.id, entry: reviewed }).then((result) => {
       if (!result.ok) { setMessage(result.error.message); return; }
       setMessage(`Mesclagem concluída; ${result.value.changedFiles.length} arquivo(s) atualizado(s).`); setSelected(undefined); load();
@@ -47,8 +55,15 @@ export function ReferenceMaintenanceDialog({ onClose }: { readonly onClose: () =
     if (keyId === undefined) return;
     void window.academic.library.keyPreview({ id: keyId, policy }).then((result) => result.ok ? setSuggestion(result.value.suggestion) : setMessage(result.error.message));
   };
-  const rename = (): void => {
+  const rename = async (): Promise<void> => {
     if (keyId === undefined || suggestion.trim() === '') return;
+    const confirmed = await requestConfirmation({
+      title: 'Renomear chave de citação?',
+      description: `A chave “${keyId}” será alterada para “${suggestion.trim()}” e todas as citações vinculadas no vault serão atualizadas.`,
+      confirmLabel: 'Renomear chave',
+      destructive: false,
+    });
+    if (!confirmed) return;
     void window.academic.library.renameKey({ id: keyId, nextId: suggestion.trim() }).then((result) => {
       if (!result.ok) { setMessage(result.error.message); return; }
       setMessage(`Chave atualizada; ${result.value.changedFiles.length} arquivo(s) atualizado(s).`); setKeyId(result.value.entry.id); setSuggestion(''); load();

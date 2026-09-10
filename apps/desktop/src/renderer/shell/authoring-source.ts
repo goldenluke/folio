@@ -1,11 +1,13 @@
 /** Gera Markdown autoral para os comandos de escrita; nenhuma UI interpreta AST. */
-export const figureSource = (input: { readonly uri: string; readonly alt: string; readonly caption: string; readonly source?: string; readonly identifier?: string }): string => {
+export const figureSource = (input: { readonly uri: string; readonly alt: string; readonly caption: string; readonly source?: string; readonly identifier?: string; readonly width?: number }): string => {
   const id = input.identifier?.trim();
+  const width = input.width === undefined ? undefined : Math.max(10, Math.min(100, Math.round(input.width)));
+  const attributes = [id === undefined || id === '' ? undefined : `#${id}`, width === undefined || width === 100 ? undefined : `width=${width}%`].filter((value): value is string => value !== undefined);
   return [
     input.caption.trim() === '' ? '' : `Figura: ${input.caption.trim()}`,
-    `![${input.alt.trim()}](${input.uri})${id === undefined || id === '' ? '' : ` {#${id}}`}`,
+    `![${input.alt.trim()}](${input.uri})${attributes.length === 0 ? '' : ` {${attributes.join(' ')}}`}`,
     input.source?.trim() === '' || input.source === undefined ? '' : `Fonte: ${input.source.trim()}`,
-  ].filter(Boolean).join('\n');
+  ].filter(Boolean).join('\n\n');
 };
 
 export const tableSource = (columns: number, rows: number, alignment: 'left' | 'center' | 'right' = 'left'): string => {

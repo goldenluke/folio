@@ -14,6 +14,7 @@ import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path
 
 import {
   DEFAULT_WORKSPACE_CONFIGURATION,
+  FULL_WORKSPACE_STORAGE_CAPABILITIES,
   WORKSPACE_CONFIGURATION_SCHEMA_VERSION,
   WORKSPACE_STATE_SCHEMA_VERSION,
   WorkspaceAlreadyExistsError,
@@ -49,6 +50,10 @@ const META_DIRECTORY = '.academic';
 const STATE_FILE = 'workspace-state.json';
 const CONFIG_FILE = 'workspace-config.json';
 const RECOVERY_DIRECTORY = 'recovery';
+
+/** `.academic` é reservado em qualquer profundidade — uma pasta aninhada que já foi seu próprio vault não deve vazar metadados para o pai. */
+const touchesMetaDirectory = (relativePath: string): boolean =>
+  relativePath === META_DIRECTORY || relativePath.split('/').includes(META_DIRECTORY);
 
 const hashContent = (content: string | Uint8Array): ContentHash =>
   asContentHash(`sha256:${createHash('sha256').update(content).digest('hex')}`);
@@ -107,6 +112,7 @@ interface ScannedFile {
 
 /** Implementação Node do vault; o package core não conhece filesystem. */
 export class LocalFilesystemStorage implements WorkspaceStorage {
+  readonly capabilities = FULL_WORKSPACE_STORAGE_CAPABILITIES;
   readonly #root: string;
   readonly #records = new Map<WorkspaceFileId, PersistedWorkspaceFile>();
   readonly #listeners = new Set<WorkspaceEventListener>();
@@ -248,6 +254,18 @@ export class LocalFilesystemStorage implements WorkspaceStorage {
     this.#records.set(next.id, next);
     await this.#persistState();
     await rm(recoveryPath, { force: true });
+    this.#emit({ type: 'workspace:file-changed', file: fileFromRecord(next) });
+    return fileFromRecord(next);
+  }
+
+  async writeBinary(request: import('@abnt/workspace-core').WriteWorkspaceBinaryFileRequest): Promise<WorkspaceFile> {
+    this.#requireOpen();
+    const record = this.#record(request.fileId);
+    await this.#assertWritable(record, request.expectedRevision);
+    await this.#writeBytesAtomically(this.#absolutePath(record.path), request.bytes);
+    const next: PersistedWorkspaceFile = { ...record, revision: record.revision + 1, contentHash: hashContent(request.bytes) };
+    this.#records.set(next.id, next);
+    await this.#persistState();
     this.#emit({ type: 'workspace:file-changed', file: fileFromRecord(next) });
     return fileFromRecord(next);
   }
@@ -489,7 +507,7 @@ export class LocalFilesystemStorage implements WorkspaceStorage {
     const visit = async (absoluteDirectory: string): Promise<void> => {
       const entries = await readdir(absoluteDirectory, { withFileTypes: true });
       for (const entry of entries) {
-        if (entry.name === META_DIRECTORY && absoluteDirectory === this.#root) continue;
+        if (entry.name === META_DIRECTORY) continue;
         const absolute = resolve(absoluteDirectory, entry.name);
         if (entry.isSymbolicLink()) continue;
         if (entry.isDirectory()) {
@@ -725,7 +743,7 @@ export class LocalFilesystemStorage implements WorkspaceStorage {
   async #startWatchers(): Promise<void> {
     const onChange = (_event: string, fileName: string | Buffer | null): void => {
       const candidate = fileName === null ? undefined : String(fileName).replace(/\\/gu, '/');
-      if (candidate !== undefined && (candidate === META_DIRECTORY || candidate.startsWith(`${META_DIRECTORY}/`))) return;
+      if (candidate !== undefined && touchesMetaDirectory(candidate)) return;
       this.#scheduleRefresh();
     };
     try {
@@ -745,7 +763,7 @@ export class LocalFilesystemStorage implements WorkspaceStorage {
   async #restartFallbackWatchers(generation: number): Promise<void> {
     const listener = (_event: string, fileName: string | Buffer | null): void => {
       const candidate = fileName === null ? undefined : String(fileName).replace(/\\/gu, '/');
-      if (candidate !== undefined && (candidate === META_DIRECTORY || candidate.startsWith(`${META_DIRECTORY}/`))) return;
+      if (candidate !== undefined && touchesMetaDirectory(candidate)) return;
       this.#scheduleRefresh();
     };
     this.#stopWatchers();
@@ -759,7 +777,7 @@ export class LocalFilesystemStorage implements WorkspaceStorage {
     const visit = async (directory: string): Promise<void> => {
       directories.push(directory);
       for (const entry of await readdir(directory, { withFileTypes: true })) {
-        if (entry.name === META_DIRECTORY && directory === this.#root) continue;
+        if (entry.name === META_DIRECTORY) continue;
         if (entry.isDirectory() && !entry.isSymbolicLink()) await visit(resolve(directory, entry.name));
       }
     };

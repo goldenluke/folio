@@ -1,15 +1,18 @@
-import { app, BrowserWindow, session } from 'electron';
+import { app, BrowserWindow, Menu, session } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import type { WorkspaceBrowserCaptureDto } from '@abnt/protocol';
 
 import { registerDesktopIpc } from './ipc.js';
 import { loadSystemInformation } from './build-information.js';
 import { CompilerSupervisor } from './compiler-supervisor.js';
 import { ExportSupervisor } from './export-supervisor.js';
 import { WorkspaceSupervisor } from './workspace-supervisor.js';
+import { startBrowserBridge } from './browser-bridge.js';
 
 let disposeIpc: (() => void) | undefined;
+let disposeBrowserBridge: (() => void) | undefined;
 
 // Marca apresentada pelo processo Electron no ambiente desktop. Os namespaces
 // internos @abnt/* continuam sendo identificadores de implementação.
@@ -34,6 +37,12 @@ const sendOperationalError = (operation: string, message: string): void => {
       operation,
       error: { code: 'INTERNAL', message },
     });
+  }
+};
+
+const sendBrowserCapture = (capture: WorkspaceBrowserCaptureDto): void => {
+  for (const window of BrowserWindow.getAllWindows()) {
+    window.webContents.send('abnt:desktop:event', { type: 'desktop:browser-capture', capture });
   }
 };
 
@@ -63,6 +72,20 @@ const createWindow = async (): Promise<void> => {
 };
 
 app.whenReady().then(async () => {
+  /**
+   * Sem isto, o Electron cria o menu padrão da plataforma, cujos itens
+   * Undo/Redo do menu Edit usam `role: 'undo'`/`'redo'` — undo/redo nativo do
+   * Chromium, que não sabe nada do histórico próprio do CodeMirror. O
+   * acelerador Mod+Z/Mod+Shift+Z do menu intercepta a tecla antes dela virar
+   * um keydown no DOM, então `historyKeymap` do editor nunca chega a rodar:
+   * undo/redo parecem simplesmente não fazer nada. O shell inteiro (paleta de
+   * comandos, atalhos, toolbar) já é autoral deste app; o menu nativo nunca
+   * foi usado para nada aqui além disso — em build empacotado ele some por
+   * completo, em desenvolvimento sobra só Reload/DevTools.
+   */
+  Menu.setApplicationMenu(app.isPackaged ? null : Menu.buildFromTemplate([
+    { label: 'Desenvolvedor', submenu: [{ role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }] },
+  ]));
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
@@ -87,6 +110,12 @@ app.whenReady().then(async () => {
   });
   const systemInformation = await loadSystemInformation(asset('build-info.json'));
   disposeIpc = registerDesktopIpc(workspace, exportService, systemInformation, createWindow);
+  try {
+    disposeBrowserBridge = await startBrowserBridge(sendBrowserCapture);
+  } catch {
+    // A porta pode estar ocupada por outra instância; o desktop continua útil.
+    sendOperationalError('browser-bridge', 'A ponte do navegador não pôde iniciar nesta instância.');
+  }
   await createWindow();
   const smokeVault = process.env.ABNT_DESKTOP_SMOKE_VAULT;
   if (smokeVault !== undefined) {
@@ -251,6 +280,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   disposeIpc?.();
+  disposeBrowserBridge?.();
   workspace.dispose();
   compiler.dispose();
   exportService.dispose();

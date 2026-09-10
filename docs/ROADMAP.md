@@ -1146,9 +1146,8 @@ Ver ADR 0059.
       declaradas entre dois profiles.
 - [x] **F101 — Profile validation preview**: avaliação seca revision-safe
       informa o impacto antes de escrever o profile no frontmatter.
-- [ ] **F102 — Nova família acadêmica real**: aguarda escolha explícita de
-      produto/mercado; não selecionar APA, IEEE, Vancouver ou equivalente por
-      reflexo técnico.
+- [~] **F102 — Nova família acadêmica real**: APA 7ª edição foi selecionada
+      como segunda família; implementação inicial em andamento.
 
 Ver ADR 0060.
 
@@ -1198,6 +1197,30 @@ Ver ADR 0061.
 
 Ver ADR 0062.
 
+### Onda W — Sync Preparation (sem cloud) ✅
+
+- [x] **F117 — State Classification**: autoria, estado operacional portátil,
+      preferência de máquina e projeção reconstruível são políticas fechadas
+      de `workspace-core`; SQLite/FTS nunca é candidato a sync.
+- [x] **F118 — Portable Workspace Metadata**: `PortableWorkspaceState` é
+      envelope JSON versionado para estado operacional portátil, separado de
+      Markdown, `library.json` e SQLite.
+- [x] **F119 — Storage Capabilities**: `WorkspaceStorage` declara garantias
+      de atomicidade, watch, binários, comparação de revisão e conditional
+      write; consumidores não usam `instanceof LocalFilesystemStorage`.
+- [x] **F120 — Conflict Taxonomy**: conflitos de texto, referências,
+      annotations, projetos, collections, workspace state, delete/edit e
+      rename/edit têm resolução manual explícita; entidade não vira text merge.
+- [x] **F121 — Conditional Writes**: a borda de sync compara revisão esperada
+      antes de escrever e expõe conflito de revisão sem sobrescrever estado.
+- [x] **F122 — Sync Adapter Contract**: contrato abstrato prevê
+      list/read/write e operações condicionais de rename/delete/revision/
+      subscribe/poll conforme capabilities, ainda sem adapter de rede.
+- [x] **F123 — Sync Simulation**: dois adapters em memória demonstram
+      replicação de estado compartilhável e conflitos explícitos sem rede.
+
+Ver ADR 0066.
+
 ### Onda X — Research Capture & Intake ✅
 
 - [x] **F124 — Universal Import**: uma única superfície recebe BibTeX, RIS,
@@ -1221,9 +1244,1047 @@ Ver ADR 0062.
 
 Ver ADR 0063.
 
+### Onda Y — Submission & Publishing Workflow ✅
+
+- [x] **F131 — Submission Target**: Project associa profile, prazo,
+      artefatos e requisitos como estado operacional, sem alterar o Markdown.
+- [x] **F132 — Preflight**: a tela agrega diagnósticos revisionados,
+      estatísticas estruturais e Reference Health existentes; não cria um
+      segundo validador no renderer.
+- [x] **F133 — Artifact Set**: um registro final pode gerar PDF, DOCX e HTML
+      para cada documento do projeto; arquivos suplementares continuam
+      autoria vinculada e são confirmados explicitamente no checklist.
+- [x] **F134 — Export Presets**: presets locais aplicam um conjunto de
+      formatos ao alvo, sem ganhar autoridade sobre profiles ou publicação.
+- [x] **F135 — Submission Snapshot**: antes de exportar, Folio cria snapshots
+      operacionais por documento e os vincula ao registro de submissão.
+- [x] **F136 — Final Review**: a revisão exibe erros, avisos, citações,
+      referências/xrefs não resolvidas, figuras e tabelas.
+- [x] **F137 — Reproducible Publication Record**: o registro guarda revisão e
+      hash autoral, profile/versão e hashes SHA-256 dos artefatos, sem copiar
+      o conteúdo-fonte.
+
+Ver ADR 0064.
+
+### Onda Z — coesão diária do workspace ✅
+
+- [x] **F138 — Home**: ao abrir um vault, Home reúne documentos recentes,
+      projetos, fila de leitura, marcos, problemas e progresso sem criar um
+      dashboard analítico independente.
+- [x] **F139 — Research Dashboard**: Read–Annotate–Write mostra fila,
+      PDFs, annotations ainda sem literature note e notas existentes a partir
+      dos DTOs já projetados pelo Workspace Service.
+- [x] **F140 — Unified Activity**: atividade operacional local registra tipos
+      mínimos de ação sem conteúdo de documentos, e nunca vira log autoral.
+- [x] **F141 — Contextual Sidebar**: o mesmo registro de painéis compõe o
+      contexto do documento ou do workspace; pesquisa, referências e projetos
+      continuam superfícies da mesma shell, não três aplicações paralelas.
+- [x] **F142 — Focus Modes**: Escrita, Leitura, Revisão e Pesquisa alteram
+      somente a composição de navegação e contexto.
+- [x] **F143 — Workspace Layouts**: layouts salvos são preferências locais por
+      vault, aplicadas sem mudar tabs, sessões ou documentos.
+- [x] **F144 — Onboarding**: primeiro uso explica o vault local-first e leva
+      a abrir pasta, criar documento/TCC ou importar referências.
+- [x] **F145 — Command Discoverability**: a única Command Palette ganha
+      categorias, aliases, recência, atalhos e filtragem por disponibilidade.
+
+Ver ADR 0065.
+
 Release operations (packaging, installers, signing, update e observabilidade).
 Nada disso deve alterar o núcleo semântico; é essa propriedade que o M4 existe
 para verificar.
+
+## F146+ — próximo ciclo de produto (em andamento — ver progresso por onda abaixo)
+
+O baseline chega até F145, com F102 deliberadamente aberto (aguarda escolha
+de uma segunda família acadêmica). Nove eixos para o próximo ciclo — não como
+fila linear: algumas são fundações transversais, outras dependem claramente
+delas. A ordem de implementação recomendada não é a ordem alfabética das
+letras:
+
+```
+AA Product Hardening
+      ↓
+AB AI local foundation
+      ↓
+AC Systematic Review
+      ↓
+AD Research Data
+      ↓
+AE Extensions 2.0
+      ↓
+AF Cloud/Sync
+      ↓
+AG Collaboration
+      ↓
+AH Submission Integrations
+```
+
+F102 (segunda família acadêmica) fica fora dessa sequência automática — só
+entra quando houver decisão comercial concreta de mercado/norma.
+
+**Ponto de nova pausa:** implementar AA, AB e AC primeiro e reavaliar. Essas
+três têm a maior chance de aumentar o valor do Folio sem introduzir de
+imediato a complexidade operacional de cloud/colaboração. O produto já tem
+Projects, intake, workflow de submissão, profiles, automação e coesão diária
+(concluído até F145); o próximo salto não é "mais um painel" — é usar essa
+infraestrutura para pesquisa científica mais profunda: IA assistida com
+controle explícito, revisão sistemática e rastreabilidade de dados.
+
+### Onda AA — Product Hardening & Performance (em andamento — F146 concluído)
+
+Antes de somar cloud, IA ou colaboração: uma rodada ampla para transformar a
+quantidade grande de features já existentes num produto fluido.
+
+- [x] **F146 — Performance Observatory**: `apps/desktop/src/renderer/shell/
+      performance.ts` grava duração em memória do processo renderer (sem
+      disco, sem rede — reiniciar o app limpa a amostra) para startup,
+      vault-open (só o caminho sem diálogo nativo — `restoreLast()`, não
+      `chooseAndOpen()`, que fica contaminado por tempo de resposta humana),
+      abertura de editor, preview (compile fica implícito nele — não há um
+      gatilho de "compile" isolado no desktop), busca, grafo, PDF load/search,
+      export PDF/DOCX (rotulado como "com diálogo de salvar": o IPC de export
+      não separa compilação do diálogo nativo, então a duração inclui a
+      escolha do usuário — não há hoje fronteira de protocolo para separar as
+      duas coisas), project dashboard e Home. `PerformanceObservatoryDialog`
+      (comando `performance.open`, no menu "•••" e na Command Palette) mostra
+      contagem/última/média/mín/máx por operação, com botão para limpar.
+      "Rebuild de índice" não ganhou instrumentação própria: o desktop não
+      expõe hoje um gatilho de UI distinto para isso (acontece implicitamente
+      dentro de `open()`), então fica coberto por vault-open em vez de um
+      metric fabricado sem trigger real.
+- [x] **F147 — Large Vault Benchmark**: `scripts/benchmark-large-vault.ts`
+      gera um vault sintético (docs/refs/citações/links/tags configuráveis,
+      `--docs=N --refs=N`) num diretório temporário e mede
+      `storage.open()`, `index.open()` (indexação completa), `list()` e
+      `search()`. Rodado nos 3 tiers do roadmap: 100 docs/1.000 refs (index
+      219 ms), 1.000 docs/10.000 refs (index 1,8 s), **10.000 docs/50.000
+      refs (index 26,8 s — achado real: a primeira indexação de um vault
+      grande é o custo dominante, não a listagem/busca subsequente, que
+      ficam em milissegundos)**. PDFs/annotations ficam como metadata, sem
+      bytes reais, para manter o benchmark rápido — documentado como
+      limitação deliberada, não escondida.
+- [x] **F148 — Large Document Benchmark**: `scripts/benchmark-large-document.ts`
+      gera um documento sintético por contagem aproximada de páginas ABNT
+      (`--pages=N`) e mede `compilar()` (prepare+compile+html),
+      `renderizarDocx()` e `gerarPdf()` via Chromium. Rodado em 50/200/500
+      páginas: compile 85/225/523 ms, DOCX 50/75/128 ms, PDF (Chromium)
+      845/2.596/6.195 ms — cresce linearmente, sem degradação superlinear
+      até 500 páginas. TCC modular/dissertação/tese já têm timing
+      equivalente via composição de embeds (Onda M) — não duplicado aqui.
+- [x] **F149 — IPC Payload Optimization**: medido antes de decidir, como o
+      texto do roadmap pedia. `scripts/measure-editor-snapshot-payload.ts`
+      mostra que o overhead do `EditorSnapshotDto` além do `content` bruto é
+      irrelevante (0,76 KB em 1 página, 11 KB em 500 páginas — sob 1,2% do
+      payload total mesmo no extremo); o "peso" é o próprio texto do
+      documento, não a casca do DTO. Medição à parte de transporte real
+      (`MessageChannel.postMessage`, o mesmo usado pelo Workspace Service)
+      mostra round-trip de 1,47 ms para 1 MB — desprezível frente aos
+      523–6.195 ms de compilação/render medidos no F148. **Decisão: não
+      migrar para DTOs de evento leves agora** — os números não mostram
+      necessidade; revisitar se um caso real de lentidão aparecer em
+      documentos > 500 páginas.
+- [x] **F150 — Incremental Workspace Projection**: `DesktopWorkspaceServiceHost.problems()`
+      abria e recompilava todo `.md` do vault a cada chamada, mesmo sem
+      nenhuma edição — o alvo mais caro e mais fácil de confirmar com os
+      números do F147 (indexação inicial de 10k docs ~27s). Cache
+      `#problemsCache` por `WorkspaceFileId`, invalidado pela revisão de
+      *storage* (não a de sessão — um draft aberto sem save nunca usa
+      cache, porque sua revisão de storage não muda até salvar); arquivo
+      removido do vault expira do cache numa varredura completa (não numa
+      chamada recortada por `fileIds`, que não pode inferir remoção).
+      `tests/f150-incremental-problems-projection.test.ts` prova
+      comportamento, não só tipo: 40 documentos, segunda chamada sem
+      edição *e* consistentemente sob 50% do tempo da primeira, terceira
+      chamada após editar+salvar um arquivo reflete o novo diagnóstico.
+      Home/Research Dashboard/Graph/Bibliography health não têm o mesmo
+      padrão de "reabrir tudo" que Problems tinha — já usam listas/streams
+      do índice SQLite ou do storage diretamente, sem o custo de abrir uma
+      sessão de editor por arquivo; auditados, sem alvo comparável
+      encontrado nesta rodada.
+- [x] **F151 — Virtualized Lists**: `VirtualizedList` de
+      altura fixa, sem nova dependência, já protege os resultados da busca
+      global; `virtualWindow()` é coberto por teste. Biblioteca de referências,
+      auditoria bibliográfica, Problems de revisão e seletor de projetos agora
+      compartilham a mesma janela virtual. As superfícies de anotações e
+      atividade existentes são cartões limitados por painel, não coleções longas
+      com scroll próprio; não foi criado um virtualizador de altura fixa que
+      degradaria sua apresentação variável.
+- [ ] **F152 — Keyboard-first polish** *(em andamento)*: o Command Registry
+      continua sendo a única rota para atalhos; a nova infraestrutura de
+      diálogos fecha em Escape, prende Tab e devolve foco ao originador.
+      Coleções virtualizadas respondem a setas, Page Up/Down, Home e End sem
+      depender do mouse. Falta a auditoria de navegação de cada painel/lista.
+- [ ] **F153 — Accessibility** *(em andamento)*: `useDialogAccessibility`
+      fornece focus trap, Escape e restauração de foco para prompts e
+      confirmações e para o Modo de revisão; estilos respeitam
+      `prefers-reduced-motion`. Falta aplicar o hook às demais janelas e
+      concluir a auditoria ARIA/contraste.
+- [ ] **F154 — Empty/loading/error states** *(em andamento)*: Home agora
+      distingue carregamento (`role=status`) e erro (`role=alert`) das
+      projeções remotas; Saúde das referências faz o mesmo durante a auditoria
+      bibliográfica. Falta consolidar o mesmo contrato visual nas outras
+      superfícies assíncronas.
+- [ ] **F155 — Unified destructive-action UX** *(em andamento)*: prompts e
+      confirmações nativas foram substituídos por um `alertdialog` acessível;
+      exclusão de referência, automações/macros, mesclagem de referências e
+      renomeação de chaves passam por prévia explícita. Ainda falta cobrir
+      archive, overwrite e edições em lote.
+
+### Onda AB — IA acadêmica local / opt-in
+
+Modular e provider-agnostic desde o contrato. Nunca embutir "OpenAI" (ou
+qualquer provider específico) no modelo central — isso fica no adapter.
+
+- [x] **F156 — AI Provider Contract**: `@abnt/ai` define `AiProvider`
+      (`complete`, `embed`, `capabilities`) sem citar vendor no core.
+      Providers possíveis depois: modelo local, OpenAI, Anthropic, Google,
+      endpoint enterprise.
+- [x] **F157 — Explicit Context Builder**: `buildAiContext()` é uma
+      allow-list explícita e remove itens vazios/duplicados; nenhum caminho
+      existe para incluir o vault inteiro por default. O usuário escolhe
+      seleção, documento atual, seção, referências selecionadas, literature
+      notes, PDF annotations e projeto.
+- [x] **F158 — Local AI Provider**: adapter de endpoint compatível em
+      localhost, injetado por `LocalAiTransport`; não abre rede por conta
+      própria e não tem provider comercial embutido.
+- [x] **F159 — AI Data Disclosure Preview**: `disclosureFor()` apresenta
+      provider, local/externo, cada item, tipo e tamanho antes da chamada.
+- [x] **F160 — AI Summarize Selection**: instrução acadêmica de resumo sobre
+      o contexto selecionado, retornada como sugestão do provider.
+- [x] **F161 — Literature Note Assistant**: instrução estruturada para nota
+      de literatura a partir de referência e anotações explicitamente
+      escolhidas.
+- [x] **F162 — Compare Sources**: fluxo de comparação exige fontes no
+      contexto, orienta método/resultados e preserva os links de origem via
+      `citedContext()`.
+- [x] **F163 — Claim-to-source assistant**: `claimToSource()` ranqueia fontes
+      já fornecidas pelo workspace; nunca produz nem insere uma citação.
+- [x] **F164 — Semantic Search**: `semanticSearch()` opera somente sobre
+      embeddings recebidos, e `hybridSearch()` combina ranking lexical e
+      semântico sem tocar no FTS5.
+- [x] **F165 — AI Review**: instrução separada para coerência, redundância,
+      estrutura e transições, explicitamente sem validação ABNT.
+- [x] **F166 — AI Action Preview**: `actionPreview()` calcula before/after,
+      inserido/removido e não possui caminho de escrita; a UI decide se e
+      quando despachar uma `EditorTransaction`.
+
+> **Auditoria de produto (desktop, 2026-09):** AB é infraestrutura de package
+> pronta para um host opt-in, mas ainda não é uma superfície do Folio: não há
+> import de `@abnt/ai` em `apps/desktop`, método de protocolo, comando ou
+> diálogo de disclosure. Isso preserva a promessa de não enviar dados sem
+> escolha explícita; a integração de UI continua trabalho separado.
+
+### Onda AC — Revisão sistemática avançada
+
+Potencial grande para diferenciar o produto; a Literature Review Matrix
+(F47) já é uma boa fundação.
+
+- [x] **F167 — Review Protocol**: `@abnt/systematic-review` armazena pergunta,
+      bases, estratégia, critérios e período como estado operacional.
+- [x] **F168 — PICO / PICOS / SPIDER frameworks**: templates opcionais no
+      protocolo, sem hardcode no core documental.
+- [x] **F169–F179 — registry, screening, exclusões, fila, double screening,
+      schema/extração, qualidade, PRISMA, evidence table e vínculos**:
+      projeções puras cobrem cada conceito; PRISMA e tabela são derivados,
+      e nenhum conteúdo de checklist protegido é incorporado.
+
+> **Auditoria de produto (desktop, 2026-09):** AC ainda não possui import,
+> DTO/protocolo ou painel no Desktop. O package é uma base operacional pura;
+> não deve ser anunciado como workflow de revisão sistemática disponível na
+> aplicação até receber uma superfície local-first.
+
+### Onda AD — Dataset & Research Data Management
+
+Outro grande diferencial.
+
+- [x] **F180–F190 — Research Data Management**: `@abnt/research-data`
+      registra CSV/TSV/JSON/XLSX/Parquet/imagens/archives, metadata e versões;
+      usa SHA-256, preview read-only e inferência de schema; valida data
+      dictionary, produz citação de dataset, links de artefatos, proveniência
+      de análise e manifesto reprodutível de revision/datasets/scripts/hashes.
+
+> **Auditoria de produto (desktop, 2026-09):** AD não está conectado ao host
+> desktop — não há registry, preview ou manifesto acessível pela UI ainda.
+> A implementação atual prova o domínio e os invariantes, não a experiência
+> de gestão de dados no Folio.
+
+### Onda AE — Extensions / Ecosystem 2.0
+
+O plugin system atual (Onda S) já prova isolamento e contribuições
+restritas; agora dá para expandir com cuidado.
+
+- [x] **F191–F204 — Extensions Ecosystem 2.0**: `@abnt/plugin-api` agora
+      cobre settings declarativos, storage namespaced, adapters de
+      bibliografia/busca/intake, métricas de projeto, profiles, templates e
+      commands com argumentos. Manifestos declaram permissões, Trust UI pode
+      projetá-las por `requestedPermissions()`, compatibilidade é verificada
+      por faixa Folio/API e `packageDescriptor()` define packaging/instalação
+      local, sem marketplace e sem UI arbitrária.
+- [x] **F192–F204 — declaradas no manifesto e validadas pelo core**:
+      o host existente continua a única fronteira de execução; integração de
+      cada provider é opt-in por capability e não recebe autorização extra.
+
+> **Auditoria de produto (desktop, 2026-09):** AE é a exceção já integrada:
+> o gerenciador local, exibição de capabilities, enable/disable, reload e
+> comandos/exportações contribuidos estão conectados a IPC. Instalação de
+> pacote local e UI de confiança mais detalhada ainda exigem uma rota de host
+> explícita, apesar de o formato estar pronto no package.
+
+### Onda AF — Cloud / Sync real
+
+Só agora usa o contrato preparado na Onda W (F117–F123).
+
+- [x] **F205–F218 — Cloud/Sync local-first**: `@abnt/workspace-sync` usa o
+      contrato `WorkspaceSyncAdapter` existente como provider injetável,
+      identidade de dispositivo sem path, filtro de estado portátil, write
+      incremental por hash/revisão, recursos binários, inbox de conflitos,
+      fila offline, status e recovery sem delete automático. Auth permanece
+      fora do core; criptografia ponta-a-ponta continua decisão de ADR e
+      deletes remotos exigem operações explícitas/tombstones do provider.
+- [x] **F205A — primeiro provider concreto (pasta espelho)**:
+      `WorkspaceStorageSyncAdapter` conecta dois vaults abertos sem vazar paths
+      absolutos para o engine. Ele sincroniza conteúdo textual e binário por
+      caminho/hash/revisão; `LocalFilesystemStorage.writeBinary()` preserva
+      bytes durante recovery/overwrite revisionado. `tests/f205-workspace-sync`
+      cobre dois vaults reais com Markdown e bytes não UTF-8. O Desktop oferece
+      Configurações → Sincronização local: o Main escolhe a pasta nativa sem
+      devolver o path ao renderer, e a UI mostra estado, pendências, inbox,
+      sync explícito, recovery e escolha explícita de manter local/usar espelho.
+      A associação vault→espelho é lembrada no `userData` do Main e restaurada
+      ao reabrir o vault; espelhos aninhados no vault são recusados.
+- [ ] **F206 — Account Boundary**: auth fica fora do core.
+- [ ] **F207 — Device Identity**: identificar dispositivo sem usar path
+      como identidade.
+- [ ] **F208 — Portable State Sync**: sincronizar só as classes já
+      definidas como portáveis (F117).
+- [ ] **F209 — Incremental File Sync**: baseado em revisão/hash e
+      conditional write.
+- [ ] **F210 — Binary Resource Sync**: PDFs, assets, datasets.
+- [x] **F211 — Conflict Inbox**: uma superfície única para conflitos da
+      pasta espelho, com identificador e caminho relativo sem path local.
+- [ ] **F212 — Text Conflict Resolution**: a UI já oferece manter local ou
+      usar espelho, sempre por escolha explícita; merge manual continua aberto.
+- [ ] **F213 — Structured Conflict Resolution**: referência, projeto,
+      annotation, reading queue.
+- [ ] **F214 — Offline Queue**: mudanças locais continuam funcionando sem
+      rede.
+- [x] **F215 — Sync Status**: `synced`, `pending`, `conflict`, `offline` e
+      `error` projetados no Desktop sem revelar a pasta configurada.
+- [ ] **F216 — End-to-end Encryption Decision**: ADR separado; não assumir
+      implementação.
+- [ ] **F217 — Remote Delete Safety**: tombstones/retenção apropriados.
+- [x] **F218 — Sync Recovery**: reconstruir explicitamente o vault local a
+      partir da pasta espelho, sem delete automático.
+
+### Onda AG — Collaboration & Shared Review
+
+Só depois de sync (Onda AF).
+
+- [x] **F219–F231 — Collaboration & Shared Review**: `@abnt/collaboration`
+      modela projetos compartilhados, roles, comentários/threads, resolve e
+      reopen, milestones, atribuições, screening colaborativo com decisões
+      independentes, agreement/conflitos e presença leve. A escolha entre
+      locking/OT/CRDT continua um decision point explícito, sem implementar
+      edição concorrente antes dessa decisão.
+
+> **Auditoria de produto (desktop, 2026-09):** colaboradores, papéis e
+> comentários editoriais agora possuem DTO, IPC e superfícies no Desktop. O
+> estado operacional é sincronizável pela pasta espelho; threads, presença e
+> screening compartilhado ainda não possuem UX distribuída.
+
+> **Fundação de transporte (2026-09):** o estado `collaboration` agora é uma
+> classe `portable-operational` explícita e a pasta espelho o sincroniza por
+> uma rota composta, em `.academic/operational/`, separada do conteúdo
+> autoral. A interface, papéis, threads e presença continuam pendentes; esta
+> mudança só prepara a persistência distribuída correta e preserva a decisão
+> de não introduzir CRDT/OT/locking.
+- [x] **F220 — Roles**: owner, editor, reviewer, viewer.
+- [x] **F221 — Shared Review Comments**: comentários editoriais associados à
+      seleção viajam no estado operacional sincronizável.
+- [x] **F222 — Threads**: respostas em comentários no estado operacional
+      sincronizável.
+- [x] **F223 — Resolve / Reopen**: workflow editorial persistido por thread
+      e sincronizável pela pasta espelho.
+- [ ] **F224 — Mentions**: `@revisor`, operacional.
+- [ ] **F225 — Shared Milestones**.
+- [ ] **F226 — Shared Screening**: excelente para revisão sistemática (Onda
+      AC).
+- [ ] **F227 — Independent Screening Decisions**: evitar que um revisor
+      veja a decisão do outro até a fase definida.
+- [ ] **F228 — Screening Agreement**: concordância e conflitos.
+- [ ] **F229 — Review Assignments**: atribuir documentos, referências, itens
+      de screening.
+- [ ] **F230 — Presence**: só presença leve ("Ana vendo Métodos").
+- [ ] **F231 — Concurrent Editing Decision Point**: só aqui decidir se
+      realmente precisa de CRDT, OT ou locking — não antes.
+
+### Onda AH — Submission Integrations
+
+A Onda Y já cria o Submission Record; agora integra com o mundo externo.
+
+- [x] **F232–F242 — Submission Integrations**:
+      `@abnt/submission-integrations` define adapter provider-specific,
+      autores/ORCID, metadata editorial, pacote de periódico/ZIP/repositório,
+      preparação de DOI sem registro, checklist declarativo, status e rounds
+      de revisão. Nenhuma API externa é chamada sem adapter escolhido.
+
+> **Decisão de produto (2026-09):** os primeiros adapters são **ORCID**,
+> **Crossref** e **OJS**. `normalizeOrcid()`/`withOrcid()` tratam identidade
+> sem chamada externa; `createCrossrefMetadataAdapter()` prepara exportação de
+> metadata e deixa registro de DOI para um provider explícito; e
+> `createOjsAdapter()` recebe transporte de submit/status injetado. Ainda não
+> há credenciais, HTTP ou UI no Desktop — o core não escolhe endpoint nem
+> transmite dados silenciosamente.
+- [ ] **F233 — ORCID Integration**: para identidade/autores.
+- [ ] **F234 — Crossref Metadata Export**: metadata para workflows
+      editoriais onde fizer sentido.
+- [ ] **F235 — Journal Submission Package**: manuscrito, figuras,
+      suplementares e metadata conforme o alvo.
+- [ ] **F236 — Generic Submission ZIP**: muito útil mesmo sem API externa.
+- [ ] **F237 — Repository Deposit Package**: para repositórios
+      institucionais.
+- [ ] **F238 — DOI Deposit Preparation**: não registrar DOI diretamente até
+      haver caso/provider real.
+- [ ] **F239 — Submission Checklist Adapter**: o alvo pode acrescentar
+      requisitos.
+- [ ] **F240 — Submission API Integration**: só para plataformas escolhidas
+      explicitamente (ex.: OJS, sistemas institucionais, APIs de
+      repositório).
+- [ ] **F241 — Submission Status**: submitted, under review, revision
+      requested, accepted, rejected — quando o provider suportar.
+- [ ] **F242 — Revision Round**: ligar submission, comentários de revisão,
+      novo snapshot e novo conjunto de artefatos.
+
+### Onda AJ — Academic Bases & Views
+
+Views acadêmicas são definições portáteis em `.academic/views/`, fora do
+SQLite e sem cópia de entidades. Cada view aponta para uma única fonte e seus
+resultados continuam projeções reconstruíveis.
+
+- [x] **F243 — Academic View Model**: pacote puro, versionado, com filtro
+      `QueryAst`, ordenação, agrupamento, layout e colunas.
+- [x] **F244 — Academic View Sources**: fontes fechadas para documentos,
+      referências, notas, projetos, datasets, estudos e anotações.
+- [x] **F245 — Table View**: tabela virtualizada para fontes disponíveis.
+- [x] **F246 — List View** e **F247 — Card View**.
+- [x] **F248 — Board View**, **F249 — Calendar View** e **F250 — Timeline
+      View**: representações da mesma definição, sem criar estado canônico.
+- [x] **F251 — Saved Views**: Workspace Service persiste e sincroniza a
+      definição como estado operacional portátil; a regressão prova reabertura
+      sem depender do índice SQLite.
+
+O primeiro recorte renderiza referências e documentos já disponíveis no
+Desktop. As demais fontes têm contrato/modelo e receberão os respectivos
+adaptadores de projeção conforme suas superfícies operacionais forem unificadas.
+
+### Ondas de consolidação — Desktop workflows
+
+Após AJ–AP, a prioridade é reduzir a distância entre packages/modelos/testes e
+workflows completos no Desktop. Não se cria uma nova fonte de verdade: cada
+entrega reutiliza Markdown, estado operacional portátil e projeções do
+Workspace Service.
+
+#### Onda AQ — AA Finish / Product Hardening
+
+- [ ] **F152–F155** — teclado, acessibilidade, estados empty/loading/error e
+      confirmação unificada para toda superfície nova.
+
+#### Onda AR — Academic Views 2.0
+
+- [x] **F295** — Literature Notes View Adapter.
+- [ ] **F296–F299** — adapters para projetos, datasets, estudos de revisão e
+      anotações PDF.
+- [ ] **F300** — editor visual de filtro, ordenação, agrupamento, colunas e
+      layout.
+
+#### Onda AS — Views, Relations & Rollups
+
+- [x] **F301** — coluna relation: projeta uma lista legível de entidades
+      ligadas (resolve título pelo id, não um contador).
+- [x] **F302** — coluna rollup: `count`/`unique-count` sobre relações de um
+      tipo.
+- [x] **F303** — coluna formula: aritmética restrita (`+ - * /`, parênteses,
+      campos e literais), sem `eval`, rede ou código arbitrário.
+- [x] **F304** — chart view: barras CSS agrupadas por campo, sem dependência
+      de biblioteca de gráficos.
+- [x] **F305** — agrupamento: `AcademicView.group` (existente desde a Onda AJ,
+      nunca lido pelo renderer) agora particiona `table`/`list` em seções.
+- [x] **F306** — blocos de dashboard: `DashboardViewBlock` (metric/chart/table)
+      aponta para uma view existente e persiste no mesmo documento portátil,
+      nunca copia linhas.
+
+Relações são sempre derivadas sob demanda por `workspace/academic-relations`
+— nunca materializadas — mesmo tratamento de `researchOverview()` (ver ADR
+0070). Hoje só dois dos cinco tipos declarados em `Relation['kind']` resolvem
+para dado real: `cites` (via `SqliteWorkspaceIndex.citations()`) e
+`annotates` (via `readPdfAnnotations()`), cada um emitido nas duas direções
+porque `related()`/`rollup()` só casam pela ponta `from`. Os outros três
+ficam declarados no tipo, mas não resolvem nada, e isso é deliberado, não uma
+lacuna escondida: `belongs-to-project` porque `ResearchProject` ainda vive
+só em `localStorage` do renderer, sem DTO nem RPC; `uses-dataset` porque
+nenhuma entidade de dataset existe além do nome da fonte e de um adapter não
+chamado; `evidence-for` porque `@abnt/systematic-review` ainda não está
+ligado ao desktop. Nenhuma dessas três é um contador que "engana" — a UI
+simplesmente não tem como preenchê-las ainda.
+
+#### Onda AT — Navigation 2.0
+
+- [x] **F307–F311** — categorias reais de projetos, views, bookmarks e buscas
+      salvas na navegação unificada (`WorkspaceNavigationDialog`): projetos
+      via `readResearchProjects`, views via `academicViews()`, buscas salvas
+      via prop já mantida pelo host da árvore de knowledge workspace.
+      Canvases permanece um estado vazio honesto — ver nota abaixo.
+- [x] **F312–F318** — bookmarks: `WorkspaceBookmarkDto`/`BookmarkTargetDto`
+      (8 alvos: document/section/reference/annotation/project/view/search/
+      dataset), store em `.academic/bookmarks/*.json` (mesmo adaptador
+      portátil de academic-views), commands `bookmark.create` (documento
+      atual) e `bookmark.remove`, mais um formulário manual na aba de
+      bookmarks para os demais alvos.
+- [x] **F319–F325** — Peek Service (`workspace/peek`): resolve dado real no
+      host para `document`/`section` (excerto real do corpo via
+      `citationSnippet`), `reference` (biblioteca) e `annotation`
+      (`readPdfAnnotations`). `project`/`view`/`search`/`dataset` voltam
+      `entity: undefined` de propósito.
+
+Bookmarks apontam para identidades já existentes e nunca copiam conteúdo —
+política da ADR 0068. Peek deriva sob demanda e nunca materializa nada, o
+mesmo princípio já usado por `academicRelations()`/`researchOverview()` (ADR
+0070). A escolha de resolver só 4 dos 8 alvos no host é deliberada: para
+`project`/`view`/`search` o cliente já mantém a lista inteira em memória
+sempre que o diálogo de navegação está aberto, então um round-trip não
+agregaria nada; `dataset` não tem entidade nenhuma para resumir (mesma nota
+já registrada pela Onda AS sobre `uses-dataset`). A aba de canvases continua
+um estado vazio: `@abnt/research-canvas` não tem nenhuma integração com o
+desktop ainda — isso é trabalho da Onda AW, não desta.
+
+#### Onda AU — Slash Commands & Research Journal
+
+- [x] **F326–F330** — trigger `/` só no início da linha vira completion
+      nativa do CodeMirror (`autocompletion`, segunda entrada em `override`),
+      sourced pelo Command Registry vivo. Teclado (setas/Enter/Esc) vem de
+      graça do `@codemirror/autocomplete` — nenhum keymap novo foi escrito.
+      Argumentos são os que cada comando já coleta sozinho após selecionado
+      (`math.insertEquation`/`transclusion.insert` já chamam `requestText`);
+      nenhum comando registrado declara `CommandArgumentSchema` hoje, então
+      não existe infraestrutura real para um parser de argumento inline
+      `/comando arg` — construir um seria escopo especulativo.
+- [x] **F331–F335** — diário de pesquisa em `journal/YYYY-MM-DD.md`, Markdown
+      comum criado sob demanda (idempotente por data, mesmo padrão de F34
+      para notas de literatura — não o adaptador JSON de academic-views/
+      bookmarks). Navegação via `journal.openToday` e uma aba própria na
+      navegação unificada com calendário real (só dias com entrada existente
+      ficam clicáveis) e lista plana. Captura rápida via `journal.capture`,
+      que insere o texto como bullet logo abaixo de `## Observações`.
+
+O menu `/` cobre só `citation.openPicker`, `figure.insert`, `table.insert`,
+`math.insertEquation`, `xref.insert` e `transclusion.insert` — comandos que
+inserem no documento atual. `template.createDocument` fica de fora porque
+troca de aba para um documento novo, e `journal.capture`/`journal.openToday`
+porque escrevem/navegam para um arquivo diferente do que está sendo editado;
+nenhum dos dois respeita a semântica de "inserir aqui" que une os seis
+escolhidos. `slashCommands()` em `@abnt/workspace-navigation` permanece
+deliberadamente sem uso em produção: seus rótulos fixos divergiriam do
+título/`isEnabled` reais assim que qualquer comando mudasse — a lista viva
+mora em `app.tsx`, ao lado do registro desses comandos. Criar uma entrada de
+diário para uma data que não seja hoje não tem nenhuma UI nesta onda, mesmo
+`journalOpen`/`journalCapture` já aceitando `date` opcional no protocolo.
+
+#### Onda AV — Capture Inbox & Browser Bridge
+
+- [x] **F336–F341** — inbox persistente, quick/URL/selection capture, revisão
+      e encaminhamento explícito para referência, nota, diário ou projeto.
+- [x] **F342–F343** — bridge e extensão de navegador, sempre via DTO validado
+      e confirmação no Desktop.
+
+A inbox vive em `.academic/inbox/reference-inbox-captures.json` como dado
+operacional portátil; só o encaminhamento cria referência, Markdown de nota ou
+entrada de diário. A extensão MV3 envia apenas URL, título e seleção por
+`POST` ao loopback `127.0.0.1:38373`; a bridge valida o DTO e abre uma pendência
+no desktop, sem caminho de vault, token ou autoridade de escrita.
+
+#### Onda AW — Research Canvas Desktop
+
+- [x] **F344–F355** — persistência, tab, pan/zoom, drag, edges, grupos, nós
+      acadêmicos, argument map e busca.
+- [x] **F356–F360** — passagem Canvas → escrita com preview antes de mutação.
+
+Canvas é persistido como `.academic/canvases/research-canvases-canvases.json`,
+revalidado pelo Workspace Service e sincronizável como estado operacional. A
+superfície de pesquisa abre o mapa em uma área dedicada, com pan/zoom, drag,
+busca, grupos, nós de documento/referência/texto e arestas argumentativas. A
+passagem para escrita só monta uma prévia de cartões textuais; a inserção no
+documento ativo continua sendo uma confirmação explícita do usuário.
+
+#### Onda AX — Block Composition integrada
+
+- [x] **F361–F368** — parser, Language Service, completion, transclusão e
+      comandos revisionados de extrair, modularizar e mesclar.
+
+Blocos são identificados por `^id` e referenciados por `[[arquivo.md#^id]]`.
+O Language Service sugere IDs de blocos do vault, sem leitura no renderer. Os
+comandos de inserir referência, extrair seleção e mesclar módulo usam a mesma
+sintaxe e exibem prévia/confirmação antes de criar arquivo ou despachar edição
+revisionada ao editor.
+
+#### Onda AY — Academic Forms no Desktop
+
+- [x] **F369–F375** — renderer de forms, extraction/dataset/reference forms,
+      botões de view, seleção e ações em lote com preview.
+
+O desktop renderiza os schemas do pacote `academic-forms`: referência revisa a
+biblioteca via DTO, dataset e extração exibem prévias validadas, e a ação em
+lote de referências é um comando registrado com confirmação. Nenhum botão de
+formulário escreve diretamente no filesystem ou interpreta automação.
+
+#### Onda AZ — Collaboration UX distribuída
+
+- [x] **F376–F383** — mentions, milestones, screening compartilhado/cego,
+      agreement, assignments, presence e ADR de edição concorrente.
+
+#### Onda BA — Sync comercial completo
+
+- [x] **F384–F390** — merge manual de texto, conflitos estruturados,
+      tombstones, ADR E2EE e primeiro provider de rede.
+
+#### Onda BB — Submission Integrations no Desktop
+
+- [x] **F391–F399** — UI ORCID, exportação Crossref, packages, conexão e
+      submissão OJS, status e rounds de revisão.
+
+#### Onda BC — Reconciliação de produto e integrações profundas
+
+Nesta fase, a prioridade é aprofundar os vínculos entre capacidades já
+entregues, e não abrir outra família isolada de features. As decisões abaixo
+partem do estado real do repositório: Canvas já possui persistência, edição de
+arestas/grupos e ponte confirmada para escrita; Block Composition já percorre
+parser, Language Service, completion, transclusão e comandos; e o popup de
+slash command é a completion nativa do CodeMirror. Não devem ser registrados
+como lacunas apenas por existirem implementações em packages distintos.
+
+- [x] **F400 — Roadmap State Reconciliation**: o resumo de `AGENTS.md` passa
+      a registrar AA–BB e este roadmap torna explícita a fronteira entre
+      fundações de package, integrações de host e superfícies desktop. O estado
+      é sustentado por ADRs 0064–0076, testes F146–F399 e pelo histórico local;
+      não depende de uma lista retrospectiva inferida somente por nomes de
+      commits.
+- [x] **F401 — Real Project Relations**: `#readAcademicRelationResource`
+      (`apps/desktop/src/workspace/workspace-service.ts`) lê o recurso
+      portátil `.academic/relations/academic-relations.json`
+      (`JsonOperationalSyncAdapter`) e deriva `belongs-to-project` nos dois
+      sentidos (`document↔project`, `reference↔project`) para Views, Rollups,
+      Navigation e Canvas — não é mais projeção local do renderer.
+- [x] **F402 — Real Dataset Relations**: mesmo recurso, campo `datasets`,
+      deriva `uses-dataset` nos dois sentidos a partir de entidade operacional
+      consultável no host, sem copiar metadado de pesquisa para Markdown ou
+      SQLite.
+- [x] **F403 — Evidence Relations**: mesmo recurso, campo `evidence`, deriva
+      `evidence-for` nos dois sentidos, ligando artefatos da revisão
+      sistemática à superfície desktop.
+- [ ] **F404 — Slash Command Workflows**: somente se houver fluxo de produto
+      que exija argumentos estruturados. O menu, filtro e teclado simples já
+      são responsabilidade da completion nativa; não duplicar esse mecanismo
+      com um popup paralelo.
+- [ ] **F405 — Canvas Daily-workflow Audit**: validar, com cenários reais, os
+      fluxos Canvas → outline, nota de literatura e documento antes de ampliar
+      a interação visual já existente.
+- [ ] **F406 — Block Composition Product Audit**: validar a experiência
+      ponta-a-ponta de `^block-id` no editor e no Language Service; correções
+      devem reutilizar a infraestrutura F361–F368, não criar um segundo
+      resolvedor de blocos.
+- [ ] **F407 — Forms Workflow Integration**: levar o renderer genérico de
+      forms aos fluxos que tenham DTO/host real (extração, dataset e intake),
+      com preview e confirmação antes de qualquer mutação.
+
+#### Onda BD — Robustez distribuída
+
+- [x] **F408 — Multi-device Sync Harness**: regressões exercitam dois
+      adapters independentes, conflito delete/edição e a convergência após o
+      retorno de um provider, sem depender de servidor real.
+- [x] **F409 — Structured Conflict Resolution**: conflitos preservam tipo,
+      entidade e resolução explícita; texto exige merge manual e estado
+      operacional nunca é tratado como Markdown.
+- [x] **F410 — Offline and Recovery**: falha transitória enfileira o snapshot
+      portátil mais recente por chave, sem bloquear autoria; a próxima sync o
+      reaplica e esvazia a fila somente após sucesso.
+- [x] **F411 — Tombstone Lifecycle**: delete/edição continua conflito visível
+      e nunca ressuscita um registro removido automaticamente.
+- [x] **F412 — E2EE ADR**: ADR 0075 fixa que provider HTTP não equivale a
+      criptografia ponta a ponta e mantém chaves/rotação fora do escopo até
+      decisão operacional completa.
+- [x] **F413 — Provider Security Model**: endpoint, token efêmero e adapter
+      injetável não carregam path do vault nem credenciais para o estado
+      sincronizado.
+- [x] **F414 — Collaboration Failure Recovery**: `recover()` reconstrói
+      somente registros portáteis remotos e jamais apaga conteúdo local por
+      inferência.
+
+#### Onda BE — Decisão de edição concorrente
+
+- [x] **F415 — Local Conflict Telemetry**: contagens locais e agregadas de
+      contenção, expiração, conflito e merge manual, sem conteúdo ou rede.
+- [x] **F416 — Locking Prototype**: leases opt-in com expiração, renovação e
+      liberação pelo titular, isolados do editor e do mecanismo de sync.
+- [x] **F417 — OT/CRDT Evaluation**: comparação documentada: ambas as opções
+      dependem de operações, presença e recuperação que o produto ainda não
+      possui; não introduzir dependência especulativa.
+- [x] **F418 — Architecture Decision**: ADR 0077 mantém `undecided`; um lock
+      só poderá chegar à UI com evidência de contenção recorrente.
+
+### Horizonte Zotero-inspired — após F401–F403
+
+Este horizonte absorve eficiência de captura, metadata, anexos e manutenção de
+biblioteca sem transformar o Folio em um gestor bibliográfico isolado. A fonte
+canônica continua CSL-JSON + vault; nenhum provider, snapshot ou índice ganha
+autoridade autoral. F401–F403 concluídas libera BF; BF/BG concluídas (pacotes
+puros e testados) liberam BH.
+
+#### Onda BF — Universal Scholarly Identifiers ✅ (modelo)
+
+- [x] **F419–F428** — `@abnt/scholarly-identifiers`: detecção determinística
+      de DOI/ISBN/PMID/arXiv/ADS (`detectScholarlyIdentifier`), registry de
+      resolvers por provider (`IdentifierResolverRegistry`) e revisão em lote
+      que nunca confirma duplicata sozinha (`reviewBatch` só reporta
+      `duplicateIds`, quem decide é o host). `tests/f419-scholarly-
+      identifiers.test.ts`. Escopo desta entrega é o modelo/detecção; UI de
+      preview com duplicatas e ligação ao protocolo do desktop ficam para a
+      integração de produto do horizonte, não reabrem esta onda.
+
+#### Onda BG — PDF Reconciliation ✅ (modelo)
+
+- [x] **F429–F435** — `@abnt/pdf-reconciliation` (depende só de
+      `@abnt/scholarly-identifiers`): `identifiersFromPdfText` é scanner
+      literal — sem OCR, sem heurística que invente metadata — e
+      `reconcilePdfText` produz candidato revisável com o mesmo registry de
+      BF, incluindo `duplicateIds` para sinalizar referência pai já existente.
+      `tests/f429-pdf-reconciliation.test.ts`. Anexar/criar pai e undo de
+      metadata na UI continuam como integração de produto pendente, mesma
+      ressalva de BF.
+
+#### Onda BH — Attachment Model 2.0 ✅
+
+- [x] **F436–F446** — `@abnt/attachment-model` (pacote novo, sem
+      dependências): `AttachmentId` de marca, múltiplos `Attachment` por
+      referência com `role` (`primary`/`supplementary`/`dataset`/`snapshot`),
+      `kind` (`file`/`link`), `displayTitle` opcional e histórico de
+      `versions` (`addAttachmentVersion` nunca reescreve, só acrescenta).
+      `suggestAttachmentFilename` sugere nome determinístico
+      (sobrenome-ano-título); `checkAttachmentHealth` é puro e recebe do host
+      quais `fileId`/`referenceId` existem, apontando anexo órfão ou arquivo
+      ausente sem tocar filesystem. `sanitizeSnapshotHtml` reduz qualquer
+      captura a texto puro — `<script>`/`<style>`/comentários somem antes de
+      entrar no manifesto; não existe caminho para persistir HTML executável.
+      `migrateAttachmentManifest`/`parseAttachmentManifest` migram o v1
+      (`references/attachments.json`, um PDF por referência) para v2 sem
+      perda, e descartam individualmente uma entrada corrompida do v2 em vez
+      de derrubar o manifesto inteiro. `retargetAttachments` generaliza o
+      merge/rename de referência (F54/F55) para mover TODO anexo da
+      duplicata, não só o PDF principal. `tests/f436-attachment-model.test.ts`
+      (9 testes).
+      Diferente de BF/BG, a integração de produto **não** ficou para depois:
+      `apps/desktop/src/workspace/reference-attachments.ts` foi portado para
+      v2 (funções legadas mantidas, agora sobre o manifesto novo); sete
+      métodos novos em `WorkspaceMethod`/`DesktopWorkspaceService`
+      (`attachments`, `addAttachment`, `addAttachmentVersion`,
+      `removeAttachment`, `renameAttachmentFile`, `attachmentLocalPath`,
+      `attachmentHealth`) mais `WorkspacePickAttachmentRequest`
+      (gatilho do diálogo nativo, só entre preload e Main); UI em
+      `ReferenceLibraryDialog` (múltiplos anexos por papel, nova versão,
+      aplicar sugestão de nome, remover) e saúde de anexos agregada no
+      `ReferenceHealthDialog`. `tests/f436-attachment-protocol.test.ts`
+      (2 testes de integração via `MessagePort` real, incluindo migração de
+      um manifesto v1 escrito direto no disco). Ver
+      [ADR 0078](adr/0078-attachment-model-2.md).
+      Ficou fora de propósito, deliberadamente: abrir link em navegador
+      externo (só "copiar link", para não introduzir `shell.openExternal`
+      sobre dado do vault sem desenho de segurança dedicado) e extractor real
+      de snapshot de página (Onda BN).
+
+#### Onda BI — Full Text Discovery ✅ (modelo)
+
+- [x] **F447–F453** — `@abnt/full-text-discovery` (pacote novo, sem
+      dependências): `FullTextResolver` é o contrato de provider — cada
+      adapter externo é injetado explicitamente via
+      `FullTextDiscoveryRegistry.register`, nunca uma chamada de rede
+      embutida no pacote. `discover(query)` consulta todos os resolvers
+      registrados em paralelo (`Promise.allSettled`); um provider que falha
+      ou devolve candidato malformado (`createFullTextCandidate` valida URL
+      HTTP(S), confiança em 0–1 e provenance `retrievedAt`) nunca derruba os
+      demais nem vira exceção silenciosa — aparece em `failures`, e o
+      candidato ruim é descartado individualmente. `dedupeByUrl` preserva o
+      candidato de maior confiança quando dois providers acham a mesma URL.
+      O resultado (`FullTextReview`) é só para revisão humana: baixar ou
+      anexar um candidato continua ação separada e explícita do host, natural
+      candidata a usar `workspace/add-attachment` (Onda BH) quando a
+      integração de produto acontecer. `tests/f447-full-text-
+      discovery.test.ts` (5 testes). Mesmo recorte deliberado de BF/BG:
+      modelo e testes primeiro, protocolo/IPC/UI ainda não vieram nesta
+      entrega.
+
+#### Onda BJ — Explicit Reference Relations ✅
+
+- [x] **F454–F459** — `@abnt/reference-relations` (pacote novo): `kind`
+      fechado (`version-of`/`extension-of`/`replica-of`/`revision-of`/
+      `correction-of`), `fromId`/`toId` nunca podem coincidir.
+      `ReferenceRelationSet` é o estado portátil-operacional versionado
+      (`version: 1`); `createReferenceRelationSet`/`parseReferenceRelationSet`
+      seguem a mesma postura defensiva de `parseAttachmentManifest` (Onda BH):
+      entrada individual corrompida é descartada, nunca derruba o conjunto
+      inteiro. "Relação não equivale a duplicata" é aplicado de verdade, não
+      só documentado: `assertNotDuplicate` reaproveita o mesmo motor de
+      F53/F128 (`findReferenceDuplicates`, `@abnt/bibliography`) para recusar
+      criar uma relação explícita entre duas entradas que o motor já
+      sinalizaria para merge. `tests/f454-reference-relations.test.ts`
+      (6 testes).
+      Diferente de BF/BG/BI, a integração de produto veio na mesma revisão:
+      `reference-relations` entrou em `WorkspaceStateResource`
+      (`@abnt/workspace-core`, classificado `portable-operational`, igual a
+      `academic-relations`) e ganhou adapter próprio no `SyncEngine`. Três
+      métodos novos em `WorkspaceMethod`/`DesktopWorkspaceService`
+      (`referenceRelations`, `addReferenceRelation`, `removeReferenceRelation`)
+      passaram pelos quatro lugares da armadilha de protocolo. `graph()`
+      (`apps/desktop/src/workspace/workspace-service.ts`) mescla
+      `referenceRelationEdges()` nas arestas derivadas de sempre, criando nó
+      `reference` para qualquer referência relacionada que ainda não apareça
+      no grafo (usa a biblioteca gerenciada para o label) — `WorkspaceGraph
+      EdgeKind` (protocolo) e o `Record` de legendas do `GraphDialog` ganharam
+      os cinco novos tipos de aresta. UI em `ReferenceLibraryDialog`: seção
+      "Relações" lista vínculos da referência selecionada nos dois sentidos e
+      permite criar/remover. `tests/f454-reference-relations-protocol.test.ts`
+      (1 teste de integração via `MessagePort` real, cobrindo criação,
+      listagem filtrada, projeção no grafo, remoção, e rejeição de duplicata/
+      auto-relação/referência inexistente).
+      Achado durante a integração, não corrigido aqui (tarefa em segundo
+      plano separada): `errorFor()` em `workspace-service.ts` reduz qualquer
+      `Error` de validação não reconhecida a uma mensagem genérica antes de
+      cruzar o protocolo — deliberado para erros verdadeiramente inesperados
+      (ver `ProtocolError` em `packages/protocol/src/model.ts`), mas isso
+      também descarta mensagens amigáveis de validação (ex.: a explicação de
+      `assertNotDuplicate`) em toda a superfície do Workspace Service, não só
+      aqui. A UI de relações já invoca `setPreview(result.error.message)`
+      corretamente; o texto que chega é só genérico até essa lacuna maior ser
+      resolvida.
+
+#### Onda BK — Scholarly Status & Integrity
+
+- [ ] **F460–F467** — provider de status, retratação/concern/correção,
+      avisos na biblioteca, ao citar e no preflight, com refresh explícito.
+
+#### Onda BL — Annotation Synthesis ✅
+
+- [x] **F468–F475** — `@abnt/annotation-synthesis` (pacote novo, sem
+      dependências): três templates (`quote-list`/`grouped-by-source`/
+      `grouped-by-color`), `synthesizeAnnotations()` gera markdown com
+      marcador de idempotência (`<!-- folio-pdf-annotation:ID -->`) e citação
+      real `[@referenceId, p. N]` por bloco — backlink e contexto de citação
+      (F48) nascem de graça da citação real, sem mecanismo novo.
+      `createColorSemantics`/`parseColorSemantics` validam o mapa cor→rótulo
+      (cor sem rótulo é rejeitada), com leitura defensiva de entrada
+      corrompida. `PdfAnnotation` ganhou `color?` opcional.
+      `tests/f468-annotation-synthesis.test.ts` (7 testes).
+      Integração de produto na mesma revisão: `annotation-color-semantics`
+      registrado como `portable-operational` em `WorkspaceStateResource`;
+      quatro métodos novos (`annotations`, `annotationColorSemantics`,
+      `setAnnotationColorSemantics`, `synthesizeAnnotations`) no protocolo.
+      `synthesizeAnnotations` insere de verdade por `EditorTransaction`:
+      abre (ou reaproveita) a sessão do documento-alvo, `controller.dispatch()`
+      seguido de `controller.save()` — se o alvo já estiver aberto numa aba,
+      ela recebe a atualização pelo canal normal de snapshot, nunca por
+      escrita externa de arquivo. Alvo é `{kind:'reference'}` (nota de
+      leitura, criada se preciso — mesmo `#ensureLiteratureNote` de F34) ou
+      `{kind:'file'}` (qualquer documento existente, ex.: o ativo no editor).
+      O fluxo legado de anotação única (F36.4, `linkPdfAnnotation`) foi
+      mantido byte-a-byte — formato antigo, escrita direta — para não
+      regredir o já publicado; a nova síntese é aditiva, não substitui.
+      UI: seletor de 5 cores fixas ao criar destaque no leitor de PDF
+      (`pdf-reader.tsx`); diálogo novo "Síntese de anotações"
+      (`annotation-synthesis.tsx`) lista anotações do vault inteiro com
+      seleção múltipla, template, alvo (fonte única ou documento ativo) e
+      editor inline da semântica de cores. `tests/f468-annotation-synthesis-
+      protocol.test.ts` (1 teste de integração via `MessagePort` real:
+      múltiplas fontes, cor, template, idempotência, os dois tipos de alvo e
+      rejeição de alvo/anotação inexistente).
+
+#### Onda BM — Literature Monitoring ✅
+
+- [x] **F476–F484** — `@abnt/literature-monitoring` (pacote novo, sem
+      dependências): `parseFeed()` é scanner determinístico de RSS 2.0
+      (`<item>`) e Atom (`<entry>`) por regex — cobre o caso comum
+      (título/link/guid-id/data/resumo, CDATA e entidades básicas),
+      namespaces exóticos e XML agressivamente malformado ficam fora de
+      propósito, mesma régua de `identifiersFromPdfText` (Onda BG).
+      `LiteratureSubscriptionSet`/`LiteratureFeedInbox` são conjuntos
+      versionados com leitura defensiva (entrada corrompida é descartada,
+      não derruba o conjunto); `matchesKeywords`/`newInboxItemsFromFeed`
+      filtram e deduplicam por id/guid dentro da mesma assinatura, sem
+      tocar rede. `tests/f476-literature-monitoring.test.ts` (9 testes).
+      Integração de produto na mesma revisão: `fetchFeedItems()`
+      (`apps/desktop/src/workspace/literature-monitoring.ts`) é provider
+      explícito com fetcher injetável — mesmo padrão de `resolveDoi`
+      (F8) — nunca rede silenciosa. Sete métodos novos no protocolo
+      (`literatureSubscriptions`, `add/removeLiteratureSubscription`,
+      `literatureFeedInbox`, `pollLiteratureSubscription`,
+      `dismissFeedInboxItem`, `importFeedInboxItem`); `literature-
+      subscriptions` e `literature-feed-inbox` registrados como
+      `portable-operational` em `WorkspaceStateResource`.
+      `importFeedInboxItem` reaproveita `identifiersFromPdfText` (Onda BG)
+      para achar DOI no texto do item — se encontrar, resolve pelo mesmo
+      `resolveDoi` de F8; senão cria entrada manual mínima
+      (`type: 'webpage'`, `URL` do item) via `suggestReferenceKey`
+      (`title-year`) para a chave. "Feed nunca entra automaticamente na
+      biblioteca" é literal: só `importFeedInboxItem` grava em
+      `library.json`, e sempre remove o item do inbox ao concluir — nenhum
+      outro caminho escreve lá. Integração com fila de leitura e projetos
+      é client-side puro: `LiteratureMonitoringDialog`
+      (`apps/desktop/src/renderer/literature-monitoring.tsx`) escreve
+      direto na mesma chave `folio.reading-queue:{workspaceId}` que
+      `research-workflow.tsx` já usa (F45 é preferência local, sem
+      protocolo) e no mesmo `referenceIds` de projeto que
+      `research-projects.tsx` já usa (F103, também local) — sem inventar
+      um segundo mecanismo. `tests/f476-literature-monitoring-
+      protocol.test.ts` (1 teste de integração via `MessagePort` real com
+      `globalThis.fetch` stubado: assinatura, busca, deduplicação na
+      segunda busca, filtro por palavra-chave, descarte e as duas vias de
+      importação — DOI e manual).
+
+#### Onda BN — Scholarly Web Capture 2.0 ✅
+
+- [x] **F485–F495** — `@abnt/web-capture` (pacote novo, depende só de
+      `document-model`/`scholarly-identifiers`/`pdf-reconciliation`): registry
+      explícito (`WebCaptureExtractorRegistry`, mesmo padrão de
+      `IdentifierResolverRegistry`/`FullTextDiscoveryRegistry` das Ondas
+      BF/BI) com 5 extractors embutidos — Schema.org (microdados
+      `itemprop`, varredura plana), citation meta (Highwire/Google
+      Scholar), Dublin Core, JSON-LD (`<script type="application/ld+json">`,
+      inclusive `@graph` com múltiplos nós) e DOI (reaproveita
+      `identifiersFromPdfText` da Onda BG sobre o texto visível da página).
+      Nenhum scraping por site: são 5 formatos padronizados, não translators
+      por domínio — "extractors específicos vivem em plugin" descreve o
+      ponto de extensão (`.register()`), não uma obrigação desta onda; ver
+      [ADR 0080](docs/adr/0080-web-capture-registry.md) para por que isso
+      não usa o `plugin-host` de child_process existente. Cada extractor
+      devolve campos parciais (`WebCaptureFields`, sem `id`) e anexos
+      descobertos (`role: 'supplementary'`, ex.: `citation_pdf_url`, imagem
+      de capa via JSON-LD); `scoreWebCaptureFields` pontua por soma
+      ponderada de campos preenchidos — determinístico, sem heurística de
+      conteúdo. Um extractor com bug nunca derruba o lote (`try/catch` por
+      extractor, mesma régua de `Promise.allSettled` na Onda BI).
+      `tests/f485-web-capture.test.ts` (11 testes). Integração de produto na
+      mesma revisão: `fetchPageHtml()`
+      (`apps/desktop/src/workspace/web-capture.ts`) é o mesmo padrão de
+      `resolveDoi`/`fetchFeedItems` — fetcher injetável, teto de 4M
+      caracteres (mesma régua de `MAX_CAPTURE_BYTES` do browser-bridge).
+      Único método novo de protocolo, `webCaptureExtract`: busca a página,
+      roda o registry, e para todo candidato com `DOI` nos campos tenta
+      `resolveDoi` (F8) — sucesso substitui os campos pelo CSL-JSON real do
+      provider e resulta em qualidade normalmente mais alta; falha mantém o
+      campo raspado da página. Não inventa persistência nova: o candidato
+      escolhido segue para `library.intakePreview`/`library.upsert` (F124/
+      F128) como qualquer outra entrada, e anexos descobertos entram via
+      `workspace/add-attachment` (`kind: 'link'`, Onda BH) só depois que a
+      referência existe. UI em duas frentes: `capture-inbox.tsx`'s
+      "Referência" agora chama `webCaptureExtract` antes de cair na captura
+      ingênua por domínio (`captureUrl`), mostrando um seletor com todos os
+      candidatos ranqueados por qualidade — nunca mescla automaticamente,
+      "Continuar sem extrair" preserva o caminho antigo se a extração falhar
+      ou não achar nada; `research-intake.tsx`'s campo "DOI ou URL" pré-
+      preenche com o melhor candidato, mas a entrada cai na fila de revisão
+      existente (nada é confirmado sem o usuário editar/aceitar).
+      `tests/f485-web-capture-protocol.test.ts` (2 testes de integração via
+      `MessagePort` real: extração multi-formato ranqueada com enriquecimento
+      por DOI, e propagação de erro de rede sem derrubar o protocolo).
+
+#### Onda BO — Library Maintenance Center ✅
+
+- [x] **F496–F504** — `libraryMaintenanceOverview` (único método novo de
+      protocolo) é composição pura de sinais já existentes, por referência:
+      citação (mesmo `#requireIndex().citations()` de `referenceHealth`/
+      `researchOverview`), duplicata (`findReferenceDuplicates`, `@abnt/
+      bibliography`, F53), saúde de anexo (`checkAttachmentHealth`, `@abnt/
+      attachment-model`, Onda BH) e relação explícita (`#readReferenceRelations`,
+      Onda BJ). A auditoria bibliográfica em si (`invalid-doi`, `missing-pdf`
+      etc.) foi extraída de dentro de `referenceHealth` para o método privado
+      `#auditCatalog`, reaproveitado por ambos — não há duas cópias do mesmo
+      loop de validação. Nenhum algoritmo novo: o método só junta `Map`s por
+      `referenceId`, no mesmo molde de `projectDashboard()` (F105) e
+      `researchOverview()` (F45–F47). Duas ações em lote na UI, seguindo o
+      precedente já existente de `batch.addToCollection`/`forms.
+      applyReferenceType` (laço no cliente sobre métodos de item único, atrás
+      de uma única confirmação) — nenhum método de protocolo novo para lote:
+      remover referências selecionadas (`library.remove` em laço) e limpar
+      anexos quebrados das selecionadas (busca `attachmentHealth()` fresco,
+      filtra por seleção e código `missing-file`/`broken-link`, remove via
+      `workspace.removeAttachment`). UI nova em
+      `library-maintenance-center.tsx` (`LibraryMaintenanceCenterDialog`,
+      comando `library.maintenanceCenter`): totais, lista com checkbox por
+      referência e badges (citada/não usada, duplicata, anexos e problemas,
+      relações, auditoria) — não duplica nenhuma das telas já existentes
+      (`ReferenceMaintenanceDialog` continua sendo o fluxo de merge/rename
+      passo-a-passo; `ReferenceHealthDialog` continua sendo o detalhe de
+      auditoria; este painel é a visão agregada e o ponto de ações em lote).
+      `tests/f496-library-maintenance.test.ts` (1 teste de integração via
+      `MessagePort` real cobrindo citação, duplicata por DOI, anexo e
+      relação simultaneamente, e confirmando que `referenceHealth` e
+      `libraryMaintenanceOverview` concordam nos totais compartilhados).
+
+#### Onda BP — Citation Picker Polish ✅
+
+- [x] **F505–F507** — Descoberta desta onda: tanto `apps/desktop/src/
+      workspace/*` quanto `apps/desktop/src/renderer/*` são proibidos
+      (`.dependency-cruiser.cjs`, `severity: error`) de importar `@abnt/
+      markdown`/`@abnt/standards`/`@abnt/semantics`/`@abnt/compiler`
+      diretamente — compilação fica isolada no Compiler Service (ADR 0015/
+      0017). Isso descartou "chamar o motor de verdade" para a prévia e
+      forçou as três features a ficarem como extensão de DTO existente +
+      composição no cliente, nunca um novo round-trip pelo compilador. Ver
+      [ADR 0081](docs/adr/0081-citation-picker-polish.md).
+      **F505 (ranking)**: `WorkspaceReferenceDto` (F31, `references()`)
+      ganhou `citationCount` — `#requireIndex().citations(fileId)` agregado
+      por referência, escopado ao documento aberto (as demais chamadas de
+      `#referenceDtoFrom`, vault-wide, recebem 0 — nenhum consumidor delas
+      lia esse campo antes de existir). `CitationDialog` ordena por
+      `citationCount*2 + (está no mesmo projeto do documento ? 1 : 0)`,
+      onde "projeto" é só leitura de `readResearchProjects(workspaceId)`
+      (F103, já client-side) filtrando por `documentIds` — nenhum estado
+      novo, nenhum protocolo novo.
+      **F506 (prévia)**: `WorkspaceReferenceDto` também ganhou
+      `narrativeAuthor`/`parentheticalAuthor`/`year`, calculados no host via
+      `autorDaChamada`/`autorDaChamadaParentetica`/`anoDaReferencia`
+      (`@abnt/bibliography` — as mesmas funções que `motorAutorDataAbnt`
+      usa por baixo). `citationPreviewText` (novo, `citation-source.ts`)
+      compõe a prévia no cliente com esses rótulos, mesma forma "autor
+      (ano, locator)" do motor real, mas sem sufixo de ano (2020a/2020b) —
+      rotulada "aproximada" na UI; a inserção continua vindo de
+      `citationSource(draft)`, nunca da prévia.
+      **F507 (locator inline)**: a tabela de abreviações (`p.`/`cap.`/
+      `seção`/...) que já vivia embutida dentro de `editableCitationAt`
+      (ADR 0029 já documentava essa cópia deliberada, por não poder importar
+      o parser real) virou `parseLocatorSuffix`, exportada e reaproveitada
+      por um campo novo de "adição rápida" no picker: digitar `chave, p. 12`
+      resolve a referência e preenche locator/sufixo em um passo, sem as
+      três interações separadas de antes.
+      `tests/f505-citation-picker-polish.test.ts` (6 testes das funções
+      puras) e `tests/f505-citation-picker-polish-protocol.test.ts` (1 teste
+      de integração via `MessagePort` real confirmando `citationCount`/
+      autor/ano em `references()`).
+
+### F102 — Segunda família acadêmica: APA 7ª edição
+
+Escolha de produto: **APA 7ª edição**, por alcance internacional em ciências
+sociais e comportamentais, ciências naturais, enfermagem, comunicação,
+educação, negócios e engenharia. A implementação permanece uma sub-sequência
+própria — não uma única feature:
+
+- [x] F102A — specification mapping (escopo inicial: artigo APA 7)
+- [x] F102B — citation engine rules (autor-data, narrativa, múltiplas fontes e locator)
+- [x] F102C — validation (metadados essenciais, abstract e qualidade de DOI)
+- [x] F102D — publication profile (APA 7 Article registrado no Compiler Service)
+- [x] F102E — fixtures (publicação cobre citação e referência APA)
+- [x] F102F — visual regression (fixture APA 7 em PDF/PNG e baseline aprovado)
+- [ ] F102G — institutional variants
+
+O profile APA será implementado sem copiar texto protegido do manual: regras
+codificadas, fixtures autorais e referências públicas por edição/cláusula.
 
 ## Dívida conhecida
 

@@ -24,4 +24,11 @@ describe('F76/F77 — grupos de citações e locator tipado', () => {
       ] },
     });
   });
+
+  it('não deixa uma citação anterior capturar um clique no texto comum nem e-mail', () => {
+    const content = 'Base [@silva2024] texto comum [rótulo]. Contato: pessoa@universidade.edu.';
+    expect(editableCitationAt(content, content.indexOf('texto'))).toBeUndefined();
+    expect(editableCitationAt(content, content.indexOf('universidade'))).toBeUndefined();
+    expect(editableCitationAt(content, content.indexOf('silva'))).toMatchObject({ range: { start: 5, end: 17 } });
+  });
 });

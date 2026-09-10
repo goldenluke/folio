@@ -25,6 +25,9 @@ keywords:
 lang: pt-BR
 bibliography: referencias.bib
 ---
+Figura: image--2--3-1-1
+
+![image--2--3-1-1](./image--2--3-1-1.png)
 
 # Introdução
 

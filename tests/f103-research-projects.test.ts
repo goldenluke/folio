@@ -3,12 +3,23 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { MessageChannel } from 'node:worker_threads';
 
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 
 import { criarServicoDeCompiler } from '@abnt/compiler';
 import { createInProcessCompilerClient, createWorkspaceMessagePortClient, serveWorkspaceOverMessagePort } from '@abnt/protocol';
 
 import { DesktopWorkspaceServiceHost } from '../apps/desktop/src/workspace/workspace-service.js';
+import { createResearchProject, readResearchProjects, writeResearchProjects } from '../apps/desktop/src/renderer/research-projects.js';
+
+it('persiste imediatamente um projeto criado, sem depender de um efeito do React', () => {
+  const values = new Map<string, string>();
+  vi.stubGlobal('window', { localStorage: { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } } });
+  try {
+    const project = createResearchProject('Pesquisa aplicada');
+    writeResearchProjects('vault-1', [project]);
+    expect(readResearchProjects('vault-1')).toMatchObject([{ id: project.id, title: 'Pesquisa aplicada' }]);
+  } finally { vi.unstubAllGlobals(); }
+});
 
 it('F103–F105 — dashboard projeta documentos de um projeto por IDs, sem transformar o projeto em pasta', async () => {
   const root = await mkdtemp(join(tmpdir(), 'folio-f103-'));

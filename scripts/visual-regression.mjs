@@ -11,6 +11,7 @@ const fixtures = [
   { name: 'm4-abnt', profile: 'abnt-artigo', input: 'fixtures/m4/artigo.md', output: 'artigo' },
   { name: 'm4-web', profile: 'web-article', input: 'fixtures/m4/artigo.md', output: 'artigo' },
   { name: 'm5-tcc', profile: 'abnt-tcc', input: 'fixtures/m5/tcc.md', output: 'tcc' },
+  { name: 'apa-7', profile: 'apa-7', input: 'fixtures/apa/artigo.md', output: 'artigo' },
 ];
 
 function run(command, args) {

@@ -3,7 +3,10 @@ import type { DiagnosticDto, PublicationDocument, ResolvedDocumentDto } from '@a
 /** A versão do contrato de produto; manifestos incompatíveis nunca são ativados. */
 export const FOLIO_PLUGIN_API_VERSION = 1;
 
-export type FolioPluginCapability = 'lint' | 'commands' | 'views' | 'language-diagnostics' | 'export';
+export type FolioPluginCapability = 'lint' | 'commands' | 'views' | 'language-diagnostics' | 'export' | 'read-document' | 'read-library' | 'network' | 'write-operational-state';
+export type FolioPluginSetting = { readonly id: string; readonly label: string; readonly type: 'string' | 'boolean' | 'enum' | 'number'; readonly default?: string | boolean | number; readonly options?: readonly string[]; };
+export interface FolioPluginProjectContribution { readonly id: string; readonly title: string; readonly metric: string; }
+export interface FolioPluginIntakeContribution { readonly id: string; readonly title: string; }
 
 /** Painel declarativo: plugins não injetam componentes React no renderer. */
 export interface FolioPluginViewContribution { readonly id: string; readonly title: string; readonly body: string; }
@@ -17,9 +20,17 @@ export interface FolioPluginManifest {
   readonly apiVersion: typeof FOLIO_PLUGIN_API_VERSION;
   readonly entry: string;
   readonly capabilities: readonly FolioPluginCapability[];
+  readonly folioVersion?: { readonly min?: string; readonly max?: string };
+  readonly settings?: readonly FolioPluginSetting[];
   readonly commands?: readonly FolioPluginCommandContribution[];
   readonly views?: readonly FolioPluginViewContribution[];
   readonly exports?: readonly FolioPluginExportContribution[];
+  readonly projectContributions?: readonly FolioPluginProjectContribution[];
+  readonly intakeProviders?: readonly FolioPluginIntakeContribution[];
+  readonly bibliographyAdapters?: readonly { readonly id: string; readonly title: string }[];
+  readonly searchProviders?: readonly { readonly id: string; readonly title: string }[];
+  readonly publicationProfiles?: readonly { readonly id: string; readonly title: string }[];
+  readonly templates?: readonly { readonly id: string; readonly title: string }[];
 }
 
 export interface PluginCommandContext { readonly activeFileId?: string; readonly activeRevision?: number; }

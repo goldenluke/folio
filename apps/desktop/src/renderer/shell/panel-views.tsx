@@ -8,6 +8,7 @@ import type {
 } from '@abnt/protocol';
 
 import type { PanelDefinition } from './panels.js';
+import { requestText } from '../text-prompt.js';
 
 const severityLabel: Record<'info' | 'warning' | 'error', string> = {
   info: 'Info',
@@ -73,7 +74,7 @@ export const outlinePanel: PanelDefinition = {
           <li key={item.nodeId} draggable onDragStart={(event) => event.dataTransfer.setData('text/x-folio-outline-offset', String(item.range.start))} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const from=Number(event.dataTransfer.getData('text/x-folio-outline-offset')); if (!Number.isFinite(from) || from === item.range.start) return; moveOutlineSection(from, from < item.range.start ? 'down' : 'up'); }}>
             <div className="flex items-center" style={{ paddingLeft: `${0.25 + Math.max(0, item.depth - 1) * 0.75}rem` }}>
               <button type="button" className="w-5 text-xs text-slate-400 hover:text-indigo-700" aria-label="Alternar subseções" onClick={() => setCollapsed((current) => { const next = new Set(current); if (next.has(item.nodeId)) next.delete(item.nodeId); else next.add(item.nodeId); return next; })}>{collapsed.has(item.nodeId) ? '▸' : '▾'}</button>
-              <button type="button" className={`min-w-0 flex-1 truncate rounded-lg bg-transparent py-1 text-left text-sm hover:bg-indigo-50 ${active?.nodeId === item.nodeId ? 'font-medium text-indigo-700' : 'text-slate-700'}`} onClick={() => navigate(item.range.start)} onDoubleClick={() => { const title=window.prompt('Título da seção:',item.title); if(title!==null&&title.trim()!==''&&title.trim()!==item.title)renameOutlineSection(item.range.start,title.trim()); }}>{item.title}</button>
+              <button type="button" className={`min-w-0 flex-1 truncate rounded-lg bg-transparent py-1 text-left text-sm hover:bg-indigo-50 ${active?.nodeId === item.nodeId ? 'font-medium text-indigo-700' : 'text-slate-700'}`} onClick={() => navigate(item.range.start)} onDoubleClick={() => { void requestText('Título da seção', item.title).then((title) => { if(title!==null&&title.trim()!==''&&title.trim()!==item.title)renameOutlineSection(item.range.start,title.trim()); }); }}>{item.title}</button>
               <button type="button" className="px-1 text-xs text-slate-400 hover:text-indigo-700" aria-label="Mover seção acima" onClick={() => moveOutlineSection(item.range.start, 'up')}>↑</button><button type="button" className="px-1 text-xs text-slate-400 hover:text-indigo-700" aria-label="Mover seção abaixo" onClick={() => moveOutlineSection(item.range.start, 'down')}>↓</button>
             </div>
           </li>

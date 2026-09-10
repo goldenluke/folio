@@ -1,0 +1,15 @@
+{
+  "schema": "abnt-workspace-state",
+  "version": 1,
+  "workspaceId": "workspace_b6f6ec66-897d-4cf5-8559-4d9803b1c1cd",
+  "files": {
+    "file_fcd2b6a8-f8d4-4e4c-982b-5c0ba781384b": {
+      "id": "file_fcd2b6a8-f8d4-4e4c-982b-5c0ba781384b",
+      "documentId": "document_f623af3d-de9b-4381-8a19-44613a7f372b",
+      "path": "silva2024.md",
+      "revision": 1,
+      "contentHash": "sha256:eff60b939ab464668ef49dc6d66c0cec3b7f37aa28fef50a06adaede2a280abb",
+      "mediaType": "text/markdown"
+    }
+  }
+}

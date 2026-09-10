@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "canvases": [
+    {
+      "schema": "folio-research-canvas",
+      "version": 1,
+      "id": "25b6dc67-bf32-47f2-bfc8-7a95968dd384",
+      "title": "Canvas 1",
+      "nodes": [
+        {
+          "id": "fc2a8c62-1527-4e3a-973d-53907eb00909",
+          "type": "text",
+          "text": "Nova ideia",
+          "role": "claim",
+          "x": 134,
+          "y": 159
+        },
+        {
+          "id": "f74fd142-d6f0-444a-aa65-7e2181e9aaaf",
+          "type": "document",
+          "fileId": "file_aeafce3d-fc41-4267-8de8-235c450a789a",
+          "path": "artigo-2.md",
+          "x": 353,
+          "y": 51
+        },
+        {
+          "id": "d67ed3f6-dd49-4be7-924b-0c25f73b6a1d",
+          "type": "document",
+          "fileId": "file_aeafce3d-fc41-4267-8de8-235c450a789a",
+          "path": "artigo-2.md",
+          "x": 325,
+          "y": 182
+        },
+        {
+          "id": "f2f25012-cf6d-4bb5-9238-dceef3635a67",
+          "type": "document",
+          "fileId": "file_aeafce3d-fc41-4267-8de8-235c450a789a",
+          "path": "artigo-2.md",
+          "x": 154,
+          "y": -9
+        },
+        {
+          "id": "ff2a5158-d11e-4a65-9920-96d46849baf8",
+          "type": "text",
+          "text": "Nova ideia",
+          "role": "claim",
+          "x": 182,
+          "y": 311
+        }
+      ],
+      "edges": [
+        {
+          "id": "bd5f5d2e-601a-45c8-a97c-e3b5c6342649",
+          "from": "fc2a8c62-1527-4e3a-973d-53907eb00909",
+          "to": "f74fd142-d6f0-444a-aa65-7e2181e9aaaf",
+          "kind": "contradicts"
+        },
+        {
+          "id": "167dc087-bb5b-482c-b15a-7ea45bd6459b",
+          "from": "fc2a8c62-1527-4e3a-973d-53907eb00909",
+          "to": "ff2a5158-d11e-4a65-9920-96d46849baf8",
+          "kind": "derived-from"
+        }
+      ],
+      "groups": [
+        {
+          "id": "9d3db9eb-61d8-48ea-8a52-e38051dc0408",
+          "label": "Grupo 1",
+          "nodeIds": [
+            "fc2a8c62-1527-4e3a-973d-53907eb00909",
+            "f74fd142-d6f0-444a-aa65-7e2181e9aaaf",
+            "d67ed3f6-dd49-4be7-924b-0c25f73b6a1d",
+            "f2f25012-cf6d-4bb5-9238-dceef3635a67"
+          ]
+        },
+        {
+          "id": "94f19630-5d8a-475e-b4ef-f1303933dc2b",
+          "label": "Argumento",
+          "nodeIds": [
+            "d67ed3f6-dd49-4be7-924b-0c25f73b6a1d"
+          ]
+        }
+      ]
+    }
+  ]
+}

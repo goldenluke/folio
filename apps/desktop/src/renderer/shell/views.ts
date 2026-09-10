@@ -46,6 +46,8 @@ export interface ViewsModel {
   updateSnapshot(fileId: string, snapshot: EditorSnapshot): void;
   /** `undefined` só é um estado de carregamento válido antes da primeira resposta chegar. */
   updatePreview(fileId: string, preview: EditorPreviewDto | undefined): void;
+  /** Reordena a tab sem tocar em sessão, documento ou preview. */
+  reorder(id: ViewId, beforeId: ViewId): void;
   /** Remove a tab da lista e devolve o estado removido para o chamador decidir o destino do controller. */
   close(id: ViewId): ViewState | undefined;
   /** Esvazia a lista de uma vez (troca de vault); o chamador descarta os controllers devolvidos. */
@@ -118,6 +120,19 @@ export function createViewsModel(): ViewsModel {
       const current = views[index];
       if (current === undefined || current.type !== 'preview') return;
       views = [...views.slice(0, index), { ...current, preview, loading: false }, ...views.slice(index + 1)];
+      emit();
+    },
+    reorder(id, beforeId) {
+      if (id === beforeId) return;
+      const from = views.findIndex((view) => view.id === id);
+      const to = views.findIndex((view) => view.id === beforeId);
+      if (from === -1 || to === -1) return;
+      const moved = views[from];
+      if (moved === undefined) return;
+      const next = views.filter((view) => view.id !== id);
+      const target = next.findIndex((view) => view.id === beforeId);
+      if (target === -1) return;
+      views = [...next.slice(0, target), moved, ...next.slice(target)];
       emit();
     },
     close(id) {

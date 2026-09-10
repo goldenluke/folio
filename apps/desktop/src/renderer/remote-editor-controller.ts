@@ -34,6 +34,8 @@ const workspaceFile = (file: WorkspaceFileDto): WorkspaceFile => ({
   ...(file.mediaType !== undefined ? { mediaType: file.mediaType } : {}),
 });
 
+const AUTOSAVE_DELAY_MS = 600;
+
 type SourceRangeDto = NonNullable<EditorSnapshotDto['diagnostics'][number]['source']>;
 
 const source = (value: SourceRangeDto): SourceRange => ({
@@ -89,6 +91,7 @@ export class RemoteEditorController implements EditorController {
   #tail: Promise<void> = Promise.resolve();
   #pending = 0;
   #unsubscribe: (() => void) | undefined;
+  #autosaveTimer: ReturnType<typeof setTimeout> | undefined;
   #disposed = false;
 
   constructor(options: RemoteEditorControllerOptions) {
@@ -154,17 +157,21 @@ export class RemoteEditorController implements EditorController {
       this.#pending -= 1;
       await this.#adoptResult(result, localVersion);
     });
+    this.#scheduleAutosave();
     return this.#state;
   }
 
   async save(): Promise<EditorSnapshot> {
     this.#requireActive();
-    await this.#tail;
-    const result = await this.#api.editor.save({
-      fileId: String(this.fileId),
-      expectedRevision: this.#server.session.revision,
+    const localVersion = this.#state.version;
+    this.#tail = this.#tail.then(async () => {
+      const result = await this.#api.editor.save({
+        fileId: String(this.fileId),
+        expectedRevision: this.#server.session.revision,
+      });
+      await this.#adoptResult(result, localVersion);
     });
-    await this.#adoptResult(result, this.#state.version);
+    await this.#tail;
     return this.#state;
   }
 
@@ -188,6 +195,7 @@ export class RemoteEditorController implements EditorController {
   dispose(): void {
     if (this.#disposed) return;
     this.#disposed = true;
+    if (this.#autosaveTimer !== undefined) clearTimeout(this.#autosaveTimer);
     this.#unsubscribe?.();
     this.#unsubscribe = undefined;
     for (const listener of this.#listeners) listener({ type: 'editor:closed', fileId: this.fileId });
@@ -214,6 +222,20 @@ export class RemoteEditorController implements EditorController {
     if (this.#disposed) return;
     this.#state = snapshot;
     for (const listener of this.#listeners) listener({ type, snapshot });
+  }
+
+  #scheduleAutosave(): void {
+    if (this.#autosaveTimer !== undefined) clearTimeout(this.#autosaveTimer);
+    this.#autosaveTimer = setTimeout(() => {
+      this.#autosaveTimer = undefined;
+      void this.#autosave();
+    }, AUTOSAVE_DELAY_MS);
+  }
+
+  async #autosave(): Promise<void> {
+    await this.#tail;
+    if (this.#disposed || !this.#state.session.dirty || this.#state.externalChange !== undefined) return;
+    await this.save();
   }
 
   #requireActive(): void {

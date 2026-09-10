@@ -1,0 +1,8 @@
+import { describe, expect, it } from 'vitest';
+import { auditSurface, contextActions, isSemanticDropAllowed, navigationTree, peekSummary, recordRecent, validateHomeCustomization } from '../packages/workspace-polish/src/index.js';
+describe('F288–F294 — consistência do workspace', () => {
+  it('oferece navegação unificada sem confundir identidades', () => expect(navigationTree({ views: 2 }).find((item) => item.kind === 'views')).toMatchObject({ label: 'Views', count: 2 }));
+  it('filtra menus e impede drop em views, que são projeções', () => { expect(contextActions([{ id: 'open', commandId: 'document.open', label: 'Abrir', targetKinds: ['document'] }], 'document')).toHaveLength(1); expect(isSemanticDropAllowed({ source: 'reference', destination: 'project' })).toBe(true); expect(isSemanticDropAllowed({ source: 'document', destination: 'canvas' })).toBe(false); });
+  it('unifica peek, recência, Home e auditoria de superfície', () => { expect(peekSummary({ kind: 'reference', id: 'x', title: 'Artigo', authors: 'Silva' })).toContain('Silva'); expect(recordRecent([], { kind: 'view', id: 'v', visitedAt: 1 })).toHaveLength(1); expect(validateHomeCustomization({ pinned: ['views', 'projects'] }).pinned).toHaveLength(2); expect(auditSurface({ keyboard: true, focus: false, loading: true, error: true, empty: true, destructiveActions: true, dragDrop: true, contextMenu: true, peek: true })).toEqual(['focus']); });
+  it('F319–F325 — PeekEntity cobre alvos de view e busca salva de bookmarks', () => { expect(peekSummary({ kind: 'view', id: 'v1', title: 'Minha view', excerpt: 'table' })).toBe('table'); expect(peekSummary({ kind: 'search', id: 's1', title: 'Minha busca', excerpt: 'year:2025' })).toBe('year:2025'); });
+});

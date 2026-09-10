@@ -78,6 +78,8 @@ describe('M5 — profile de TCC', () => {
       '5 Conclusão',
     ]);
     expect(result.html).toContain('target-counter(attr(href), page)');
+    expect(result.html).toContain('publication-toc-leader');
+    expect(result.html).toContain('border-bottom: 1px dotted currentColor;');
     expect(result.html).toContain('@page preliminary');
     expect(result.html).toContain('counter-reset: page 0;');
     expect(result.html).toContain('data-role="tcc:approval-sheet"');
@@ -95,5 +97,12 @@ describe('M5 — profile de TCC', () => {
     expect(ids).toContain('ABNT-14724-EST-009');
     expect(ids).toContain('ABNT-6028-TCC-001');
     expect(ids).toContain('ABNT-6028-TCC-002');
+  });
+
+  it('inclui um logotipo institucional opcional apenas na capa', async () => {
+    const withLogo = (await source()).replace('properties:\n', 'properties:\n  "tcc:cover-logo": "data:image/svg+xml;base64,PHN2Zy8+"\n');
+    const result = await compilar(withLogo, { documentId: 'tcc.md', baseDir: FIXTURE_DIR, embutirRecursos: true });
+    const cover = result.publicacao.children.find((block) => block.type === 'front-matter' && block.role === 'tcc:cover');
+    expect(cover?.type === 'front-matter' ? cover.children[0] : undefined).toMatchObject({ type: 'figure', src: 'data:image/svg+xml;base64,PHN2Zy8+', width: '28%' });
   });
 });

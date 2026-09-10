@@ -32,6 +32,7 @@ import {
   validarWorkspaceLibraryRemoveRequest,
   validarWorkspaceLibraryFormatRequest,
   validarWorkspaceLibraryResolveDoiRequest,
+  validarWorkspaceWebCaptureExtractRequest,
   validarWorkspaceLibraryImportRequest,
   validarWorkspaceLibraryIntakePreviewRequest,
   validarWorkspaceLibraryDuplicatesRequest,
@@ -39,15 +40,55 @@ import {
   validarWorkspaceLibraryKeyPreviewRequest,
   validarWorkspaceLibraryRenameKeyRequest,
   validarWorkspaceReferenceHealthRequest,
+  validarWorkspaceLibraryMaintenanceRequest,
+  validarWorkspaceReferenceRelationsRequest,
+  validarWorkspaceAddReferenceRelationRequest,
+  validarWorkspaceRemoveReferenceRelationRequest,
+  validarWorkspaceAnnotationsRequest,
+  validarWorkspaceSetAnnotationColorSemanticsRequest,
+  validarWorkspaceSynthesizeAnnotationsRequest,
+  validarWorkspaceAddLiteratureSubscriptionRequest,
+  validarWorkspaceRemoveLiteratureSubscriptionRequest,
+  validarWorkspacePollLiteratureSubscriptionRequest,
+  validarWorkspaceDismissFeedInboxItemRequest,
+  validarWorkspaceImportFeedInboxItemRequest,
   validarWorkspaceReferenceAttachmentsRequest,
   validarWorkspaceReferenceAttachmentRequest,
   validarWorkspaceCreatePdfAnnotationRequest,
   validarWorkspacePdfAnnotationRequest,
+  validarWorkspaceAttachmentsRequest,
+  validarWorkspaceAddAttachmentRequest,
+  validarWorkspacePickAttachmentRequest,
+  validarWorkspaceAddAttachmentVersionRequest,
+  validarWorkspaceAttachmentRequest,
+  validarWorkspaceRenameAttachmentFileRequest,
+  validarWorkspaceAttachmentHealthRequest,
   validarWorkspaceSearchRequest,
   validarWorkspaceProblemsRequest,
   validarWorkspaceProfileValidationPreviewRequest,
   validarWorkspacePluginSetEnabledRequest,
   validarWorkspacePluginCommandRequest,
+  workspaceAcademicViewsResponseSchema,
+  workspaceAcademicRelationsResponseSchema,
+  referenceRelationDtoSchema,
+  workspaceReferenceRelationsResponseSchema,
+  workspaceAnnotationColorSemanticsResponseSchema,
+  workspaceSynthesizeAnnotationsResponseSchema,
+  literatureSubscriptionDtoSchema,
+  workspaceLiteratureSubscriptionsResponseSchema,
+  workspaceLiteratureFeedInboxResponseSchema,
+  workspacePollLiteratureSubscriptionResponseSchema,
+  workspaceBookmarksResponseSchema,
+  workspaceSetBookmarksRequestSchema,
+  workspaceCaptureInboxResponseSchema,
+  workspaceSetCaptureInboxRequestSchema,
+  workspaceResearchCanvasesResponseSchema,
+  workspaceSetResearchCanvasesRequestSchema,
+  workspacePeekRequestSchema,
+  workspaceJournalOpenRequestSchema,
+  workspaceJournalCaptureRequestSchema,
+  workspacePeekResponseSchema,
+  workspaceSetAcademicViewsRequestSchema,
   validarLanguageCompletionRequest,
   validarLanguageDefinitionRequest,
   validarLanguageHoverRequest,
@@ -71,6 +112,10 @@ import {
   workspaceReadResponseSchema,
   workspaceOpenRequestSchema,
   workspaceOpenResponseSchema,
+  workspaceSyncStatusResponseSchema,
+  workspaceCollaborationResponseSchema,
+  workspaceSetCollaborationRequestSchema,
+  workspaceResolveSyncConflictRequestSchema,
   workspaceSearchResponseSchema,
   workspaceProblemsResponseSchema,
   workspaceProfilesResponseSchema,
@@ -91,6 +136,7 @@ import {
   workspaceProjectDashboardResponseSchema,
   workspaceLibraryListResponseSchema,
   workspaceLibraryEntryResponseSchema,
+  workspaceWebCaptureExtractResponseSchema,
   workspaceLibraryFormatResponseSchema,
   workspaceLibraryImportResponseSchema,
   workspaceLibraryIntakePreviewResponseSchema,
@@ -99,8 +145,12 @@ import {
   workspaceLibraryKeyPreviewResponseSchema,
   workspaceLibraryRenameKeyResponseSchema,
   workspaceReferenceHealthResponseSchema,
+  workspaceLibraryMaintenanceResponseSchema,
   workspaceReferenceAttachmentsResponseSchema,
   workspaceReferenceAttachmentDtoSchema,
+  workspaceAttachmentsResponseSchema,
+  workspaceAttachmentResponseSchema,
+  workspaceAttachmentHealthResponseSchema,
   workspaceAttachReferencePdfRequestSchema,
   workspaceReferencePdfResponseSchema,
   workspacePdfAnnotationsResponseSchema,
@@ -110,6 +160,8 @@ import {
   editorPreviewResponseSchema,
   editorSnapshotDtoSchema,
   workspaceAssetDtoSchema,
+  workspaceAssetPreviewRequestSchema,
+  workspaceAssetPreviewResponseSchema,
   workspaceFileDtoSchema,
   emptyResponseSchema,
   type DesktopEventDto,
@@ -128,6 +180,8 @@ import {
   type EditorSnapshotRequest,
   type EditorImportAssetRequest,
   type WorkspaceAssetDto,
+  type WorkspaceAssetPreviewRequest,
+  type WorkspaceAssetPreviewResponse,
   type WorkspaceImportAssetRequest,
   type WorkspaceCreateDocumentRequest,
   type WorkspaceRenameRequest,
@@ -180,6 +234,8 @@ import {
   type WorkspaceLibraryRemoveRequest,
   type WorkspaceLibraryFormatRequest,
   type WorkspaceLibraryResolveDoiRequest,
+  type WorkspaceWebCaptureExtractRequest,
+  type WorkspaceWebCaptureExtractResponseDto,
   type WorkspaceLibraryImportRequest,
   type WorkspaceLibraryImportResponseDto,
   type WorkspaceLibraryIntakePreviewRequest,
@@ -193,6 +249,8 @@ import {
   type WorkspaceLibraryRenameKeyResponseDto,
   type WorkspaceReferenceHealthRequest,
   type WorkspaceReferenceHealthDto,
+  type WorkspaceLibraryMaintenanceRequest,
+  type WorkspaceLibraryMaintenanceOverviewDto,
   type WorkspaceReferenceAttachmentsRequest,
   type WorkspaceReferenceAttachmentDto,
   type WorkspaceAttachReferencePdfRequest,
@@ -202,9 +260,53 @@ import {
   type WorkspaceCreatePdfAnnotationRequest,
   type WorkspacePdfAnnotationRequest,
   type WorkspacePdfAnnotationLinkDto,
+  type AttachmentDto,
+  type AttachmentHealthIssueDto,
+  type WorkspaceAttachmentsRequest,
+  type WorkspaceAddAttachmentRequest,
+  type WorkspacePickAttachmentRequest,
+  type WorkspaceAddAttachmentVersionRequest,
+  type WorkspaceAttachmentRequest,
+  type WorkspaceRenameAttachmentFileRequest,
   type WorkspaceListRequest,
   type WorkspaceOpenResponse,
   type WorkspaceOpenRequest,
+  type WorkspaceSyncStatusDto,
+  type WorkspaceCollaborationDto,
+  type WorkspaceSetCollaborationRequest,
+  type WorkspaceAcademicViewsDto,
+  type WorkspaceSetAcademicViewsRequest,
+  type WorkspaceAcademicRelationsDto,
+  type ReferenceRelationDto,
+  type WorkspaceReferenceRelationsRequest,
+  type WorkspaceReferenceRelationsDto,
+  type WorkspaceAddReferenceRelationRequest,
+  type WorkspaceRemoveReferenceRelationRequest,
+  type WorkspaceAnnotationsRequest,
+  type WorkspaceAnnotationColorSemanticsDto,
+  type WorkspaceSetAnnotationColorSemanticsRequest,
+  type WorkspaceSynthesizeAnnotationsRequest,
+  type WorkspaceSynthesizeAnnotationsResponseDto,
+  type LiteratureSubscriptionDto,
+  type WorkspaceLiteratureSubscriptionsDto,
+  type WorkspaceLiteratureFeedInboxDto,
+  type WorkspaceAddLiteratureSubscriptionRequest,
+  type WorkspaceRemoveLiteratureSubscriptionRequest,
+  type WorkspacePollLiteratureSubscriptionRequest,
+  type WorkspacePollLiteratureSubscriptionResponseDto,
+  type WorkspaceDismissFeedInboxItemRequest,
+  type WorkspaceImportFeedInboxItemRequest,
+  type WorkspaceBookmarksDto,
+  type WorkspaceSetBookmarksRequest,
+  type WorkspaceCaptureInboxDto,
+  type WorkspaceSetCaptureInboxRequest,
+  type WorkspaceResearchCanvasesDto,
+  type WorkspaceSetResearchCanvasesRequest,
+  type WorkspacePeekRequest,
+  type WorkspaceJournalOpenRequest,
+  type WorkspaceJournalCaptureRequest,
+  type WorkspacePeekResponseDto,
+  type WorkspaceResolveSyncConflictRequest,
   type WorkspaceReadRequest,
   type WorkspaceReadResponse,
   type WorkspaceReferenceDto,
@@ -224,6 +326,39 @@ export const DESKTOP_CHANNELS = {
   chooseWorkspace: 'abnt:workspace:choose-open',
   restoreWorkspace: 'abnt:workspace:restore-last',
   openWorkspace: 'abnt:workspace:open',
+  chooseSyncMirror: 'abnt:workspace:choose-sync-mirror',
+  syncStatus: 'abnt:workspace:sync-status',
+  syncNow: 'abnt:workspace:sync-now',
+  syncRecover: 'abnt:workspace:sync-recover',
+  syncResolveConflict: 'abnt:workspace:sync-resolve-conflict',
+  collaboration: 'abnt:workspace:collaboration',
+  setCollaboration: 'abnt:workspace:set-collaboration',
+  academicViews: 'abnt:workspace:academic-views',
+  setAcademicViews: 'abnt:workspace:set-academic-views',
+  academicRelations: 'abnt:workspace:academic-relations',
+  referenceRelations: 'abnt:workspace:reference-relations',
+  addReferenceRelation: 'abnt:workspace:add-reference-relation',
+  removeReferenceRelation: 'abnt:workspace:remove-reference-relation',
+  annotations: 'abnt:workspace:annotations',
+  annotationColorSemantics: 'abnt:workspace:annotation-color-semantics',
+  setAnnotationColorSemantics: 'abnt:workspace:set-annotation-color-semantics',
+  synthesizeAnnotations: 'abnt:workspace:synthesize-annotations',
+  literatureSubscriptions: 'abnt:workspace:literature-subscriptions',
+  addLiteratureSubscription: 'abnt:workspace:add-literature-subscription',
+  removeLiteratureSubscription: 'abnt:workspace:remove-literature-subscription',
+  literatureFeedInbox: 'abnt:workspace:literature-feed-inbox',
+  pollLiteratureSubscription: 'abnt:workspace:poll-literature-subscription',
+  dismissFeedInboxItem: 'abnt:workspace:dismiss-feed-inbox-item',
+  importFeedInboxItem: 'abnt:workspace:import-feed-inbox-item',
+  bookmarks: 'abnt:workspace:bookmarks',
+  setBookmarks: 'abnt:workspace:set-bookmarks',
+  captureInbox: 'abnt:workspace:capture-inbox',
+  setCaptureInbox: 'abnt:workspace:set-capture-inbox',
+  researchCanvases: 'abnt:workspace:research-canvases',
+  setResearchCanvases: 'abnt:workspace:set-research-canvases',
+  peek: 'abnt:workspace:peek',
+  journalOpen: 'abnt:workspace:journal-open',
+  journalCapture: 'abnt:workspace:journal-capture',
   listWorkspace: 'abnt:workspace:list',
   readDocument: 'abnt:document:read',
   openEditor: 'abnt:editor:open',
@@ -237,6 +372,7 @@ export const DESKTOP_CHANNELS = {
   exportPlugin: 'abnt:editor:export-plugin',
   importAsset: 'abnt:editor:import-asset',
   importAssetData: 'abnt:editor:import-asset-data',
+  assetPreview: 'abnt:editor:asset-preview',
   createDocument: 'abnt:workspace:create-document',
   renameDocument: 'abnt:workspace:rename-document',
   search: 'abnt:workspace:search',
@@ -264,6 +400,7 @@ export const DESKTOP_CHANNELS = {
   libraryRemove: 'abnt:library:remove',
   libraryFormat: 'abnt:library:format',
   libraryResolveDoi: 'abnt:library:resolve-doi',
+  webCaptureExtract: 'abnt:library:web-capture-extract',
   libraryImport: 'abnt:library:import',
   libraryIntakePreview: 'abnt:library:intake-preview',
   libraryDuplicates: 'abnt:library:duplicates',
@@ -281,7 +418,18 @@ export const DESKTOP_CHANNELS = {
   libraryRemovePdfAnnotation: 'abnt:library:remove-pdf-annotation',
   libraryLinkPdfAnnotation: 'abnt:library:link-pdf-annotation',
   referenceHealth: 'abnt:workspace:reference-health',
+  libraryMaintenanceOverview: 'abnt:workspace:library-maintenance-overview',
   referenceAttachments: 'abnt:workspace:reference-attachments',
+  attachments: 'abnt:workspace:attachments',
+  addAttachment: 'abnt:workspace:add-attachment',
+  pickAndAddAttachment: 'abnt:workspace:pick-and-add-attachment',
+  addAttachmentVersion: 'abnt:workspace:add-attachment-version',
+  pickAndAddAttachmentVersion: 'abnt:workspace:pick-and-add-attachment-version',
+  removeAttachment: 'abnt:workspace:remove-attachment',
+  renameAttachmentFile: 'abnt:workspace:rename-attachment-file',
+  openAttachmentFile: 'abnt:workspace:open-attachment-file',
+  revealAttachmentFile: 'abnt:workspace:reveal-attachment-file',
+  attachmentHealth: 'abnt:workspace:attachment-health',
   languageCompletions: 'abnt:language:completions',
   languageHover: 'abnt:language:hover',
   languageDefinition: 'abnt:language:definition',
@@ -309,6 +457,45 @@ export interface AcademicDesktopApi {
     /** Reabre a última pasta escolhida pelo usuário; nunca expõe seu caminho ao renderer. */
     restoreLast(): Promise<ProtocolResult<WorkspaceOpenResponse>>;
     open(request: WorkspaceOpenRequest): Promise<ProtocolResult<WorkspaceOpenResponse>>;
+    /** Abre o seletor nativo; o caminho da pasta permanece fora do renderer. */
+    chooseSyncMirror(): Promise<ProtocolResult<WorkspaceSyncStatusDto>>;
+    syncStatus(): Promise<ProtocolResult<WorkspaceSyncStatusDto>>;
+    syncNow(): Promise<ProtocolResult<WorkspaceSyncStatusDto>>;
+    recoverFromSync(): Promise<ProtocolResult<WorkspaceSyncStatusDto>>;
+    resolveSyncConflict(request: WorkspaceResolveSyncConflictRequest): Promise<ProtocolResult<WorkspaceSyncStatusDto>>;
+    collaboration(): Promise<ProtocolResult<WorkspaceCollaborationDto>>;
+    setCollaboration(request: WorkspaceSetCollaborationRequest): Promise<ProtocolResult<WorkspaceCollaborationDto>>;
+    academicViews(): Promise<ProtocolResult<WorkspaceAcademicViewsDto>>;
+    setAcademicViews(request: WorkspaceSetAcademicViewsRequest): Promise<ProtocolResult<WorkspaceAcademicViewsDto>>;
+    academicRelations(): Promise<ProtocolResult<WorkspaceAcademicRelationsDto>>;
+    /** Onda BJ: relação explícita entre duas referências — nunca substitui merge de duplicata. */
+    referenceRelations(request: WorkspaceReferenceRelationsRequest): Promise<ProtocolResult<WorkspaceReferenceRelationsDto>>;
+    addReferenceRelation(request: WorkspaceAddReferenceRelationRequest): Promise<ProtocolResult<ReferenceRelationDto>>;
+    removeReferenceRelation(request: WorkspaceRemoveReferenceRelationRequest): Promise<ProtocolResult<undefined>>;
+    /** Onda BL: anotações do vault inteiro (ou de uma referência, se informada). */
+    annotations(request: WorkspaceAnnotationsRequest): Promise<ProtocolResult<readonly WorkspacePdfAnnotationDto[]>>;
+    annotationColorSemantics(): Promise<ProtocolResult<WorkspaceAnnotationColorSemanticsDto>>;
+    setAnnotationColorSemantics(request: WorkspaceSetAnnotationColorSemanticsRequest): Promise<ProtocolResult<WorkspaceAnnotationColorSemanticsDto>>;
+    synthesizeAnnotations(request: WorkspaceSynthesizeAnnotationsRequest): Promise<ProtocolResult<WorkspaceSynthesizeAnnotationsResponseDto>>;
+    /** Onda BM: feed nunca entra automaticamente na biblioteca — só `importFeedInboxItem` cria uma entrada. */
+    literatureSubscriptions(): Promise<ProtocolResult<WorkspaceLiteratureSubscriptionsDto>>;
+    addLiteratureSubscription(request: WorkspaceAddLiteratureSubscriptionRequest): Promise<ProtocolResult<LiteratureSubscriptionDto>>;
+    removeLiteratureSubscription(request: WorkspaceRemoveLiteratureSubscriptionRequest): Promise<ProtocolResult<undefined>>;
+    literatureFeedInbox(): Promise<ProtocolResult<WorkspaceLiteratureFeedInboxDto>>;
+    pollLiteratureSubscription(request: WorkspacePollLiteratureSubscriptionRequest): Promise<ProtocolResult<WorkspacePollLiteratureSubscriptionResponseDto>>;
+    dismissFeedInboxItem(request: WorkspaceDismissFeedInboxItemRequest): Promise<ProtocolResult<undefined>>;
+    importFeedInboxItem(request: WorkspaceImportFeedInboxItemRequest): Promise<ProtocolResult<BibliographicEntityDto>>;
+    /** Onda BN: registry de extractors sobre uma página já publicada — nunca persiste nada sozinho. */
+    webCaptureExtract(request: WorkspaceWebCaptureExtractRequest): Promise<ProtocolResult<WorkspaceWebCaptureExtractResponseDto>>;
+    bookmarks(): Promise<ProtocolResult<WorkspaceBookmarksDto>>;
+    setBookmarks(request: WorkspaceSetBookmarksRequest): Promise<ProtocolResult<WorkspaceBookmarksDto>>;
+    captureInbox(): Promise<ProtocolResult<WorkspaceCaptureInboxDto>>;
+    setCaptureInbox(request: WorkspaceSetCaptureInboxRequest): Promise<ProtocolResult<WorkspaceCaptureInboxDto>>;
+    researchCanvases(): Promise<ProtocolResult<WorkspaceResearchCanvasesDto>>;
+    setResearchCanvases(request: WorkspaceSetResearchCanvasesRequest): Promise<ProtocolResult<WorkspaceResearchCanvasesDto>>;
+    peek(request: WorkspacePeekRequest): Promise<ProtocolResult<WorkspacePeekResponseDto>>;
+    journalOpen(request: WorkspaceJournalOpenRequest): Promise<ProtocolResult<WorkspaceFileDto>>;
+    journalCapture(request: WorkspaceJournalCaptureRequest): Promise<ProtocolResult<WorkspaceFileDto>>;
     list(request: WorkspaceListRequest): Promise<ProtocolResult<readonly WorkspaceFileDto[]>>;
     search(request: WorkspaceSearchRequest): Promise<ProtocolResult<readonly WorkspaceSearchResultDto[]>>;
     problems(request: WorkspaceProblemsRequest): Promise<ProtocolResult<readonly WorkspaceProblemDto[]>>;
@@ -328,7 +515,22 @@ export interface AcademicDesktopApi {
     researchOverview(request: WorkspaceResearchOverviewRequest): Promise<ProtocolResult<WorkspaceResearchOverviewDto>>;
     projectDashboard(request: WorkspaceProjectDashboardRequest): Promise<ProtocolResult<WorkspaceProjectDashboardDto>>;
     referenceHealth(request: WorkspaceReferenceHealthRequest): Promise<ProtocolResult<WorkspaceReferenceHealthDto>>;
+    /** Onda BO: painel único de manutenção — composição de saúde/duplicatas/anexos/relações por referência. */
+    libraryMaintenanceOverview(request: WorkspaceLibraryMaintenanceRequest): Promise<ProtocolResult<WorkspaceLibraryMaintenanceOverviewDto>>;
     referenceAttachments(request: WorkspaceReferenceAttachmentsRequest): Promise<ProtocolResult<readonly WorkspaceReferenceAttachmentDto[]>>;
+    /** Onda BH: múltiplos anexos por referência (ou vault inteiro, se `referenceId` ausente). */
+    attachments(request: WorkspaceAttachmentsRequest): Promise<ProtocolResult<readonly AttachmentDto[]>>;
+    addAttachment(request: WorkspaceAddAttachmentRequest): Promise<ProtocolResult<AttachmentDto>>;
+    /** Abre o diálogo nativo de arquivo; Main preenche kind/mediaType/name/base64. */
+    pickAndAddAttachment(request: WorkspacePickAttachmentRequest): Promise<ProtocolResult<AttachmentDto>>;
+    addAttachmentVersion(request: WorkspaceAddAttachmentVersionRequest): Promise<ProtocolResult<AttachmentDto>>;
+    pickAndAddAttachmentVersion(request: WorkspaceAttachmentRequest): Promise<ProtocolResult<AttachmentDto>>;
+    removeAttachment(request: WorkspaceAttachmentRequest): Promise<ProtocolResult<undefined>>;
+    /** Sugestão de renomeação vira escrita só quando este comando é chamado. */
+    renameAttachmentFile(request: WorkspaceRenameAttachmentFileRequest): Promise<ProtocolResult<AttachmentDto>>;
+    openAttachmentFile(request: WorkspaceAttachmentRequest): Promise<ProtocolResult<undefined>>;
+    revealAttachmentFile(request: WorkspaceAttachmentRequest): Promise<ProtocolResult<undefined>>;
+    attachmentHealth(): Promise<ProtocolResult<readonly AttachmentHealthIssueDto[]>>;
     createDocument(request: WorkspaceCreateDocumentRequest): Promise<ProtocolResult<WorkspaceFileDto>>;
     renameDocument(request: WorkspaceRenameRequest): Promise<ProtocolResult<WorkspaceFileDto>>;
   };
@@ -376,6 +578,7 @@ export interface AcademicDesktopApi {
     /** Abre o seletor nativo, copia o recurso para o vault e devolve URI relativa. */
     importAsset(request: EditorImportAssetRequest): Promise<ProtocolResult<WorkspaceAssetDto>>;
     importAssetData(request: WorkspaceImportAssetRequest): Promise<ProtocolResult<WorkspaceAssetDto>>;
+    assetPreview(request: WorkspaceAssetPreviewRequest): Promise<ProtocolResult<WorkspaceAssetPreviewResponse>>;
   };
   readonly language: {
     completions(request: LanguageCompletionRequest): Promise<ProtocolResult<LanguageCompletionDto | undefined>>;
@@ -419,6 +622,103 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
       open: async (request) => {
         const checked = validarDto(workspaceOpenRequestSchema, request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.openWorkspace, checked.value, workspaceOpenResponseSchema) : checked;
+      },
+      chooseSyncMirror: () => invoke(bridge, DESKTOP_CHANNELS.chooseSyncMirror, undefined, workspaceSyncStatusResponseSchema),
+      syncStatus: () => invoke(bridge, DESKTOP_CHANNELS.syncStatus, undefined, workspaceSyncStatusResponseSchema),
+      syncNow: () => invoke(bridge, DESKTOP_CHANNELS.syncNow, undefined, workspaceSyncStatusResponseSchema),
+      recoverFromSync: () => invoke(bridge, DESKTOP_CHANNELS.syncRecover, undefined, workspaceSyncStatusResponseSchema),
+      resolveSyncConflict: async (request) => {
+        const checked = validarDto(workspaceResolveSyncConflictRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.syncResolveConflict, checked.value, workspaceSyncStatusResponseSchema) : checked;
+      },
+      collaboration: () => invoke(bridge, DESKTOP_CHANNELS.collaboration, undefined, workspaceCollaborationResponseSchema),
+      setCollaboration: async (request) => {
+        const checked = validarDto(workspaceSetCollaborationRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setCollaboration, checked.value, workspaceCollaborationResponseSchema) : checked;
+      },
+      academicViews: () => invoke(bridge, DESKTOP_CHANNELS.academicViews, undefined, workspaceAcademicViewsResponseSchema),
+      setAcademicViews: async (request) => {
+        const checked = validarDto(workspaceSetAcademicViewsRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setAcademicViews, checked.value, workspaceAcademicViewsResponseSchema) : checked;
+      },
+      academicRelations: () => invoke(bridge, DESKTOP_CHANNELS.academicRelations, undefined, workspaceAcademicRelationsResponseSchema),
+      referenceRelations: async (request) => {
+        const checked = validarWorkspaceReferenceRelationsRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.referenceRelations, checked.value, workspaceReferenceRelationsResponseSchema) : checked;
+      },
+      addReferenceRelation: async (request) => {
+        const checked = validarWorkspaceAddReferenceRelationRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.addReferenceRelation, checked.value, referenceRelationDtoSchema) : checked;
+      },
+      removeReferenceRelation: async (request) => {
+        const checked = validarWorkspaceRemoveReferenceRelationRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.removeReferenceRelation, checked.value, emptyResponseSchema) : checked;
+      },
+      annotations: async (request) => {
+        const checked = validarWorkspaceAnnotationsRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.annotations, checked.value, workspacePdfAnnotationsResponseSchema) : checked;
+      },
+      annotationColorSemantics: () => invoke(bridge, DESKTOP_CHANNELS.annotationColorSemantics, undefined, workspaceAnnotationColorSemanticsResponseSchema),
+      setAnnotationColorSemantics: async (request) => {
+        const checked = validarWorkspaceSetAnnotationColorSemanticsRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setAnnotationColorSemantics, checked.value, workspaceAnnotationColorSemanticsResponseSchema) : checked;
+      },
+      synthesizeAnnotations: async (request) => {
+        const checked = validarWorkspaceSynthesizeAnnotationsRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.synthesizeAnnotations, checked.value, workspaceSynthesizeAnnotationsResponseSchema) : checked;
+      },
+      literatureSubscriptions: () => invoke(bridge, DESKTOP_CHANNELS.literatureSubscriptions, undefined, workspaceLiteratureSubscriptionsResponseSchema),
+      addLiteratureSubscription: async (request) => {
+        const checked = validarWorkspaceAddLiteratureSubscriptionRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.addLiteratureSubscription, checked.value, literatureSubscriptionDtoSchema) : checked;
+      },
+      removeLiteratureSubscription: async (request) => {
+        const checked = validarWorkspaceRemoveLiteratureSubscriptionRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.removeLiteratureSubscription, checked.value, emptyResponseSchema) : checked;
+      },
+      literatureFeedInbox: () => invoke(bridge, DESKTOP_CHANNELS.literatureFeedInbox, undefined, workspaceLiteratureFeedInboxResponseSchema),
+      pollLiteratureSubscription: async (request) => {
+        const checked = validarWorkspacePollLiteratureSubscriptionRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.pollLiteratureSubscription, checked.value, workspacePollLiteratureSubscriptionResponseSchema) : checked;
+      },
+      dismissFeedInboxItem: async (request) => {
+        const checked = validarWorkspaceDismissFeedInboxItemRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.dismissFeedInboxItem, checked.value, emptyResponseSchema) : checked;
+      },
+      importFeedInboxItem: async (request) => {
+        const checked = validarWorkspaceImportFeedInboxItemRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.importFeedInboxItem, checked.value, workspaceLibraryEntryResponseSchema) : checked;
+      },
+      webCaptureExtract: async (request) => {
+        const checked = validarWorkspaceWebCaptureExtractRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.webCaptureExtract, checked.value, workspaceWebCaptureExtractResponseSchema) : checked;
+      },
+      bookmarks: () => invoke(bridge, DESKTOP_CHANNELS.bookmarks, undefined, workspaceBookmarksResponseSchema),
+      setBookmarks: async (request) => {
+        const checked = validarDto(workspaceSetBookmarksRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setBookmarks, checked.value, workspaceBookmarksResponseSchema) : checked;
+      },
+      captureInbox: () => invoke(bridge, DESKTOP_CHANNELS.captureInbox, undefined, workspaceCaptureInboxResponseSchema),
+      setCaptureInbox: async (request) => {
+        const checked = validarDto(workspaceSetCaptureInboxRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setCaptureInbox, checked.value, workspaceCaptureInboxResponseSchema) : checked;
+      },
+      researchCanvases: () => invoke(bridge, DESKTOP_CHANNELS.researchCanvases, undefined, workspaceResearchCanvasesResponseSchema),
+      setResearchCanvases: async (request) => {
+        const checked = validarDto(workspaceSetResearchCanvasesRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setResearchCanvases, checked.value, workspaceResearchCanvasesResponseSchema) : checked;
+      },
+      peek: async (request) => {
+        const checked = validarDto(workspacePeekRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.peek, checked.value, workspacePeekResponseSchema) : checked;
+      },
+      journalOpen: async (request) => {
+        const checked = validarDto(workspaceJournalOpenRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.journalOpen, checked.value, workspaceFileDtoSchema) : checked;
+      },
+      journalCapture: async (request) => {
+        const checked = validarDto(workspaceJournalCaptureRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.journalCapture, checked.value, workspaceFileDtoSchema) : checked;
       },
       list: async (request) => {
         const checked = validarDto(workspaceListRequestSchema, request);
@@ -472,9 +772,53 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
         const checked = validarWorkspaceReferenceHealthRequest(request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.referenceHealth, checked.value, workspaceReferenceHealthResponseSchema) : checked;
       },
+      libraryMaintenanceOverview: async (request) => {
+        const checked = validarWorkspaceLibraryMaintenanceRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryMaintenanceOverview, checked.value, workspaceLibraryMaintenanceResponseSchema) : checked;
+      },
       referenceAttachments: async (request) => {
         const checked = validarWorkspaceReferenceAttachmentsRequest(request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.referenceAttachments, checked.value, workspaceReferenceAttachmentsResponseSchema) : checked;
+      },
+      attachments: async (request) => {
+        const checked = validarWorkspaceAttachmentsRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.attachments, checked.value, workspaceAttachmentsResponseSchema) : checked;
+      },
+      addAttachment: async (request) => {
+        const checked = validarWorkspaceAddAttachmentRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.addAttachment, checked.value, workspaceAttachmentResponseSchema) : checked;
+      },
+      pickAndAddAttachment: async (request) => {
+        const checked = validarWorkspacePickAttachmentRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.pickAndAddAttachment, checked.value, workspaceAttachmentResponseSchema) : checked;
+      },
+      addAttachmentVersion: async (request) => {
+        const checked = validarWorkspaceAddAttachmentVersionRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.addAttachmentVersion, checked.value, workspaceAttachmentResponseSchema) : checked;
+      },
+      pickAndAddAttachmentVersion: async (request) => {
+        const checked = validarWorkspaceAttachmentRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.pickAndAddAttachmentVersion, checked.value, workspaceAttachmentResponseSchema) : checked;
+      },
+      removeAttachment: async (request) => {
+        const checked = validarWorkspaceAttachmentRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.removeAttachment, checked.value, emptyResponseSchema) : checked;
+      },
+      renameAttachmentFile: async (request) => {
+        const checked = validarWorkspaceRenameAttachmentFileRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.renameAttachmentFile, checked.value, workspaceAttachmentResponseSchema) : checked;
+      },
+      openAttachmentFile: async (request) => {
+        const checked = validarWorkspaceAttachmentRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.openAttachmentFile, checked.value, emptyResponseSchema) : checked;
+      },
+      revealAttachmentFile: async (request) => {
+        const checked = validarWorkspaceAttachmentRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.revealAttachmentFile, checked.value, emptyResponseSchema) : checked;
+      },
+      attachmentHealth: async () => {
+        const checked = validarWorkspaceAttachmentHealthRequest({});
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.attachmentHealth, checked.value, workspaceAttachmentHealthResponseSchema) : checked;
       },
       createDocument: async (request) => {
         const checked = validarWorkspaceCreateDocumentRequest(request);
@@ -613,6 +957,10 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
       importAssetData: async (request) => {
         const checked = validarWorkspaceImportAssetRequest(request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.importAssetData, checked.value, workspaceAssetDtoSchema) : checked;
+      },
+      assetPreview: async (request) => {
+        const checked = validarDto(workspaceAssetPreviewRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.assetPreview, checked.value, workspaceAssetPreviewResponseSchema) : checked;
       },
     },
     language: {

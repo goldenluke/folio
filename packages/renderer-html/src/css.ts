@@ -178,10 +178,31 @@ p {
   display: flex;
 }
 
+.publication-toc-entry-text {
+  background: white;
+  padding-right: 0.35em;
+}
+
+.publication-toc-leader {
+  flex: 1;
+  align-self: center;
+  border-bottom: 1px dotted currentColor;
+  opacity: 0.9;
+}
+
+.publication-toc-page {
+  min-width: 2.4em;
+  padding-left: 0.75em;
+  text-align: right;
+  background: white;
+}
+
 .publication-toc-entry a::after {
   content: target-counter(attr(href), page);
-  margin-left: auto;
+  min-width: 2.4em;
   padding-left: 0.75em;
+  text-align: right;
+  background: white;
 }
 
 /* Título de seção não deve ficar sozinho no fim da página. */

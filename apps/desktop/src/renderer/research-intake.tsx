@@ -33,7 +33,14 @@ export function ResearchIntakeDialog({ workspaceId, onClose, onMessage }: { read
   const importText = (): void => { if (content.trim() !== '') void preview(format, { format, content }, [`${sourceLabel[format]} importado`]); setContent(''); };
   const resolveIdentifier = async (): Promise<void> => {
     const value = identifier.trim(); if (value === '') return;
-    if (/^https?:\/\//iu.test(value)) { const entry = captureUrl(value); if (entry === undefined) { setMessage('URL inválida; capture apenas HTTP(S).'); return; } await preview('url', { entry }, ['URL fornecida pelo usuário']); setIdentifier(''); return; }
+    if (/^https?:\/\//iu.test(value)) {
+      const base = captureUrl(value); if (base === undefined) { setMessage('URL inválida; capture apenas HTTP(S).'); return; }
+      const extracted = await window.academic.workspace.webCaptureExtract({ url: value });
+      const best = extracted.ok ? extracted.value.candidates[0] : undefined;
+      const entry = best === undefined ? base : { ...base, ...best.fields, type: best.fields.type ?? base.type };
+      await preview('url', { entry }, best === undefined ? ['URL fornecida pelo usuário'] : [`URL fornecida pelo usuário, metadata pré-preenchida via ${best.extractorId} (revise antes de confirmar)`]);
+      setIdentifier(''); return;
+    }
     const result = await window.academic.library.resolveDoi({ doi: value }); if (!result.ok) { setMessage(result.error.message); return; }
     await preview('doi', { entry: result.value }, ['DOI resolvido pelo provider configurado']); setIdentifier('');
   };

@@ -9,6 +9,8 @@ export interface PaletteItem {
   readonly id: string;
   readonly label: string;
   readonly detail?: string;
+  readonly category?: string;
+  readonly shortcut?: string;
   readonly score: number;
 }
 
@@ -49,13 +51,40 @@ export function fuzzyScore(query: string, candidate: string): number | undefined
 const byScoreThenLabel = (left: PaletteItem, right: PaletteItem): number =>
   right.score - left.score || left.label.localeCompare(right.label, 'pt-BR');
 
-export function rankCommands(registry: CommandRegistry, context: CommandContext, query: string): readonly PaletteItem[] {
+const categoryFor = (id: string): string => ({
+  workspace: 'Workspace',
+  document: 'Documento',
+  publication: 'Publicação',
+  research: 'Pesquisa',
+  projects: 'Projetos',
+  review: 'Revisão',
+  writing: 'Escrita',
+  citation: 'Citações',
+  palette: 'Navegação',
+  navigation: 'Navegação',
+})[id.split('.')[0] ?? ''] ?? 'Outros';
+
+export function rankCommands(registry: CommandRegistry, context: CommandContext, query: string, shortcuts: ReadonlyMap<string, string> = new Map(), recentIds: readonly string[] = []): readonly PaletteItem[] {
   return registry
     .list()
     .filter((command) => registry.isEnabled(command.id, context))
     .flatMap((command: Command) => {
-      const score = Math.max(fuzzyScore(query, command.title) ?? Number.NEGATIVE_INFINITY, fuzzyScore(query, command.id) ?? Number.NEGATIVE_INFINITY);
-      return Number.isFinite(score) ? [{ id: command.id, label: command.title, detail: command.id, score }] : [];
+      const score = Math.max(
+        fuzzyScore(query, command.title) ?? Number.NEGATIVE_INFINITY,
+        fuzzyScore(query, command.id) ?? Number.NEGATIVE_INFINITY,
+        ...(command.aliases ?? []).map((alias) => fuzzyScore(query, alias) ?? Number.NEGATIVE_INFINITY),
+      );
+      if (!Number.isFinite(score)) return [];
+      const shortcut = shortcuts.get(command.id);
+      const recentIndex = recentIds.indexOf(command.id);
+      return [{
+        id: command.id,
+        label: command.title,
+        detail: command.id,
+        category: command.category ?? categoryFor(command.id),
+        ...(shortcut === undefined ? {} : { shortcut }),
+        score: score + (recentIndex === -1 ? 0 : recentIds.length - recentIndex),
+      }];
     })
     .sort(byScoreThenLabel);
 }

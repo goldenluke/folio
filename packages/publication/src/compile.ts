@@ -355,6 +355,7 @@ export function compilarPublicacao(
               primeira !== undefined && primeira.type === 'image'
                 ? textoPuro(primeira.alt)
                 : '',
+            ...(typeof n.attributes?.properties?.width === 'string' ? { width: n.attributes.properties.width } : {}),
             ...(cap !== undefined ? { caption: cap } : {}),
             ...(src !== undefined ? { attribution: src } : {}),
           });

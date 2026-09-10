@@ -76,6 +76,10 @@ const ESTILOS: StyleTokenRegistry = {
     textTransform: 'uppercase',
     marginTop: '4cm',
   },
+  'tcc-cover-logo': {
+    textAlign: 'center',
+    marginBottom: '1.5cm',
+  },
   'tcc-cover-title': {
     fontFamily: SERIF,
     fontSize: '12pt',
@@ -198,9 +202,14 @@ function cover(doc: ResolvedDocument, utils: UtilitariosDoProfile): PublicationB
   const authors = contributorsByRole(doc, 'author').map(nameOf).join('\n');
   const place = textProperty(doc, 'tcc:place') ?? '';
   const year = textProperty(doc, 'tcc:year') ?? '';
+  const logo = textProperty(doc, 'tcc:cover-logo');
+  const logoBlock: readonly PublicationBlock[] = logo !== undefined && /^data:image\//iu.test(logo)
+    ? [{ type: 'figure', style: 'tcc-cover-logo', src: logo, alt: `Logotipo de ${institution || 'instituição'}`, width: '28%' }]
+    : [];
   return page(
     'tcc:cover',
     [
+      ...logoBlock,
       line(institution, 'tcc-center'),
       line(authors, 'tcc-cover-author'),
       {

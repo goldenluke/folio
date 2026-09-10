@@ -9,6 +9,7 @@ import type {
   CreateWorkspaceFileRequest,
   RenameWorkspaceFileRequest,
   WorkspaceConfiguration,
+  WorkspaceStorageCapabilities,
   WorkspaceEvent,
   WorkspaceEventListener,
   WorkspaceFile,
@@ -53,11 +54,13 @@ const withVault = async (run: (root: string) => Promise<void>): Promise<void> =>
 
 /** Permite reproduzir um evento que foi enfileirado antes de o arquivo sumir. */
 class EventInjectingStorage implements WorkspaceStorage {
+  readonly capabilities: WorkspaceStorageCapabilities;
   readonly #listeners = new Set<WorkspaceEventListener>();
   readonly #delegate: WorkspaceStorage;
 
   constructor(delegate: WorkspaceStorage) {
     this.#delegate = delegate;
+    this.capabilities = delegate.capabilities;
   }
 
   open() {

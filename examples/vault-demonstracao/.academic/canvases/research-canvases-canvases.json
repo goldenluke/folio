@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "canvases": [
+    {
+      "schema": "folio-research-canvas",
+      "version": 1,
+      "id": "mapa-rastreabilidade",
+      "title": "Mapa argumentativo — rastreabilidade",
+      "nodes": [
+        {
+          "id": "claim",
+          "type": "text",
+          "text": "A autoria local preserva o contexto das evidências.",
+          "role": "claim",
+          "x": 281,
+          "y": 80
+        },
+        {
+          "id": "evidence",
+          "type": "text",
+          "text": "Fichamentos vinculam ideias a fontes identificáveis.",
+          "role": "evidence",
+          "x": 69,
+          "y": 260
+        },
+        {
+          "id": "counter",
+          "type": "text",
+          "text": "A organização manual exige disciplina editorial.",
+          "role": "counterargument",
+          "x": 500,
+          "y": 260
+        }
+      ],
+      "edges": [
+        {
+          "id": "supports",
+          "from": "evidence",
+          "to": "claim",
+          "kind": "supports"
+        },
+        {
+          "id": "contradicts",
+          "from": "counter",
+          "to": "claim",
+          "kind": "contradicts"
+        }
+      ],
+      "groups": [
+        {
+          "id": "argumento",
+          "label": "Argumento central",
+          "nodeIds": [
+            "claim",
+            "evidence",
+            "counter"
+          ]
+        }
+      ]
+    }
+  ]
+}

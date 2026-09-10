@@ -17,8 +17,17 @@ export interface CodeMirrorEditorAdapterOptions {
   /** Navegação vem do host; o adapter não conhece tabs, React nem workspace. */
   readonly onDefinition?: (locations: readonly LanguageLocation[]) => void;
   readonly onReferences?: (locations: readonly LanguageLocation[]) => void;
-  /** O host decide se a posição corresponde a uma citação editável. */
-  readonly onCitationClick?: (offset: number) => void;
+  /** O host apresenta ações contextuais; o adaptador só traduz a posição visual. */
+  readonly onContextMenu?: (input: { readonly offset: number; readonly x: number; readonly y: number; readonly selection: { readonly anchor: number; readonly head: number } }) => void;
+  /**
+   * F326–F330: fonte de completion para `/` no início da linha. Callback puro —
+   * o adaptador nunca conhece `CommandRegistry`, só ids/labels já filtrados e
+   * ranqueados pelo host.
+   */
+  readonly slashCommands?: {
+    readonly list: (query: string) => readonly { readonly id: string; readonly label: string }[];
+    readonly execute: (id: string) => void;
+  };
 }
 
 export interface CodeMirrorDiagnostic {
@@ -35,6 +44,8 @@ export interface CodeMirrorEditorAdapter {
   snapshot(): EditorSnapshot;
   save(): Promise<EditorSnapshot>;
   focus(): void;
+  /** F326–F330 (find/replace): abre o painel de busca do CodeMirror sem o host precisar importar @codemirror/search. */
+  openSearchPanel(): void;
   destroy(): void;
 }
 

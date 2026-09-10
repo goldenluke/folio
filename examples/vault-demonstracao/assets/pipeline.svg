@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="240" viewBox="0 0 960 240" role="img" aria-label="Pipeline de autoria até publicação">
+  <rect width="960" height="240" fill="#f8fafc"/>
+  <g font-family="Arial, sans-serif" font-size="22" font-weight="700" text-anchor="middle">
+    <rect x="35" y="80" width="185" height="78" rx="16" fill="#e0e7ff" stroke="#6366f1"/><text x="127" y="125" fill="#312e81">Markdown</text>
+    <rect x="285" y="80" width="185" height="78" rx="16" fill="#dbeafe" stroke="#2563eb"/><text x="377" y="125" fill="#1e3a8a">Semântica</text>
+    <rect x="535" y="80" width="185" height="78" rx="16" fill="#dcfce7" stroke="#16a34a"/><text x="627" y="125" fill="#14532d">Profile</text>
+    <rect x="785" y="80" width="140" height="78" rx="16" fill="#fef3c7" stroke="#d97706"/><text x="855" y="125" fill="#78350f">PDF / Web</text>
+  </g>
+  <g stroke="#64748b" stroke-width="4" fill="none"><path d="M220 119h57"/><path d="M470 119h57"/><path d="M720 119h57"/></g>
+  <g fill="#64748b"><path d="m277 111 14 8-14 8z"/><path d="m527 111 14 8-14 8z"/><path d="m777 111 14 8-14 8z"/></g>
+</svg>

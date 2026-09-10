@@ -144,6 +144,47 @@ module.exports = {
       to: { path: `^${anyPkgExcept('editor-codemirror', 'editor-core', 'language-service')}` },
     },
     {
+      name: 'academic-relations-e-folha',
+      comment:
+        'Primitivas puras de relação/rollup/fórmula (F301–F306, ver ADR 0070). ' +
+        'Não conhece nenhum outro package do workspace — quem resolve relações ' +
+        'reais é o host (Workspace Service), nunca este package.',
+      severity: 'error',
+      from: { path: `^${pkg('academic-relations')}` },
+      to: { path: `^${anyPkgExcept('academic-relations')}` },
+    },
+    {
+      name: 'academic-views-so-relacoes-e-query',
+      comment:
+        'academic-views modela e valida configuração de views/colunas ' +
+        'derivadas/dashboards; pode usar academic-relations (tipos de relação) ' +
+        'e language-service (QueryAst do filtro), mas não lê filesystem, SQLite, ' +
+        'React ou Electron. Ver ADR 0067 e ADR 0070.',
+      severity: 'error',
+      from: { path: `^${pkg('academic-views')}` },
+      to: { path: `^${anyPkgExcept('academic-views', 'academic-relations', 'language-service')}` },
+    },
+    {
+      name: 'workspace-navigation-e-folha',
+      comment:
+        'Bookmarks/target puros (F307–F318, ver ADR 0068). Não conhece nenhum ' +
+        'outro package do workspace — quem persiste/resolve é o host ' +
+        '(Workspace Service), nunca este package.',
+      severity: 'error',
+      from: { path: `^${pkg('workspace-navigation')}` },
+      to: { path: `^${anyPkgExcept('workspace-navigation')}` },
+    },
+    {
+      name: 'workspace-polish-e-folha',
+      comment:
+        'navigationTree/PeekEntity/auditSurface (F288–F294, F307–F325) são ' +
+        'primitivas de apresentação puras — sem I/O, sem outro package do ' +
+        'workspace. O host materializa PeekEntityDto sem importar este package.',
+      severity: 'error',
+      from: { path: `^${pkg('workspace-polish')}` },
+      to: { path: `^${anyPkgExcept('workspace-polish')}` },
+    },
+    {
       name: 'nucleo-nao-depende-do-indice',
       comment:
         'SQLite é cache descartável. Nenhuma camada de domínio, compiler ou storage ' +
