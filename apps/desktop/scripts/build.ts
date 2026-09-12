@@ -148,7 +148,8 @@ const identidadeNativa = async (): Promise<NativeAddonManifest> => {
 
 /** Recompila exclusivamente a cópia que o artefato desktop resolve primeiro. */
 const compilarSqliteParaElectron = async (manifest: NativeAddonManifest): Promise<void> => {
-  const nodeGyp = require.resolve('node-gyp/bin/node-gyp.js');
+  const rebuildRequire = createRequire(require.resolve('@electron/rebuild'));
+  const nodeGyp = rebuildRequire.resolve('node-gyp/bin/node-gyp.js');
   const moduleDirectory = resolve(output, 'workspace/node_modules/better-sqlite3');
   const addon = resolve(moduleDirectory, 'build/Release/better_sqlite3.node');
   const cachedAddon = resolve(nativeCache, manifest.cacheKey, 'better_sqlite3.node');

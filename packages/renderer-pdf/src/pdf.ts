@@ -43,7 +43,16 @@ export function encontrarChrome(): string {
     return doAmbiente;
   }
 
-  for (const caminho of CANDIDATOS_CHROME) {
+  const candidatosWindows = process.platform === 'win32'
+    ? [process.env['PROGRAMFILES'], process.env['PROGRAMFILES(X86)'], process.env['LOCALAPPDATA']]
+      .filter((base): base is string => base !== undefined && base !== '')
+      .flatMap((base) => [
+        join(base, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+        join(base, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+      ])
+    : [];
+
+  for (const caminho of [...candidatosWindows, ...CANDIDATOS_CHROME]) {
     if (existsSync(caminho)) return caminho;
   }
 

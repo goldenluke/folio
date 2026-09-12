@@ -1,6 +1,6 @@
 import { access, appendFile, cp, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 
 const timeoutMs = 120_000;
@@ -37,7 +37,13 @@ export async function runFolioRuntimeSmoke({ app, repositoryRoot, environment = 
   const pdfPath = join(temp, 'artigo.pdf');
   const docxPath = join(temp, 'artigo.docx');
   try {
-    await cp(resolve(repositoryRoot, 'examples/artigo-demonstracao'), vault, { recursive: true });
+    // O app abre o primeiro Markdown do vault; use um único artigo para que
+    // a verificação em disco confira exatamente o documento que foi editado.
+    await cp(resolve(repositoryRoot, 'examples/artigo-demonstracao'), vault, {
+      recursive: true,
+      filter: (source) => basename(source) !== '.academic'
+        && (!source.toLowerCase().endsWith('.md') || basename(source) === 'artigo.md'),
+    });
     await appendFile(join(vault, 'artigo.md'), `\n\nFolio ${label} smoke.\n`);
     const output = await run(app, ['--no-sandbox'], {
       ...environment,

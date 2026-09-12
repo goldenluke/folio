@@ -10,7 +10,10 @@ const stage = resolve(process.env.FOLIO_PACKAGE_STAGE ?? resolve(root, '.package
 
 const run = async (command: string, args: readonly string[]): Promise<void> => {
   await new Promise<void>((resolveRun, reject) => {
-    const child = spawn(command, [...args], { cwd: repositoryRoot, stdio: 'inherit' });
+    const pnpmCli = process.env.npm_execpath;
+    if (command === 'pnpm' && process.platform === 'win32' && pnpmCli === undefined) return reject(new Error('Execute este script com pnpm run stage:package.'));
+    const usePnpmCli = command === 'pnpm' && pnpmCli !== undefined;
+    const child = spawn(usePnpmCli ? process.execPath : command, usePnpmCli ? [pnpmCli, ...args] : [...args], { cwd: repositoryRoot, stdio: 'inherit' });
     child.once('error', reject);
     child.once('exit', (code) => {
       if (code === 0) resolveRun();
@@ -62,7 +65,7 @@ await writeFile(
   resolve(stage, 'build', 'folio-package.json'),
   `${JSON.stringify({
     product: 'Folio',
-    target: 'linux-x64',
+    target: process.env.FOLIO_NATIVE_TARGET ?? `${process.platform}-${process.arch}`,
     unsigned: true,
     nativeManifest: 'dist/workspace/native-addon.json',
   }, null, 2)}\n`,

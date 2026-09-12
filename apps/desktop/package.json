@@ -11,13 +11,13 @@
     "start": "electron ./dist/main/index.cjs",
     "rebuild:native": "FOLIO_NATIVE_TARGET=linux-x64 NODE_OPTIONS=--conditions=development tsx scripts/build.ts",
     "smoke:native": "node scripts/native-smoke.mjs",
-    "stage:package": "NODE_OPTIONS=--conditions=development tsx scripts/stage-package.ts",
+    "stage:package": "node --conditions=development --import tsx scripts/stage-package.ts",
     "package:linux": "NODE_OPTIONS=--conditions=development tsx scripts/package-linux.ts",
     "smoke:package": "node scripts/package-smoke.mjs",
     "installer:linux": "NODE_OPTIONS=--conditions=development tsx scripts/installer-linux.ts",
     "smoke:installer": "node scripts/installer-smoke.mjs",
-    "build:native:windows": "FOLIO_NATIVE_TARGET=win32-x64 NODE_OPTIONS=--conditions=development tsx scripts/build.ts",
-    "package:windows": "NODE_OPTIONS=--conditions=development tsx scripts/package-windows.ts",
+    "build:native:windows": "node --conditions=development --import tsx scripts/build.ts",
+    "package:windows": "node --conditions=development --import tsx scripts/package-windows.ts",
     "smoke:package:windows": "node scripts/package-windows-smoke.mjs"
   },
   "dependencies": {
