@@ -196,14 +196,16 @@ export function WorkspaceFileExplorer({
     top: Math.max(8, Math.min(contextMenu.y, window.innerHeight - menuHeight - 8)),
   };
   return <nav aria-label="Explorador de arquivos" className={`grid min-h-0 flex-1 grid-rows-[auto_auto_minmax(0,1fr)] ${expanded ? 'folio-file-explorer-expanded' : ''}`}>
-    <header className="flex items-center gap-2 border-b border-slate-200 pb-3">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-700"><FolioIcon name="folder" className="h-4 w-4" /></span>
-      <div className="min-w-0 flex-1"><h2 className="text-sm font-bold text-slate-800">Explorador</h2><p className="text-[11px] text-slate-400">{files.length} {files.length === 1 ? 'arquivo' : 'arquivos'} no vault</p></div>
-      <button type="button" title="Revelar documento ativo" aria-label="Revelar documento ativo" disabled={activeFileId === undefined} className="folio-control grid h-8 w-8 place-items-center rounded-lg text-slate-500 disabled:opacity-40" onClick={() => reveal()}><FolioIcon name="file" className="h-3.5 w-3.5" /></button>
-      <button type="button" title="Recolher pastas" aria-label="Recolher pastas" className="folio-control grid h-8 w-8 place-items-center rounded-lg text-slate-500" onClick={() => setCollapsed(new Set(tree.directories.map((directory) => directory.path)))}><FolioIcon name="collapse" className="h-3.5 w-3.5" /></button>
-      <button type="button" title="Criar pasta" aria-label="Criar pasta" className="folio-control relative grid h-8 w-8 place-items-center rounded-lg text-slate-500" onClick={onCreateFolder}><FolioIcon name="folder" className="h-3.5 w-3.5" /><FolioIcon name="add" className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-white" /></button>
-      <button type="button" title="Criar documento" aria-label="Criar documento" className="folio-primary grid h-8 w-8 place-items-center rounded-lg" onClick={onCreate}><FolioIcon name="add" className="h-3.5 w-3.5" /></button>
-      {onToggleExpanded !== undefined && <button type="button" title="Fechar explorador" aria-label="Fechar explorador" className="folio-control grid h-8 w-8 place-items-center rounded-lg text-slate-500" onClick={onToggleExpanded}><FolioIcon name="close" className="h-3.5 w-3.5" /></button>}
+    <header className="flex min-w-[268px] items-center gap-1 border-b border-slate-200 pb-2.5">
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-indigo-50 text-indigo-700"><FolioIcon name="folder" className="h-3.5 w-3.5" /></span>
+      <div className="min-w-[62px] flex-1"><h2 className="text-[13px] font-bold leading-4 text-slate-800">Explorador</h2><p className="text-[10px] leading-3 text-slate-400">{files.length} {files.length === 1 ? 'arquivo' : 'arquivos'} no vault</p></div>
+      <div className="flex shrink-0 items-center gap-1" aria-label="Ações do explorador">
+        <button type="button" title="Revelar documento ativo" aria-label="Revelar documento ativo" disabled={activeFileId === undefined} className="folio-control grid h-7 w-7 place-items-center rounded-md text-slate-500 disabled:opacity-40" onClick={() => reveal()}><FolioIcon name="file" className="h-3.5 w-3.5" /></button>
+        <button type="button" title="Recolher pastas" aria-label="Recolher pastas" className="folio-control grid h-7 w-7 place-items-center rounded-md text-slate-500" onClick={() => setCollapsed(new Set(tree.directories.map((directory) => directory.path)))}><FolioIcon name="collapse" className="h-3.5 w-3.5" /></button>
+        <button type="button" title="Criar pasta" aria-label="Criar pasta" className="folio-control relative grid h-7 w-7 place-items-center rounded-md text-slate-500" onClick={onCreateFolder}><FolioIcon name="folder" className="h-3.5 w-3.5" /><FolioIcon name="add" className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-white" /></button>
+        <button type="button" title="Criar documento" aria-label="Criar documento" className="folio-primary grid h-7 w-7 place-items-center rounded-md" onClick={onCreate}><FolioIcon name="add" className="h-3.5 w-3.5" /></button>
+        {onToggleExpanded !== undefined && <button type="button" title="Fechar explorador" aria-label="Fechar explorador" className="folio-control grid h-7 w-7 place-items-center rounded-md text-slate-500" onClick={onToggleExpanded}><FolioIcon name="close" className="h-3.5 w-3.5" /></button>}
+      </div>
     </header>
     <div className="py-3"><label className="sr-only" htmlFor="explorer-filter">Filtrar arquivos</label><div className="relative"><FolioIcon name="search" className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" /><input id="explorer-filter" type="search" value={filterQuery} onChange={(event) => setFilterQuery(event.target.value)} placeholder="Filtrar arquivos…" className="folio-input w-full rounded-xl py-2 pl-9 pr-3 text-xs" /></div></div>
     <ul

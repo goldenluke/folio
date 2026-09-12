@@ -7,16 +7,16 @@
       "id": "file_7e91dcda-bc14-42f1-be05-31f4391615b7",
       "documentId": "document_515dad68-5ee4-40c9-b009-0199e3a6f199",
       "path": "artigos/artigo-abnt.md",
-      "revision": 4,
-      "contentHash": "sha256:da364185b8bafbd8d4a63e7d62f0d4164e8427f07d587b69832c8da21c4f9b65",
+      "revision": 5,
+      "contentHash": "sha256:fa1ec565c282c0c176ad1e3d7b0882d303413fad7457edc1cad8733bcb1bbfd5",
       "mediaType": "text/markdown"
     },
     "file_aa54e9f3-8a7f-4dc3-9705-ddb6107314dd": {
       "id": "file_aa54e9f3-8a7f-4dc3-9705-ddb6107314dd",
       "documentId": "document_08df246c-def9-4a52-9c32-87c57fbbb04f",
       "path": "artigos/artigo-apa.md",
-      "revision": 1,
-      "contentHash": "sha256:c4cc780e09db102d301e0d0e74c8e83a2e74b87655055aec86acc747f66d3c02",
+      "revision": 9,
+      "contentHash": "sha256:7c7c487e69bf05aed9959e175e3817c812c2e8332a5e5d455aeafd89bfd11f08",
       "mediaType": "text/markdown"
     },
     "file_4dc42318-910f-47e4-9f84-28a2537839b4": {
@@ -109,8 +109,16 @@
       "id": "file_e04e5f2b-f191-42d0-9b8f-59f9d8f620aa",
       "documentId": "document_dffa3f8d-06f8-4664-9465-da23c7683fa1",
       "path": "tcc/index.md",
+      "revision": 5,
+      "contentHash": "sha256:75fc20be0fb1ad5c16ec251769724a8a9440c4bd7d7188cc252ada0498dbd6c8",
+      "mediaType": "text/markdown"
+    },
+    "file_bdf642e1-f466-4e0e-a209-e7be52cc13fe": {
+      "id": "file_bdf642e1-f466-4e0e-a209-e7be52cc13fe",
+      "documentId": "document_9b81e354-bdd3-4c08-8b47-3c145b2932e7",
+      "path": "artigo.md",
       "revision": 2,
-      "contentHash": "sha256:786b7309cd902d299fd0df24410f51c2148c31fa897dd0b5c5190d4018538972",
+      "contentHash": "sha256:1401104a9f44ef1c871d081e89b0b011d01245c90ba733cfc4e6216f5173c8e3",
       "mediaType": "text/markdown"
     }
   }

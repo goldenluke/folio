@@ -480,6 +480,196 @@ textarea:focus-visible {
   min-height: 2rem;
 }
 
+/* Blocos da Home: título e contexto são linhas separadas, também quando o
+ * botão aparece dentro de uma grade de atalhos. Não depender de utilitários
+ * Tailwind aqui impede que um purge de classes transforme o conteúdo em texto
+ * corrido. */
+#root .folio-home-row {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 0.22rem;
+  border-radius: 0.75rem;
+  padding: 0.68rem 0.75rem;
+  text-align: left;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+#root .folio-home-row:hover {
+  background: rgb(238 242 255 / 0.78);
+}
+
+#root .folio-home-row:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+#root .folio-home-row > strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #172033;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#root .folio-home-row > span {
+  min-width: 0;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Propriedades de uma página: dados editoriais compactos, sem parecer um
+ * formulário de configuração. O conteúdo continua no frontmatter; esta é só
+ * a superfície de edição do documento aberto. */
+#root .folio-page-properties {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.6rem 0.8rem;
+  padding: 0.85rem 1rem;
+}
+
+#root .folio-page-properties-dialog {
+  width: min(100%, 48rem);
+  overflow: hidden;
+  border: 1px solid #dce4ee;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 28px 80px rgb(15 23 42 / 0.25);
+}
+
+#root .folio-page-properties-dialog > header {
+  display: flex;
+  align-items: start;
+  gap: 1rem;
+  border-bottom: 1px solid #e7edf5;
+  background: linear-gradient(120deg, #f8fafc, #fff);
+  padding: 1rem 1.1rem 0.9rem;
+}
+
+#root .folio-page-dialog-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+  color: #6366f1;
+  font-size: 0.67rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#root .folio-page-properties-dialog h2 { margin-top: 0.18rem; color: #172033; font-size: 1rem; font-weight: 750; }
+#root .folio-page-properties-dialog p { margin-top: 0.2rem; color: #64748b; font-size: 0.79rem; }
+#root .folio-dialog-close { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; margin-left: auto; place-items: center; border-radius: 0.5rem; color: #64748b; }
+#root .folio-dialog-close:hover { background: #eef2ff; color: #4f46e5; }
+
+#root .folio-page-properties-dialog > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid #e7edf5;
+  background: #f8fafc;
+  padding: 0.7rem 1rem;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+#root .folio-page-properties-dialog > footer button {
+  border-radius: 0.5rem;
+  background: #4f46e5;
+  padding: 0.42rem 0.72rem;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+#root .folio-page-properties-dialog > footer button:hover { background: #4338ca; }
+
+#root .folio-page-properties-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0 0.15rem 0.38rem 0;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#root .folio-page-property {
+  display: grid;
+  min-width: 6.6rem;
+  gap: 0.2rem;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+#root .folio-page-property select,
+#root .folio-page-property > input {
+  min-height: 1.95rem;
+  border: 1px solid #dce4ee;
+  border-radius: 0.48rem;
+  background: #fff;
+  padding: 0.28rem 0.55rem;
+  color: #273449;
+  font-size: 0.79rem;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+#root .folio-page-property select:hover,
+#root .folio-page-property > input:hover { border-color: #bfcce0; }
+#root .folio-page-property select:focus,
+#root .folio-page-property > input:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgb(129 140 248 / 0.14); }
+#root .folio-page-property-project { min-width: min(13rem, 100%); }
+
+#root .folio-page-property-tags { min-width: min(15rem, 100%); flex: 1 1 15rem; }
+#root .folio-page-tags {
+  display: flex;
+  min-height: 1.95rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem;
+  border: 1px solid #dce4ee;
+  border-radius: 0.48rem;
+  background: #fff;
+  padding: 0.22rem 0.35rem;
+}
+
+#root .folio-page-tags:focus-within { border-color: #818cf8; box-shadow: 0 0 0 3px rgb(129 140 248 / 0.14); }
+#root .folio-page-tags input { min-width: 5.5rem; flex: 1; border: 0; background: transparent; padding: 0.12rem 0.2rem; color: #334155; font-size: 0.78rem; font-weight: 500; outline: 0; }
+#root .folio-page-tags input::placeholder { color: #94a3b8; }
+#root .folio-page-tag { display: inline-flex; align-items: center; gap: 0.16rem; border-radius: 999px; background: #e9edff; padding: 0.16rem 0.28rem 0.16rem 0.45rem; color: #4f46e5; font-size: 0.72rem; font-weight: 650; }
+#root .folio-page-tag button { display: grid; place-items: center; border-radius: 999px; padding: 0.08rem; color: #6366f1; }
+#root .folio-page-tag button:hover { background: #cfd6ff; color: #3730a3; }
+
+#root .folio-page-advanced { align-self: end; min-width: 9rem; padding-bottom: 0.03rem; }
+#root .folio-page-advanced summary { cursor: pointer; border-radius: 0.42rem; padding: 0.42rem 0.48rem; color: #4f46e5; font-size: 0.76rem; font-weight: 700; list-style: none; }
+#root .folio-page-advanced summary::-webkit-details-marker { display: none; }
+#root .folio-page-advanced summary::before { content: '+'; margin-right: 0.3rem; }
+#root .folio-page-advanced[open] { display: grid; min-width: min(25rem, 100%); grid-template-columns: minmax(10rem, 1fr) auto; align-items: end; gap: 0.6rem; border-left: 1px solid #e2e8f0; padding-left: 0.7rem; }
+#root .folio-page-advanced[open] summary::before { content: '−'; }
+
+#root .folio-page-context { display: flex; align-items: center; gap: 0.28rem; color: #64748b; font-size: 0.75rem; white-space: nowrap; }
+#root .folio-page-context button { border-radius: 0.4rem; padding: 0.35rem 0.42rem; color: #4f46e5; font-weight: 650; }
+#root .folio-page-context button:hover { background: #eef2ff; }
+
+@media (max-width: 720px) {
+  #root .folio-page-properties-heading { width: 100%; }
+  #root .folio-page-property-project, #root .folio-page-property-tags { flex-basis: 100%; }
+  #root .folio-page-advanced[open] { grid-template-columns: 1fr; width: 100%; }
+}
+
 #root > main > div.fixed > section {
   border-color: var(--folio-border) !important;
   background: rgb(255 255 255 / 0.98) !important;

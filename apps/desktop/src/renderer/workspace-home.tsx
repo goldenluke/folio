@@ -1,7 +1,7 @@
 import { useEffect, useState, type JSX } from 'react';
 
 import { createHomeBlock, HOME_BLOCK_KINDS, reorderHomeBlocks } from '@abnt/page-workspace';
-import type { WorkspaceBookmarkDto, WorkspaceFileDto, WorkspaceHomeBlockDto, WorkspaceHomeLayoutDto, WorkspacePageDto, WorkspaceThemesDto } from '@abnt/protocol';
+import type { WorkspaceBookmarkDto, WorkspaceFileDto, WorkspaceHomeBlockDto, WorkspaceHomeLayoutDto, WorkspacePageDto } from '@abnt/protocol';
 
 import { FolioLogo } from './folio-logo.js';
 import { type ResearchProject } from './research-projects.js';
@@ -18,7 +18,6 @@ export function WorkspaceHome({ workspaceId, files, recentFileIds, activities, o
   readonly onOpenFile: (fileId: string, path: string) => void; readonly onCommand: (id: string) => void; readonly onDismissOnboarding: () => void;
 }): JSX.Element {
   const [layout, setLayout] = useState<WorkspaceHomeLayoutDto>();
-  const [themes, setThemes] = useState<WorkspaceThemesDto>();
   const [pages, setPages] = useState<readonly WorkspacePageDto[]>([]);
   const [projects, setProjects] = useState<readonly ResearchProject[]>([]);
   const [bookmarks, setBookmarks] = useState<readonly WorkspaceBookmarkDto[]>([]);
@@ -31,24 +30,15 @@ export function WorkspaceHome({ workspaceId, files, recentFileIds, activities, o
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([window.academic.workspace.homeLayout(), window.academic.workspace.pages(), window.academic.workspace.themes(), window.academic.workspace.researchProjects(), window.academic.workspace.bookmarks()]).then(([home, pageList, loadedThemes, loadedProjects, loadedBookmarks]) => {
+    void Promise.all([window.academic.workspace.homeLayout(), window.academic.workspace.pages(), window.academic.workspace.researchProjects(), window.academic.workspace.bookmarks()]).then(([home, pageList, loadedProjects, loadedBookmarks]) => {
       if (cancelled) return;
       if (home.ok) setLayout(home.value); else setMessage(home.error.message);
       if (pageList.ok) setPages(pageList.value.pages); else setMessage(pageList.error.message);
-      if (loadedThemes.ok) setThemes(loadedThemes.value); else setMessage(loadedThemes.error.message);
       if (loadedProjects.ok) setProjects(loadedProjects.value.projects.flatMap((project) => typeof project.id === 'string' && typeof project.title === 'string' && typeof project.createdAt === 'string' && typeof project.updatedAt === 'string' ? [project as unknown as ResearchProject] : []).filter((project) => project.archivedAt === undefined)); else setMessage(loadedProjects.error.message);
       if (loadedBookmarks.ok) setBookmarks(loadedBookmarks.value.bookmarks); else setMessage(loadedBookmarks.error.message);
     });
     return () => { cancelled = true; };
   }, [workspaceId]);
-
-  useEffect(() => {
-    const theme = themes?.themes.find((item) => item.id === themes.activeId);
-    if (theme === undefined) return;
-    const root = document.documentElement;
-    for (const [key, value] of Object.entries(theme.tokens)) root.style.setProperty(`--folio-${key.replace(/[A-Z]/gu, (letter) => `-${letter.toLowerCase()}`)}`, value);
-    root.dataset.folioTheme = theme.mode;
-  }, [themes]);
 
   const save = async (next: WorkspaceHomeLayoutDto): Promise<void> => {
     setLayout(next);
@@ -104,7 +94,7 @@ export function WorkspaceHome({ workspaceId, files, recentFileIds, activities, o
     }
   };
 
-  return <div className="h-full overflow-auto bg-[radial-gradient(circle_at_95%_0%,_var(--folio-surface-muted,#e0e7ff),_transparent_34rem),linear-gradient(180deg,_var(--folio-surface,#f8fafc),_var(--folio-surface-muted,#eef2ff))] p-5 sm:p-8"><main className="mx-auto max-w-7xl"><header className="flex flex-wrap items-center justify-between gap-5 border-b border-slate-200 pb-6"><div className="flex items-center gap-3"><FolioLogo size={32} label={false} /><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">Workspace</p><h1 className="text-2xl font-bold tracking-tight text-slate-950">Centro de trabalho</h1></div></div><div className="flex flex-wrap gap-2">{themes !== undefined && <select aria-label="Tema do workspace" className="folio-control rounded-xl px-3 py-2 text-sm font-semibold" value={themes.activeId} onChange={(event) => { const next = { ...themes, activeId: event.target.value }; setThemes(next); void window.academic.workspace.setThemes(next).then((result) => { if (!result.ok) setMessage(result.error.message); else setThemes(result.value); }); }}>{themes.themes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name}</option>)}</select>}<button type="button" className="folio-control rounded-xl px-4 py-2 text-sm font-semibold" onClick={() => setEditing((value) => !value)} aria-pressed={editing}>Personalizar Home</button><button type="button" className="folio-primary rounded-xl px-4 py-2 text-sm font-bold" onClick={() => onCommand('template.createArticle')}>Novo documento</button></div></header>
+  return <div className="h-full overflow-auto bg-[radial-gradient(circle_at_95%_0%,_var(--folio-surface-muted,#e0e7ff),_transparent_34rem),linear-gradient(180deg,_var(--folio-surface,#f8fafc),_var(--folio-surface-muted,#eef2ff))] p-5 sm:p-8"><main className="mx-auto max-w-7xl"><header className="flex flex-wrap items-center justify-between gap-5 border-b border-slate-200 pb-6"><div className="flex items-center gap-3"><FolioLogo size={32} label={false} /><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">Workspace</p><h1 className="text-2xl font-bold tracking-tight text-slate-950">Centro de trabalho</h1></div></div><div className="flex flex-wrap gap-2"><button type="button" className="folio-control rounded-xl px-4 py-2 text-sm font-semibold" onClick={() => setEditing((value) => !value)} aria-pressed={editing}>Personalizar Home</button><button type="button" className="folio-primary rounded-xl px-4 py-2 text-sm font-bold" onClick={() => onCommand('template.createArticle')}>Novo documento</button></div></header>
     {onboardingVisible && <section className="mt-5 rounded-2xl border border-indigo-200 bg-indigo-50 p-5"><h2 className="font-bold text-indigo-950">Comece pelo que já existe no vault</h2><p className="mt-1 text-sm text-indigo-800">Crie um documento ou transforme um Markdown em página quando precisar de propriedades e tarefas.</p><button type="button" className="mt-3 text-sm font-bold text-indigo-700 underline" onClick={onDismissOnboarding}>Dispensar</button></section>}
     {editing && layout !== undefined && <div className="mt-5 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white/70 p-4"><span className="text-sm font-semibold text-slate-700">Adicionar bloco</span>{HOME_BLOCK_KINDS.filter((kind) => !layout.blocks.some((block) => block.kind === kind)).map((kind) => <button key={kind} type="button" className="folio-control rounded-lg px-3 py-1.5 text-sm font-semibold" onClick={() => addBlock(kind)}>{createHomeBlock(kind).title}</button>)}</div>}
     <section className="mt-6 grid gap-4 lg:grid-cols-3">{layout === undefined ? <p role="status" className="rounded-2xl bg-white p-5 text-sm text-slate-500">Carregando a Home…</p> : layout.blocks.filter((block) => block.enabled || editing).map((block, index) => <article key={block.id} draggable={editing} aria-grabbed={editing ? draggedBlockId === block.id : undefined} onDragStart={(event) => { if (!editing) return; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', block.id); setDraggedBlockId(block.id); }} onDragOver={(event) => { if (!editing || draggedBlockId === undefined || draggedBlockId === block.id) return; event.preventDefault(); event.dataTransfer.dropEffect = 'move'; setDropTargetId(block.id); }} onDrop={(event) => { event.preventDefault(); const fromId = draggedBlockId ?? event.dataTransfer.getData('text/plain'); if (fromId !== '') reorder(fromId, block.id); setDraggedBlockId(undefined); setDropTargetId(undefined); }} onDragEnd={() => { setDraggedBlockId(undefined); setDropTargetId(undefined); }} className={`${span(block.span)} rounded-2xl border bg-white p-5 shadow-sm ${dropTargetId === block.id ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200'} ${editing ? 'cursor-grab active:cursor-grabbing' : ''}`}><div className="mb-4 flex items-center justify-between gap-3"><h2 className="font-bold text-slate-900">{block.title}</h2>{editing && <div className="flex items-center gap-1"><button type="button" className="folio-icon-button" aria-label={`Mover ${block.title} para cima`} onClick={() => move(index, -1)}>↑</button><button type="button" className="folio-icon-button" aria-label={`Mover ${block.title} para baixo`} onClick={() => move(index, 1)}>↓</button><select aria-label={`Largura de ${block.title}`} className="rounded-md border border-slate-200 bg-white p-1 text-xs" value={block.span} onChange={(event) => patchBlock(block.id, { span: Number(event.target.value) as 1 | 2 | 3 })}><option value="1">1 coluna</option><option value="2">2 colunas</option><option value="3">3 colunas</option></select><button type="button" className="folio-icon-button" aria-label={`${block.enabled ? 'Ocultar' : 'Mostrar'} ${block.title}`} onClick={() => patchBlock(block.id, { enabled: !block.enabled })}>{block.enabled ? '−' : '+'}</button></div>}</div>{block.enabled ? blockContent(block) : <p className="text-sm text-slate-400">Bloco oculto. Use + para voltar a mostrá-lo.</p>}</article>)}</section>

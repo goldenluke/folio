@@ -106,7 +106,7 @@ const HOME_BLOCK_DEFAULTS: Readonly<Record<HomeBlockKind, Omit<HomeBlock, 'id'>>
 export function createHomeBlock(kind: HomeBlockKind): HomeBlock { return { id: kind, ...HOME_BLOCK_DEFAULTS[kind] }; }
 
 export function defaultWorkspaceHomeLayout(): WorkspaceHomeLayout {
-  return { version: 1, panels: { explorerWidth: 288, contextWidth: 272 }, blocks: [
+  return { version: 1, panels: { explorerWidth: 296, contextWidth: 272 }, blocks: [
     createHomeBlock('recent'), createHomeBlock('tasks'), createHomeBlock('projects'),
     createHomeBlock('documents'), createHomeBlock('captures'), createHomeBlock('shortcuts'),
   ] };
@@ -123,7 +123,7 @@ export function createWorkspaceHomeLayout(input: WorkspaceHomeLayout): Workspace
     ids.add(id); return { ...block, id, title };
   });
   const panels = input.panels;
-  if (!Number.isFinite(panels?.explorerWidth) || !Number.isFinite(panels.contextWidth) || panels.explorerWidth < 220 || panels.explorerWidth > 440 || panels.contextWidth < 220 || panels.contextWidth > 440) throw new Error('Largura de painel inválida.');
+  if (!Number.isFinite(panels?.explorerWidth) || !Number.isFinite(panels.contextWidth) || panels.explorerWidth < 280 || panels.explorerWidth > 440 || panels.contextWidth < 220 || panels.contextWidth > 440) throw new Error('Largura de painel inválida.');
   return { version: 1, blocks, panels: { explorerWidth: Math.round(panels.explorerWidth), contextWidth: Math.round(panels.contextWidth) } };
 }
 

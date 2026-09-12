@@ -2369,6 +2369,10 @@ O layout de quadro das Academic Views agrupa dinamicamente pelo campo escolhido
 (inclusive rollups, fórmulas e relações derivadas), sem colunas ou cartões fixos.
 Views de documentos também projetam tipo, status e prazo de `folio:`; o
 calendário ordena o prazo real quando a página o declara.
+Os itens da Home mantêm título e contexto em linhas próprias, com truncamento,
+foco visível e hover estável; não dependem de uma classe utilitária removível no build.
+Markdown sem `folio:` permanece silenciosamente utilizável: habilitar a camada
+de página é uma ação secundária no menu de reticências e na Command Palette.
 O explorador revela o documento ativo, expande resultados filtrados e permite
 recolher a árvore sem perder o estado do vault.
 O modo de personalização também inclui blocos ausentes, e Favoritos projeta os

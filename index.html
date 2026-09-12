@@ -1,21 +1,134 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Folio reúne pesquisa, escrita e publicação acadêmica em um workspace local-first." />
-  <title>Folio — pesquisa, escrita e publicação acadêmica</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Folio é um workspace acadêmico local-first para pesquisa, escrita, referências e publicação." />
+  <meta name="theme-color" content="#f8fafc" />
+  <title>Folio — o workspace para pesquisa acadêmica</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{ink:'#10142a',indigo:{450:'#6254e7'}}}}}</script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { folio: { ink: '#172033', indigo: '#4f46e5', paper: '#f8fafc', line: '#dce4ee' } },
+          boxShadow: { frame: '0 24px 70px rgba(36, 47, 84, .14)', soft: '0 12px 30px rgba(36, 47, 84, .08)' }
+        }
+      }
+    };
+  </script>
 </head>
-<body class="bg-slate-950 text-slate-100 antialiased selection:bg-indigo-400 selection:text-slate-950">
-  <div class="absolute inset-x-0 top-0 -z-10 h-[42rem] bg-[radial-gradient(circle_at_72%_10%,rgba(99,102,241,.36),transparent_27rem),radial-gradient(circle_at_15%_12%,rgba(56,189,248,.14),transparent_20rem)]"></div>
-  <main class="mx-auto max-w-7xl px-6 pb-24 lg:px-8">
-    <nav class="flex items-center justify-between py-7"><a class="flex items-center gap-2.5 text-2xl font-black tracking-[-.08em]" href="#top"><img src="landing/folio.svg" alt="Folio" class="h-9 w-9" />fo<span class="text-indigo-300">lio</span></a><div class="hidden gap-6 text-sm text-slate-300 md:flex"><a href="#produto" class="hover:text-white">Produto</a><a href="#fluxo" class="hover:text-white">Fluxo</a><a href="#local" class="hover:text-white">Local-first</a></div><a href="https://github.com/goldenluke/folio" class="rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold hover:border-indigo-300 hover:text-indigo-200">Ver no GitHub</a></nav>
-    <section id="top" class="grid items-center gap-12 py-20 lg:grid-cols-[1.08fr_.92fr] lg:py-28"><div><p class="text-xs font-bold tracking-[.22em] text-indigo-300">WORKSPACE ACADÊMICO LOCAL-FIRST</p><h1 class="mt-5 max-w-4xl text-5xl font-black leading-[.92] tracking-[-.075em] text-white sm:text-7xl">Pesquisa, escrita e publicação no mesmo lugar.</h1><p class="mt-7 max-w-2xl text-lg leading-8 text-slate-300">Leia artigos, organize referências, anote PDFs, conecte evidências, escreva em Markdown e prepare a entrega sem fragmentar o projeto entre ferramentas desconectadas.</p><div class="mt-9 flex flex-wrap gap-3"><a href="https://github.com/goldenluke/folio" class="rounded-xl bg-indigo-400 px-5 py-3 font-bold text-slate-950 transition hover:bg-indigo-300">Acompanhar no GitHub</a><a href="#produto" class="rounded-xl border border-slate-700 px-5 py-3 font-bold text-white hover:bg-slate-900">Conhecer os recursos</a></div><p class="mt-6 text-sm text-slate-400">Seus arquivos continuam seus: Markdown, PDFs e referências portáveis.</p></div><button type="button" data-lightbox="landing/Screenshot_20260910_150703.png" data-alt="Tela inicial do Folio" class="group overflow-hidden rounded-2xl border border-indigo-300/25 bg-slate-900/70 p-2 text-left shadow-2xl shadow-indigo-950/50"><img src="landing/Screenshot_20260910_150703.png" alt="Tela inicial do Folio" class="w-full rounded-xl transition duration-300 group-hover:scale-[1.015]" /><span class="block px-3 pb-2 pt-4 text-sm font-semibold text-indigo-200">Workspace para continuar o trabalho <span class="float-right text-slate-400">Ampliar</span></span></button></section>
-    <section id="fluxo" class="rounded-3xl border border-slate-800 bg-slate-900/60 p-7 sm:p-10"><p class="text-xs font-bold tracking-[.2em] text-indigo-300">UM FLUXO CONTÍNUO</p><div class="mt-4 grid gap-8 lg:grid-cols-[.9fr_1.1fr]"><div><h2 class="text-3xl font-bold tracking-[-.045em]">O trabalho acadêmico não acontece em uma única ferramenta.</h2><p class="mt-4 leading-7 text-slate-300">O Folio aproxima leitura, biblioteca, texto, revisão e entrega. Em vez de esconder seus dados em uma plataforma, trabalha sobre o workspace local.</p></div><div class="flex flex-wrap content-center gap-2 text-sm font-bold"> <span class="rounded-full bg-indigo-400 px-4 py-2 text-slate-950">Ler</span><span class="rounded-full border border-slate-700 px-4 py-2">Anotar</span><span class="rounded-full border border-slate-700 px-4 py-2">Relacionar</span><span class="rounded-full border border-slate-700 px-4 py-2">Citar</span><span class="rounded-full border border-slate-700 px-4 py-2">Escrever</span><span class="rounded-full border border-slate-700 px-4 py-2">Validar</span><span class="rounded-full border border-slate-700 px-4 py-2">Publicar</span></div></div></section>
-    <section id="produto" class="py-24"><div class="max-w-3xl"><p class="text-xs font-bold tracking-[.2em] text-indigo-300">O PRODUTO</p><h2 class="mt-4 text-4xl font-bold tracking-[-.05em] sm:text-5xl">Um workspace para o projeto inteiro, não só para o documento.</h2></div><div class="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3"><article class="rounded-2xl border border-slate-800 bg-slate-900 p-6"><h3 class="font-bold text-white">Escrita estruturada</h3><p class="mt-3 text-sm leading-6 text-slate-300">Markdown para autoria, com estrutura de documento, citações, referências cruzadas, preview e diagnósticos próximos do editor.</p></article><article class="rounded-2xl border border-slate-800 bg-slate-900 p-6"><h3 class="font-bold text-white">Biblioteca e anexos</h3><p class="mt-3 text-sm leading-6 text-slate-300">CSL-JSON, DOI, BibTeX, RIS e capturas web. Uma referência pode manter PDFs, versões, datasets, links e snapshots.</p></article><article class="rounded-2xl border border-slate-800 bg-slate-900 p-6"><h3 class="font-bold text-white">Leitura utilizável</h3><p class="mt-3 text-sm leading-6 text-slate-300">PDFs, highlights, comentários e anotações que podem virar literature notes e sínteses ligadas à fonte.</p></article><article class="rounded-2xl border border-slate-800 bg-slate-900 p-6"><h3 class="font-bold text-white">Projetos e canvas</h3><p class="mt-3 text-sm leading-6 text-slate-300">Agrupe documentos e referências sem mover arquivos. Use o canvas para argumentos, evidências e contrapontos antes de escrever.</p></article><article class="rounded-2xl border border-slate-800 bg-slate-900 p-6"><h3 class="font-bold text-white">Revisão antes da entrega</h3><p class="mt-3 text-sm leading-6 text-slate-300">Problemas, histórico, snapshots e preflight ajudam a localizar citações, metadados e requisitos pendentes.</p></article><article class="rounded-2xl border border-slate-800 bg-slate-900 p-6"><h3 class="font-bold text-white">Publicação</h3><p class="mt-3 text-sm leading-6 text-slate-300">A mesma estrutura pode seguir para PDF, DOCX e HTML, com profiles de publicação separados do conteúdo autoral.</p></article></div></section>
-    <section class="grid gap-8 border-y border-slate-800 py-20 lg:grid-cols-2"><div><p class="text-xs font-bold tracking-[.2em] text-indigo-300">VEJA O FOLIO</p><h2 class="mt-4 text-4xl font-bold tracking-[-.05em]">Contexto onde ele importa.</h2><p class="mt-5 max-w-lg leading-7 text-slate-300">A biblioteca, o editor e o acompanhamento do trabalho são partes do mesmo workspace.</p></div><div class="grid gap-5"><button data-lightbox="landing/Screenshot_20260910_150752.png" data-alt="Biblioteca do Folio" class="group overflow-hidden rounded-2xl border border-slate-800 text-left"><img src="landing/Screenshot_20260910_150752.png" alt="Biblioteca do Folio" class="transition duration-300 group-hover:scale-[1.02]" /><span class="block bg-slate-900 px-4 py-3 text-sm font-semibold">Referências e pesquisa <span class="float-right text-indigo-300">Ampliar</span></span></button><button data-lightbox="landing/Screenshot_20260910_151014.png" data-alt="Editor acadêmico do Folio" class="group overflow-hidden rounded-2xl border border-slate-800 text-left"><img src="landing/Screenshot_20260910_151014.png" alt="Editor acadêmico do Folio" class="transition duration-300 group-hover:scale-[1.02]" /><span class="block bg-slate-900 px-4 py-3 text-sm font-semibold">Editor e ferramentas de escrita <span class="float-right text-indigo-300">Ampliar</span></span></button></div></section>
-    <section id="local" class="py-24"><div class="rounded-3xl bg-gradient-to-br from-indigo-500 to-violet-700 p-8 sm:p-12"><p class="text-xs font-bold tracking-[.2em] text-indigo-100">LOCAL-FIRST DE VERDADE</p><h2 class="mt-4 max-w-3xl text-4xl font-black tracking-[-.06em] text-white sm:text-6xl">O software organiza o trabalho. Não passa a ser dono dele.</h2><p class="mt-6 max-w-2xl text-lg leading-8 text-indigo-50">Os textos são arquivos reais; PDFs continuam acessíveis; referências continuam portáveis. SQLite acelera busca e navegação, mas o índice pode ser reconstruído.</p></div></section>
-    <footer class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 pt-8 text-sm text-slate-400"><span>Folio · pesquisa, escrita e publicação acadêmica.</span><a href="https://github.com/goldenluke/folio" class="font-semibold text-indigo-300 hover:text-white">github.com/goldenluke/folio</a></footer>
-  </main><dialog id="lightbox" class="m-auto max-h-[94vh] max-w-[94vw] rounded-2xl bg-slate-950 p-3 backdrop:bg-slate-950/85"><button id="close-lightbox" class="absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full bg-slate-900 text-2xl text-white">×</button><img id="lightbox-image" class="max-h-[88vh] rounded-xl" alt="" /></dialog><script>const d=document.getElementById('lightbox'),i=document.getElementById('lightbox-image');document.querySelectorAll('[data-lightbox]').forEach(b=>b.onclick=()=>{i.src=b.dataset.lightbox;i.alt=b.dataset.alt;d.showModal()});document.getElementById('close-lightbox').onclick=()=>d.close();d.onclick=e=>{if(e.target===d)d.close()};</script>
-</body></html>
+<body class="bg-folio-paper font-sans text-folio-ink antialiased selection:bg-indigo-200">
+  <div class="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[44rem] bg-[radial-gradient(circle_at_85%_4%,rgba(199,210,254,.8),transparent_28rem),radial-gradient(circle_at_8%_18%,rgba(224,242,254,.8),transparent_25rem)]"></div>
+
+  <header class="mx-auto max-w-7xl px-5 sm:px-8">
+    <nav class="flex items-center justify-between border-b border-slate-200/90 py-4" aria-label="Navegação principal">
+      <a href="#inicio" class="flex items-center gap-2.5" aria-label="Folio, início">
+        <img src="landing/folio.svg" alt="" class="h-9 w-9 rounded-xl shadow-sm" />
+        <span class="text-lg font-black tracking-[-.055em] text-slate-900">fo<span class="text-folio-indigo">lio</span></span>
+      </a>
+      <div class="hidden items-center gap-6 text-sm font-semibold text-slate-600 md:flex">
+        <a href="#produto" class="transition hover:text-folio-indigo">Produto</a>
+        <a href="#fluxo" class="transition hover:text-folio-indigo">Fluxo</a>
+        <a href="#arquivos" class="transition hover:text-folio-indigo">Arquivos</a>
+      </div>
+      <a href="https://github.com/goldenluke/folio/releases" class="rounded-lg bg-folio-indigo px-3.5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">Baixar para Linux</a>
+    </nav>
+  </header>
+
+  <main id="inicio">
+    <section class="mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[.92fr_1.08fr] lg:py-24">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[.18em] text-folio-indigo">Workspace acadêmico local-first</p>
+        <h1 class="mt-5 max-w-3xl text-5xl font-black leading-[.96] tracking-[-.065em] text-slate-950 sm:text-6xl xl:text-7xl">Pesquisa, escrita e entrega em um mesmo lugar.</h1>
+        <p class="mt-6 max-w-xl text-lg leading-8 text-slate-600">O Folio reúne documentos, fontes, anotações, argumentos e requisitos de publicação sem transformar seu projeto em uma coleção de abas e arquivos perdidos.</p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="https://github.com/goldenluke/folio/releases" class="rounded-lg bg-folio-indigo px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">Ver downloads</a>
+          <a href="#produto" class="rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-folio-indigo">Conhecer o produto</a>
+        </div>
+        <dl class="mt-10 grid max-w-xl grid-cols-3 gap-4 border-t border-slate-200 pt-5 text-sm">
+          <div><dt class="font-bold text-slate-950">Markdown</dt><dd class="mt-1 leading-5 text-slate-500">Texto autoral que continua seu.</dd></div>
+          <div><dt class="font-bold text-slate-950">ABNT e APA 7</dt><dd class="mt-1 leading-5 text-slate-500">Profiles separados do conteúdo.</dd></div>
+          <div><dt class="font-bold text-slate-950">Linux x64</dt><dd class="mt-1 leading-5 text-slate-500">Disponível inicialmente.</dd></div>
+        </dl>
+      </div>
+      <figure class="relative">
+        <div class="absolute -inset-5 -z-10 rounded-[2rem] bg-indigo-200/45 blur-2xl"></div>
+        <button type="button" data-lightbox="landing/Screenshot_20260910_150703.png" data-alt="Visão geral do workspace Folio" class="group block w-full overflow-hidden rounded-xl border border-slate-300 bg-white p-2 text-left shadow-frame focus:outline-none focus:ring-4 focus:ring-indigo-200">
+          <img src="landing/Screenshot_20260910_150703.png" alt="Visão geral do workspace Folio" class="w-full rounded-lg transition duration-300 group-hover:scale-[1.012]" />
+          <figcaption class="flex items-center justify-between gap-4 px-3 py-3 text-sm"><span><strong class="text-slate-900">O trabalho volta a ter contexto.</strong><span class="ml-2 text-slate-500">Home, documentos, tarefas e conexões.</span></span><span class="shrink-0 font-bold text-folio-indigo">Ampliar</span></figcaption>
+        </button>
+      </figure>
+    </section>
+
+    <section id="fluxo" class="border-y border-slate-200 bg-white/70">
+      <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8">
+        <div class="grid gap-8 lg:grid-cols-[.72fr_1.28fr] lg:items-end">
+          <div><p class="text-xs font-bold uppercase tracking-[.18em] text-folio-indigo">Do primeiro PDF ao arquivo final</p><h2 class="mt-3 text-3xl font-bold tracking-[-.045em] text-slate-950 sm:text-4xl">Uma sequência de trabalho, não módulos isolados.</h2></div>
+          <p class="max-w-2xl text-base leading-7 text-slate-600">A fonte que você encontra pode virar referência, anexo, anotação, nota, evidência e citação. O Folio preserva essas conexões para que a etapa de entrega não comece do zero.</p>
+        </div>
+        <ol class="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <li class="rounded-xl border border-slate-200 bg-slate-50 p-4"><span class="text-xs font-bold text-folio-indigo">01</span><h3 class="mt-5 font-bold text-slate-900">Capturar</h3><p class="mt-2 text-sm leading-6 text-slate-500">Traga páginas, identificadores e arquivos para o inbox de pesquisa.</p></li>
+          <li class="rounded-xl border border-slate-200 bg-slate-50 p-4"><span class="text-xs font-bold text-folio-indigo">02</span><h3 class="mt-5 font-bold text-slate-900">Ler</h3><p class="mt-2 text-sm leading-6 text-slate-500">Anote PDFs e mantenha trechos ligados à fonte de origem.</p></li>
+          <li class="rounded-xl border border-slate-200 bg-slate-50 p-4"><span class="text-xs font-bold text-folio-indigo">03</span><h3 class="mt-5 font-bold text-slate-900">Conectar</h3><p class="mt-2 text-sm leading-6 text-slate-500">Relacione páginas, projetos, datasets, evidências e argumentos.</p></li>
+          <li class="rounded-xl border border-slate-200 bg-slate-50 p-4"><span class="text-xs font-bold text-folio-indigo">04</span><h3 class="mt-5 font-bold text-slate-900">Escrever</h3><p class="mt-2 text-sm leading-6 text-slate-500">Produza em Markdown com citações, preview e estrutura próximos.</p></li>
+          <li class="rounded-xl border border-slate-200 bg-slate-50 p-4"><span class="text-xs font-bold text-folio-indigo">05</span><h3 class="mt-5 font-bold text-slate-900">Entregar</h3><p class="mt-2 text-sm leading-6 text-slate-500">Revise requisitos e exporte PDF, DOCX ou HTML a partir do mesmo conteúdo.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="produto" class="mx-auto max-w-7xl px-5 py-20 sm:px-8">
+      <div class="max-w-3xl"><p class="text-xs font-bold uppercase tracking-[.18em] text-folio-indigo">Feito para o projeto inteiro</p><h2 class="mt-3 text-4xl font-bold tracking-[-.055em] text-slate-950 sm:text-5xl">O documento não precisa carregar sozinho toda a pesquisa.</h2><p class="mt-5 text-lg leading-8 text-slate-600">O Folio organiza as partes que normalmente se espalham entre gerenciador de referências, leitor de PDF, editor de texto, bloco de notas e planilhas.</p></div>
+      <div class="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-soft"><p class="text-xs font-bold text-folio-indigo">ESCRITA</p><h3 class="mt-3 text-lg font-bold text-slate-950">Editor acadêmico</h3><p class="mt-3 text-sm leading-6 text-slate-600">Estrutura, referências cruzadas, citações, histórico, diagnóstico e preview vivem ao lado do texto, sem alterar a autoria em Markdown.</p></article>
+        <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-soft"><p class="text-xs font-bold text-folio-indigo">BIBLIOTECA</p><h3 class="mt-3 text-lg font-bold text-slate-950">Referências que mantêm contexto</h3><p class="mt-3 text-sm leading-6 text-slate-600">CSL-JSON, DOI, BibTeX, RIS, PDFs, versões, links, snapshots e relações explícitas em uma mesma biblioteca.</p></article>
+        <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-soft"><p class="text-xs font-bold text-folio-indigo">LEITURA</p><h3 class="mt-3 text-lg font-bold text-slate-950">Anotações utilizáveis</h3><p class="mt-3 text-sm leading-6 text-slate-600">Destaques e comentários de PDF podem se transformar em notas e sínteses, sempre rastreáveis até o material original.</p></article>
+        <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-soft"><p class="text-xs font-bold text-folio-indigo">ORGANIZAÇÃO</p><h3 class="mt-3 text-lg font-bold text-slate-950">Páginas, tarefas e bases</h3><p class="mt-3 text-sm leading-6 text-slate-600">Use propriedades opcionais no frontmatter para organizar documentos como páginas, quadros, listas e calendários.</p></article>
+        <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-soft"><p class="text-xs font-bold text-folio-indigo">PESQUISA</p><h3 class="mt-3 text-lg font-bold text-slate-950">Canvas e relações</h3><p class="mt-3 text-sm leading-6 text-slate-600">Explore argumentos, contrapontos, datasets e evidências sem confundir o mapa de pesquisa com o conteúdo publicado.</p></article>
+        <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-soft"><p class="text-xs font-bold text-folio-indigo">PUBLICAÇÃO</p><h3 class="mt-3 text-lg font-bold text-slate-950">Profiles de entrega</h3><p class="mt-3 text-sm leading-6 text-slate-600">ABNT, APA 7 e profiles extensíveis tratam apresentação e validação como regras de publicação, não como formatação manual.</p></article>
+      </div>
+    </section>
+
+    <section class="bg-slate-950 py-20 text-white">
+      <div class="mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[.78fr_1.22fr] lg:items-center">
+        <div><p class="text-xs font-bold uppercase tracking-[.18em] text-indigo-300">Biblioteca e editor no mesmo workspace</p><h2 class="mt-3 text-4xl font-bold tracking-[-.055em] sm:text-5xl">A pesquisa deixa de ficar escondida atrás das citações.</h2><p class="mt-5 max-w-lg text-lg leading-8 text-slate-300">Revisar uma fonte, encontrar um anexo e voltar ao trecho escrito não deveria interromper o raciocínio. O Folio aproxima essas etapas.</p></div>
+        <div class="grid gap-5">
+          <button type="button" data-lightbox="landing/Screenshot_20260910_150752.png" data-alt="Biblioteca de referências do Folio" class="group overflow-hidden rounded-xl border border-slate-700 bg-slate-900 text-left focus:outline-none focus:ring-4 focus:ring-indigo-300"><img src="landing/Screenshot_20260910_150752.png" alt="Biblioteca de referências do Folio" class="w-full transition duration-300 group-hover:scale-[1.012]" /><span class="flex items-center justify-between px-4 py-3 text-sm"><span><strong>Biblioteca</strong><span class="ml-2 text-slate-400">Referências, anexos e saúde do acervo.</span></span><span class="font-bold text-indigo-300">Ampliar</span></span></button>
+          <button type="button" data-lightbox="landing/Screenshot_20260910_151014.png" data-alt="Editor acadêmico do Folio" class="group overflow-hidden rounded-xl border border-slate-700 bg-slate-900 text-left focus:outline-none focus:ring-4 focus:ring-indigo-300"><img src="landing/Screenshot_20260910_151014.png" alt="Editor acadêmico do Folio" class="w-full transition duration-300 group-hover:scale-[1.012]" /><span class="flex items-center justify-between px-4 py-3 text-sm"><span><strong>Editor</strong><span class="ml-2 text-slate-400">Markdown, preview e publicação lado a lado.</span></span><span class="font-bold text-indigo-300">Ampliar</span></span></button>
+        </div>
+      </div>
+    </section>
+
+    <section id="arquivos" class="mx-auto max-w-7xl px-5 py-20 sm:px-8">
+      <div class="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-7 sm:p-10 lg:grid lg:grid-cols-[1fr_.8fr] lg:gap-12">
+        <div><p class="text-xs font-bold uppercase tracking-[.18em] text-folio-indigo">Seus arquivos continuam seus</p><h2 class="mt-3 max-w-2xl text-4xl font-bold tracking-[-.055em] text-slate-950 sm:text-5xl">Ferramentas melhores, sem aprisionar o trabalho.</h2><p class="mt-5 max-w-2xl text-lg leading-8 text-slate-600">Documentos são Markdown. Referências usam CSL-JSON. PDFs continuam arquivos acessíveis. O índice acelera busca e navegação, mas pode ser reconstruído pelo próprio workspace.</p></div>
+        <dl class="mt-8 grid gap-4 text-sm lg:mt-0"><div class="rounded-xl border border-white bg-white/80 p-4"><dt class="font-bold text-slate-900">Local-first</dt><dd class="mt-1 leading-6 text-slate-600">O vault é a fonte de verdade; a ferramenta trabalha sobre ele.</dd></div><div class="rounded-xl border border-white bg-white/80 p-4"><dt class="font-bold text-slate-900">Portável</dt><dd class="mt-1 leading-6 text-slate-600">Conteúdo e preferências operacionais acompanham o projeto sem depender de uma nuvem proprietária.</dd></div><div class="rounded-xl border border-white bg-white/80 p-4"><dt class="font-bold text-slate-900">Extensível</dt><dd class="mt-1 leading-6 text-slate-600">Profiles e extensões declarativas ampliam o workspace com contratos e permissões explícitos.</dd></div></dl>
+      </div>
+    </section>
+
+    <section class="mx-auto max-w-4xl px-5 pb-20 text-center sm:px-8"><img src="landing/folio.svg" alt="" class="mx-auto h-12 w-12 rounded-2xl shadow-sm" /><h2 class="mt-5 text-3xl font-bold tracking-[-.05em] text-slate-950 sm:text-4xl">Trabalhe no projeto inteiro, não só na próxima página.</h2><p class="mx-auto mt-4 max-w-2xl leading-7 text-slate-600">O Folio está disponível inicialmente para Linux x64. Acompanhe o desenvolvimento, os downloads e as notas de versão no GitHub.</p><a href="https://github.com/goldenluke/folio/releases" class="mt-7 inline-flex rounded-lg bg-folio-indigo px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">Ver releases do Folio</a></section>
+  </main>
+
+  <footer class="border-t border-slate-200 bg-white"><div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-7 text-sm text-slate-500 sm:px-8"><span>Folio · pesquisa, escrita e publicação acadêmica.</span><a href="https://github.com/goldenluke/folio" class="font-semibold text-folio-indigo hover:text-indigo-700">github.com/goldenluke/folio</a></div></footer>
+
+  <dialog id="lightbox" class="m-auto max-h-[94vh] max-w-[96vw] overflow-visible rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-2xl backdrop:bg-slate-950/85">
+    <button id="close-lightbox" type="button" class="absolute -right-3 -top-3 grid h-9 w-9 place-items-center rounded-full border border-slate-600 bg-slate-900 text-lg font-bold text-white shadow-lg focus:outline-none focus:ring-4 focus:ring-indigo-300" aria-label="Fechar imagem">×</button>
+    <img id="lightbox-image" class="max-h-[88vh] rounded-lg" alt="" />
+  </dialog>
+  <script>
+    const dialog = document.getElementById('lightbox');
+    const image = document.getElementById('lightbox-image');
+    const close = document.getElementById('close-lightbox');
+    document.querySelectorAll('[data-lightbox]').forEach((button) => {
+      button.addEventListener('click', () => {
+        image.src = button.dataset.lightbox;
+        image.alt = button.dataset.alt;
+        dialog.showModal();
+        close.focus();
+      });
+    });
+    close.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+  </script>
+</body>
+</html>

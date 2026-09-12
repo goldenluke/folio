@@ -405,7 +405,6 @@ function EditorDocumentPane({
           {fileFolder !== '' && <div className="truncate text-[11px] text-slate-400">{fileFolder}</div>}
         </div>
       </div>
-      <PageDocumentHeader fileId={view.fileId} revision={view.snapshot.session.revision} onError={onError} onCommand={onCommand} />
       <EditorToolbar onCommand={onCommand} />
       <EditorPane
         key={view.id}
@@ -428,20 +427,28 @@ function EditorDocumentPane({
   );
 }
 
-function PageDocumentHeader({ fileId, revision, onError, onCommand }: { readonly fileId: string; readonly revision: number; readonly onError: (message: string) => void; readonly onCommand: (id: string) => void }): JSX.Element {
+const PAGE_TYPE_LABEL: Readonly<Record<typeof PAGE_TYPES[number], string>> = { document: 'Documento', note: 'Nota', project: 'Projeto', dataset: 'Dataset', evidence: 'Evidência' };
+const PAGE_STATUS_OPTIONS = ['Ideia', 'Em andamento', 'Em revisão', 'Concluído', 'Arquivado'] as const;
+const listFromText = (value: string): readonly string[] => [...new Set(value.split(',').map((item) => item.trim()).filter((item) => item !== ''))];
+
+function PagePropertiesDialog({ fileId, revision, onError, onCommand, onClose }: { readonly fileId: string; readonly revision: number; readonly onError: (message: string) => void; readonly onCommand: (id: string) => void; readonly onClose: () => void }): JSX.Element {
   const [page, setPage] = useState<import('@abnt/protocol').WorkspacePageDto>();
-  const [status, setStatus] = useState(''); const [tags, setTags] = useState(''); const [due, setDue] = useState(''); const [type, setType] = useState(''); const [project, setProject] = useState(''); const [aliases, setAliases] = useState('');
+  const [status, setStatus] = useState(''); const [tags, setTags] = useState(''); const [tagDraft, setTagDraft] = useState(''); const [due, setDue] = useState(''); const [type, setType] = useState(''); const [project, setProject] = useState(''); const [aliases, setAliases] = useState('');
   const [projects, setProjects] = useState<readonly { readonly id: string; readonly title: string }[]>([]);
   useEffect(() => { let cancelled = false; void Promise.all([window.academic.workspace.pages(), window.academic.workspace.researchProjects()]).then(([pageList, projectList]) => { if (cancelled) return; if (pageList.ok) { const current = pageList.value.pages.find((item) => item.file.fileId === fileId); setPage(current); setStatus(current?.properties.status ?? ''); setTags(current?.properties.tags.join(', ') ?? ''); setDue(current?.properties.due ?? ''); setType(current?.properties.type ?? ''); setProject(current?.properties.project ?? ''); setAliases(current?.properties.aliases.join(', ') ?? ''); } else onError(pageList.error.message); if (projectList.ok) setProjects(projectList.value.projects.flatMap((item) => typeof item.id === 'string' && typeof item.title === 'string' ? [{ id: item.id, title: item.title }] : [])); else onError(projectList.error.message); }); return () => { cancelled = true; }; }, [fileId, revision, onError]);
-  const save = (): void => {
+  const save = (next: Partial<{ readonly status: string; readonly tags: string; readonly due: string; readonly type: string; readonly project: string; readonly aliases: string }> = {}): void => {
     if (page === undefined || page.properties.id === undefined) return;
+    const nextStatus = next.status ?? status; const nextTags = next.tags ?? tags; const nextDue = next.due ?? due; const nextType = next.type ?? type; const nextProject = next.project ?? project; const nextAliases = next.aliases ?? aliases;
     const { status: _oldStatus, due: _oldDue, type: _oldType, project: _oldProject, ...rest } = page.properties;
-    const properties = { ...rest, ...(status.trim() === '' ? {} : { status: status.trim() }), ...(due.trim() === '' ? {} : { due: due.trim() }), ...(type === '' ? {} : { type: type as typeof PAGE_TYPES[number] }), ...(project.trim() === '' ? {} : { project: project.trim() }), tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean), aliases: aliases.split(',').map((alias) => alias.trim()).filter(Boolean) };
+    const properties = { ...rest, ...(nextStatus.trim() === '' ? {} : { status: nextStatus.trim() }), ...(nextDue.trim() === '' ? {} : { due: nextDue.trim() }), ...(nextType === '' ? {} : { type: nextType as typeof PAGE_TYPES[number] }), ...(nextProject.trim() === '' ? {} : { project: nextProject.trim() }), tags: listFromText(nextTags), aliases: listFromText(nextAliases) };
     void window.academic.workspace.setPageProperties({ fileId, expectedRevision: revision, properties }).then((result) => { if (!result.ok) onError(result.error.message); else setPage(result.value); });
   };
-  if (page === undefined) return <div className="border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs text-slate-400">Carregando propriedades…</div>;
-  if (page.properties.id === undefined) return <div className="flex flex-wrap items-center gap-3 border-b border-indigo-100 bg-indigo-50 px-4 py-2"><span className="text-xs text-indigo-800">Este Markdown continua normal. Transforme-o em página para usar propriedades e relações.</span><button type="button" className="rounded-md bg-white px-2 py-1 text-xs font-bold text-indigo-700 ring-1 ring-indigo-200" onClick={() => void window.academic.workspace.enablePage({ fileId, expectedRevision: revision, id: crypto.randomUUID() }).then((result) => { if (!result.ok) onError(result.error.message); else setPage(result.value); })}>Transformar em página</button></div>;
-  return <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2.5"><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Tipo<select className="w-28 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={type} onChange={(event) => setType(event.target.value)} onBlur={save}><option value="">Página</option>{PAGE_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Status<input className="w-28 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={status} onChange={(event) => setStatus(event.target.value)} onBlur={save} /></label><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Projeto<select className="w-40 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={project} onChange={(event) => setProject(event.target.value)} onBlur={save}><option value="">Sem projeto</option>{project !== '' && !projects.some((item) => item.id === project) && <option value={project}>Projeto removido ({project})</option>}{projects.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Tags<input className="w-44 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={tags} onChange={(event) => setTags(event.target.value)} onBlur={save} placeholder="método, revisão" /></label><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Aliases<input className="w-40 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={aliases} onChange={(event) => setAliases(event.target.value)} onBlur={save} placeholder="nome alternativo" /></label><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Prazo<input type="date" className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={due} onChange={(event) => setDue(event.target.value)} onBlur={save} /></label>{page.tasks.length > 0 && <span className="pb-1 text-xs text-slate-500">{page.tasks.filter((task) => task.completed).length}/{page.tasks.length} tarefas</span>}<div className="flex items-center gap-1 pb-0.5"><button type="button" className="rounded-md px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-50" onClick={() => onCommand('document.backlinks')}>Backlinks</button>{page.properties.relations.length > 0 && <button type="button" className="rounded-md px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-50" onClick={() => onCommand('graph.open')}>Relações ({page.properties.relations.length})</button>}</div></div>;
+  const tagItems = listFromText(tags);
+  const addTag = (): void => { const tag = tagDraft.trim().replace(/,$/u, ''); if (tag === '' || tagItems.includes(tag)) { setTagDraft(''); return; } const nextTags = [...tagItems, tag].join(', '); setTags(nextTags); setTagDraft(''); save({ tags: nextTags }); };
+  const removeTag = (tag: string): void => { const nextTags = tagItems.filter((item) => item !== tag).join(', '); setTags(nextTags); save({ tags: nextTags }); };
+  if (page === undefined) return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-5" role="presentation"><section role="dialog" aria-modal="true" aria-label="Propriedades da página" className="folio-page-properties-dialog">Carregando propriedades…</section></div>;
+  if (page.properties.id === undefined) return <></>;
+  return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-5" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section role="dialog" aria-modal="true" aria-labelledby="page-properties-title" className="folio-page-properties-dialog"><header><div><div className="folio-page-dialog-kicker"><FolioIcon name="metadata" className="h-3.5 w-3.5" /> Página</div><h2 id="page-properties-title">Propriedades do documento</h2><p>Organize este documento sem alterar o texto Markdown.</p></div><button type="button" className="folio-dialog-close" aria-label="Fechar propriedades da página" onClick={onClose}><FolioIcon name="close" /></button></header><div className="folio-page-properties" aria-label="Propriedades da página"><label className="folio-page-property">Tipo<select value={type} onChange={(event) => { setType(event.target.value); save({ type: event.target.value }); }}><option value="">Página</option>{PAGE_TYPES.map((item) => <option key={item} value={item}>{PAGE_TYPE_LABEL[item]}</option>)}</select></label><label className="folio-page-property">Status<select value={status} onChange={(event) => { setStatus(event.target.value); save({ status: event.target.value }); }}><option value="">Sem status</option>{PAGE_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><label className="folio-page-property folio-page-property-project">Projeto<select value={project} onChange={(event) => { setProject(event.target.value); save({ project: event.target.value }); }}><option value="">Sem projeto</option>{project !== '' && !projects.some((item) => item.id === project) && <option value={project}>Projeto removido ({project})</option>}{projects.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label><label className="folio-page-property">Prazo<input type="date" value={due} onChange={(event) => setDue(event.target.value)} onBlur={() => save()} /></label><div className="folio-page-property folio-page-property-tags"><span>Tags</span><div className="folio-page-tags">{tagItems.map((tag) => <span key={tag} className="folio-page-tag">{tag}<button type="button" aria-label={`Remover tag ${tag}`} onClick={() => removeTag(tag)}><FolioIcon name="close" className="h-3 w-3" /></button></span>)}<input value={tagDraft} onChange={(event) => setTagDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ',') { event.preventDefault(); addTag(); } }} onBlur={addTag} placeholder={tagItems.length === 0 ? 'Adicionar tag' : '+'} aria-label="Adicionar tag" /></div></div><details className="folio-page-advanced"><summary>Mais propriedades</summary><label className="folio-page-property">Aliases<input value={aliases} onChange={(event) => setAliases(event.target.value)} onBlur={() => save()} placeholder="nome alternativo, sigla" /></label><div className="folio-page-context">{page.tasks.length > 0 && <span>{page.tasks.filter((task) => task.completed).length}/{page.tasks.length} tarefas</span>}<button type="button" onClick={() => onCommand('document.backlinks')}>Backlinks</button>{page.properties.relations.length > 0 && <button type="button" onClick={() => onCommand('graph.open')}>Relações ({page.properties.relations.length})</button>}</div></details></div><footer><span>As alterações são salvas no frontmatter do documento.</span><button type="button" onClick={onClose}>Concluir</button></footer></section></div>;
 }
 
 function SystemInformationDialog({ information, onClose }: {
@@ -1519,7 +1526,10 @@ export function App(): JSX.Element {
     let cancelled = false;
     void window.academic.workspace.themes().then((result) => {
       if (cancelled || !result.ok) return;
-      const theme = result.value.themes.find((item) => item.id === result.value.activeId);
+      // A infraestrutura de temas continua portável, mas a superfície escura
+      // fica temporariamente fora do produto até a revisão visual completa.
+      const theme = result.value.themes.find((item) => item.id === result.value.activeId && item.mode === 'light')
+        ?? result.value.themes.find((item) => item.mode === 'light');
       if (theme === undefined) return;
       const root = document.documentElement;
       for (const [key, value] of Object.entries(theme.tokens)) root.style.setProperty(`--folio-${key.replace(/[A-Z]/gu, (letter) => `-${letter.toLowerCase()}`)}`, value);
@@ -1556,7 +1566,7 @@ export function App(): JSX.Element {
   const [fileExplorerExpanded, setFileExplorerExpanded] = useState(true);
   const [searchSidebarOpen, setSearchSidebarOpen] = useState(false);
   const [contextCollapsed, setContextCollapsed] = useState(false);
-  const [panelWidths, setPanelWidths] = useState({ explorer: 288, context: 272 });
+  const [panelWidths, setPanelWidths] = useState({ explorer: 296, context: 272 });
   const [draggedTabId, setDraggedTabId] = useState<ViewId | undefined>(undefined);
   const [workspaceActivity, setWorkspaceActivity] = useState<readonly WorkspaceActivity[]>([]);
   const [recentCommandIds, setRecentCommandIds] = useState<readonly string[]>([]);
@@ -1566,6 +1576,7 @@ export function App(): JSX.Element {
   const [editorContextMenu, setEditorContextMenu] = useState<{ readonly viewId: ViewId; readonly offset: number; readonly x: number; readonly y: number; readonly selection: { readonly anchor: number; readonly head: number }; readonly submenu?: 'format' | 'paragraph' | 'insert' } | undefined>(undefined);
   const [diagnosticsCenter, setDiagnosticsCenter] = useState(false);
   const [metadataEditor, setMetadataEditor] = useState(false);
+  const [pagePropertiesOpen, setPagePropertiesOpen] = useState(false);
   const [profileSelector, setProfileSelector] = useState(false);
   const [problemsPanel, setProblemsPanel] = useState(false);
   const [reviewMode, setReviewMode] = useState(false);
@@ -1681,7 +1692,7 @@ export function App(): JSX.Element {
   const beginPanelResize = (panel: 'explorer' | 'context', event: ReactPointerEvent<HTMLDivElement>): void => {
     event.preventDefault();
     const startX = event.clientX; const initial = panelWidths[panel]; let finalWidth = initial;
-    const move = (next: PointerEvent): void => { const delta = panel === 'explorer' ? next.clientX - startX : startX - next.clientX; finalWidth = Math.max(220, Math.min(440, initial + delta)); setPanelWidths((current) => ({ ...current, [panel]: finalWidth })); };
+    const move = (next: PointerEvent): void => { const delta = panel === 'explorer' ? next.clientX - startX : startX - next.clientX; finalWidth = Math.max(panel === 'explorer' ? 280 : 220, Math.min(440, initial + delta)); setPanelWidths((current) => ({ ...current, [panel]: finalWidth })); };
     const end = (): void => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', end); persistPanelWidths({ ...panelWidths, [panel]: finalWidth }); };
     document.addEventListener('pointermove', move); document.addEventListener('pointerup', end);
   };
@@ -1850,7 +1861,7 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     if (workspaceId === undefined) {
-      setWorkspaceLayouts(defaultLayouts); setWorkspaceActivity([]); setRecentCommandIds([]); setOnboardingVisible(false); setActiveLayoutId(undefined); setLayoutVisibilityOverride({}); setSidebarCollapsed(true); setFileExplorerExpanded(true); setSearchSidebarOpen(false); setContextCollapsed(false); setPanelWidths({ explorer: 288, context: 272 }); setWorkspaceFiles([]);
+      setWorkspaceLayouts(defaultLayouts); setWorkspaceActivity([]); setRecentCommandIds([]); setOnboardingVisible(false); setActiveLayoutId(undefined); setLayoutVisibilityOverride({}); setSidebarCollapsed(true); setFileExplorerExpanded(true); setSearchSidebarOpen(false); setContextCollapsed(false); setPanelWidths({ explorer: 296, context: 272 }); setWorkspaceFiles([]);
       return;
     }
     setWorkspaceLayouts(loadLayouts(workspaceId));
@@ -1860,7 +1871,7 @@ export function App(): JSX.Element {
     setFileExplorerExpanded(true);
     setSearchSidebarOpen(false);
     setContextCollapsed(false);
-    void window.academic.workspace.homeLayout().then((result) => { if (result.ok) setPanelWidths({ explorer: result.value.panels.explorerWidth, context: result.value.panels.contextWidth }); });
+    void window.academic.workspace.homeLayout().then((result) => { if (result.ok) setPanelWidths({ explorer: Math.max(280, result.value.panels.explorerWidth), context: result.value.panels.contextWidth }); });
     setWorkspaceActivity(loadActivity(workspaceId));
     setRecentCommandIds(loadRecentCommands(workspaceId));
     setOnboardingVisible(window.localStorage.getItem(onboardingStorageKey(workspaceId)) !== 'done');
@@ -2604,6 +2615,7 @@ export function App(): JSX.Element {
       }),
       commandRegistry.register({ id: 'document.history', title: 'Mostrar histórico do documento', isEnabled: () => viewsModel.active()?.type === 'editor', run() { setHistoryOpen(true); } }),
       commandRegistry.register({ id: 'document.backlinks', title: 'Mostrar backlinks do documento', isEnabled: () => viewsModel.active()?.type === 'editor', run() { setContextCollapsed(false); setLayoutVisibilityOverride((current) => ({ ...current, showContext: true })); setActivePanelId(backlinksPanel.id); } }),
+      commandRegistry.register({ id: 'page.enable', title: 'Usar documento como página', category: 'Documento', isEnabled: () => viewsModel.active()?.type === 'editor', async run() { const active = viewsModel.active(); if (active?.type !== 'editor') return; const result = await window.academic.workspace.enablePage({ fileId: active.fileId, expectedRevision: active.snapshot.session.revision, id: crypto.randomUUID() }); if (!result.ok) { setMessage(result.error.message); return; } setPagePropertiesOpen(true); setMessage('Propriedades da página abertas.'); } }),
       commandRegistry.register({ id: 'document.compare', title: 'Comparar documentos', isEnabled: () => files.length > 1, run() { setDocumentComparisonOpen(true); } }),
       commandRegistry.register({ id: 'plugins.manage', title: 'Gerenciar plugins locais', isEnabled: () => workspaceId !== undefined, run() { setPluginManagerOpen(true); } }),
       commandRegistry.register({ id: 'application.settings', title: 'Abrir configurações', run() { setSettingsOpen(true); } }),
@@ -3033,9 +3045,10 @@ export function App(): JSX.Element {
           <button type="button" disabled={workspaceId === undefined} aria-label="Abrir inbox de capturas" title="Capturas" className="folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => void commandRegistry.execute('capture.inbox', {})}><FolioIcon name="inbox" /></button>
           <button type="button" disabled={workspaceId === undefined} aria-label="Abrir canvas de pesquisa" title="Canvas de pesquisa" className="folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => void commandRegistry.execute('research.canvas', {})}><FolioIcon name="xref" /></button>
           <button type="button" disabled={workspaceId === undefined} aria-label="Abrir integrações de submissão" title="Submissão" className="folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => void commandRegistry.execute('submission.integrations', {})}><FolioIcon name="download" /></button>
-          <button type="button" disabled={activeEditorView === undefined} aria-label="Atualizar preview" title="Atualizar preview" className="folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => void commandRegistry.execute('publication.preview', {})}><FolioIcon name="preview" /></button>
-          <button type="button" disabled={activeEditorView === undefined} aria-label="Abrir diagnósticos" title="Diagnósticos" className="folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => void commandRegistry.execute('diagnostics.openCenter', {})}><FolioIcon name="problem" /></button>
-          <button type="button" aria-label="Abrir configurações" title="Configurações" className="folio-control mt-auto grid h-9 w-9 place-items-center rounded-xl" onClick={() => setSettingsOpen(true)}><FolioIcon name="settings" /></button>
+          <div className="mt-auto grid gap-3">
+            <button type="button" aria-label="Abrir configurações" title="Configurações" className="folio-control grid h-9 w-9 place-items-center rounded-xl" onClick={() => setSettingsOpen(true)}><FolioIcon name="settings" /></button>
+            <button type="button" aria-label="Abrir vault" title="Abrir vault" className="folio-control grid h-9 w-9 place-items-center rounded-xl" onClick={() => void commandRegistry.execute('workspace.open', {})}><FolioIcon name="folder" /></button>
+          </div>
         </> : <>
         <div className="mb-7 flex items-center gap-3 px-1">
           <div className="min-w-0 flex-1"><FolioLogo size={40} /></div>
@@ -3347,6 +3360,7 @@ export function App(): JSX.Element {
           <FileMenuItem icon="format" disabled={activeEditorView === undefined} onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('writing.open', {}); }}>Ferramentas de escrita</FileMenuItem>
           <FileMenuItem icon="edit" disabled={activeEditorView === undefined} onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('document.rename', {}); }}>Renomear ou mover…</FileMenuItem>
           <FileMenuItem icon="metadata" disabled={activeEditorView === undefined} onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('metadata.edit', {}); }}>Editar metadados</FileMenuItem>
+          <FileMenuItem icon="metadata" disabled={activeEditorView === undefined} onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('page.enable', {}); }}>Usar como página</FileMenuItem>
           <FileMenuItem icon="copy" disabled={activeEditorView === undefined} onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('document.copyPath', {}); }}>Copiar caminho</FileMenuItem>
           <div className="folio-file-menu-separator" />
           <FileMenuItem icon="history" disabled={activeEditorView === undefined} onClick={() => { setMoreActionsOpen(false); void commandRegistry.execute('document.history', {}); }}>Histórico do documento</FileMenuItem>
@@ -3442,6 +3456,7 @@ export function App(): JSX.Element {
       <TextPromptHost />
       {diagnosticsCenter && activeEditorView !== undefined && <DiagnosticsCenter view={activeEditorView} onClose={() => setDiagnosticsCenter(false)} onCreateMissingReference={(id) => { void window.academic.library.upsert({ entry: { id, type: 'article', title: '[Preencher título]' } }).then((result) => { setMessage(result.ok ? `Referência ${id} criada; complete seus dados na biblioteca.` : result.error.message); if (result.ok) setReferenceLibraryEditor(true); }); }} />}
       {metadataEditor && activeEditorView !== undefined && <MetadataDialog view={activeEditorView} assets={workspaceFiles} onClose={() => setMetadataEditor(false)} />}
+      {pagePropertiesOpen && activeEditorView !== undefined && <PagePropertiesDialog fileId={activeEditorView.fileId} revision={activeEditorView.snapshot.session.revision} onError={setMessage} onCommand={(id) => { setPagePropertiesOpen(false); void commandRegistry.execute(id, {}); }} onClose={() => setPagePropertiesOpen(false)} />}
       {profileSelector && activeEditorView !== undefined && <ProfileInspectorDialog fileId={activeEditorView.fileId} expectedRevision={activeEditorView.snapshot.session.revision} activeProfileId={metadataFromSource(activeEditorView.snapshot.session.content).profile || 'abnt-artigo'} onApply={(profileId) => { const draft = { ...metadataFromSource(activeEditorView.snapshot.session.content), profile: profileId }; activeEditorView.controller.dispatch({ edits: [{ range: { start: 0, end: activeEditorView.snapshot.session.content.length }, text: applyMetadata(activeEditorView.snapshot.session.content, draft) }] }); setProfileSelector(false); }} onClose={() => setProfileSelector(false)} />}
       {problemsPanel && activeEditorView !== undefined && <ProblemsDialog view={activeEditorView} onClose={() => setProblemsPanel(false)} />}
       {crossReferencePicker && activeEditorView !== undefined && <CrossReferenceDialog view={activeEditorView} onClose={()=>setCrossReferencePicker(false)} onInsert={(identifier)=>{setCrossReferencePicker(false);void commandRegistry.execute('xref.insert',{targetCrossReference:{identifier}});}} />}

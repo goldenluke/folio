@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "activeId": "folio-light",
+  "themes": [
+    {
+      "version": 1,
+      "id": "folio-light",
+      "name": "Folio claro",
+      "mode": "light",
+      "tokens": {
+        "accent": "#4f46e5",
+        "accentStrong": "#3730a3",
+        "surface": "#ffffff",
+        "surfaceMuted": "#f8fafc",
+        "text": "#0f172a",
+        "textMuted": "#64748b",
+        "border": "#e2e8f0",
+        "fontSans": "Inter, sans-serif",
+        "fontSerif": "Georgia, serif",
+        "radius": "0.75rem",
+        "spacing": "1rem"
+      }
+    },
+    {
+      "version": 1,
+      "id": "folio-dark",
+      "name": "Folio escuro",
+      "mode": "dark",
+      "tokens": {
+        "accent": "#818cf8",
+        "accentStrong": "#a5b4fc",
+        "surface": "#0f172a",
+        "surfaceMuted": "#1e293b",
+        "text": "#f8fafc",
+        "textMuted": "#cbd5e1",
+        "border": "#334155",
+        "fontSans": "Inter, sans-serif",
+        "fontSerif": "Georgia, serif",
+        "radius": "0.75rem",
+        "spacing": "1rem"
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "id": "tasks",
+      "kind": "tasks",
+      "title": "Tarefas",
+      "span": 3,
+      "enabled": true
+    },
+    {
+      "id": "recent",
+      "kind": "recent",
+      "title": "Recentes",
+      "span": 2,
+      "enabled": true
+    },
+    {
+      "id": "projects",
+      "kind": "projects",
+      "title": "Projetos",
+      "span": 1,
+      "enabled": true
+    },
+    {
+      "id": "documents",
+      "kind": "documents",
+      "title": "Documentos",
+      "span": 1,
+      "enabled": true
+    },
+    {
+      "id": "captures",
+      "kind": "captures",
+      "title": "Capturas",
+      "span": 1,
+      "enabled": true
+    },
+    {
+      "id": "shortcuts",
+      "kind": "shortcuts",
+      "title": "Atalhos",
+      "span": 1,
+      "enabled": true
+    }
+  ],
+  "panels": {
+    "explorerWidth": 345,
+    "contextWidth": 318
+  }
+}
