@@ -73,7 +73,21 @@ const institutionalTcc = composeInstitutionalProfile(PERFIS_PADRAO['abnt-tcc']!,
   requiredMetadata: ['title', 'authors', 'tcc:institution', 'tcc:course', 'tcc:place', 'tcc:year', 'tcc:nature'],
 });
 
-export const PERFIS_DE_PRODUTO: Readonly<Record<string, CompilationProfileDefinition>> = { ...PERFIS_PADRAO, 'institutional-tcc': institutionalTcc };
+/** Variante reutilizável: instituição/programa entra no frontmatter, não no núcleo APA. */
+const institutionalApa = composeInstitutionalProfile(PERFIS_PADRAO['apa-7']!, {
+  id: 'apa-7-institutional', version: '1.0.0', name: 'APA 7 institucional (configurável)',
+  description: 'Composição APA 7 para universidade e programa declarados no documento.',
+  baseProfileId: 'apa-7', requiredMetadata: ['title', 'authors', 'abstract', 'institution', 'program'],
+});
+
+/** Perfil de referência concreto; instituições reais podem compor o mesmo contrato. */
+const universityProgramApa = composeInstitutionalProfile(PERFIS_PADRAO['apa-7']!, {
+  id: 'apa-7-university-program', version: '1.0.0', name: 'APA 7 universidade/programa',
+  description: 'Modelo APA 7 institucional com identificação obrigatória de universidade e programa.',
+  baseProfileId: 'apa-7', requiredMetadata: ['title', 'authors', 'abstract', 'institution', 'program'],
+});
+
+export const PERFIS_DE_PRODUTO: Readonly<Record<string, CompilationProfileDefinition>> = { ...PERFIS_PADRAO, 'institutional-tcc': institutionalTcc, 'apa-7-institutional': institutionalApa, 'apa-7-university-program': universityProgramApa };
 
 export const REGISTRO_DE_PERFIS_PADRAO: CompilationProfileRegistry = {
   defaultProfileId: PERFIL_PADRAO,

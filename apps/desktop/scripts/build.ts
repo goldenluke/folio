@@ -118,8 +118,8 @@ const esperarArquivo = async (path: string, timeoutMs: number): Promise<void> =>
 const identidadeNativa = async (): Promise<NativeAddonManifest> => {
   const requested = process.env.FOLIO_NATIVE_TARGET ?? nativeTargetId(process.platform, process.arch);
   const current = nativeTargetId(process.platform, process.arch);
-  if (requested !== 'linux-x64') {
-    throw new Error(`Target nativo não suportado no P18: ${requested}. O único target oficial é linux-x64.`);
+  if (requested !== 'linux-x64' && requested !== 'win32-x64') {
+    throw new Error(`Target nativo não suportado: ${requested}. Targets oficiais: linux-x64 e win32-x64.`);
   }
   if (requested !== current) {
     throw new Error(`P18 exige build nativo: target solicitado ${requested}, runner atual ${current}.`);
@@ -137,7 +137,7 @@ const identidadeNativa = async (): Promise<NativeAddonManifest> => {
   const betterSqlite3Version = require('better-sqlite3/package.json').version as string;
   const lockfileSha256 = createHash('sha256').update(await readFile(resolve(repositoryRoot, 'pnpm-lock.yaml'))).digest('hex');
   return createNativeAddonManifest({
-    platform: 'linux',
+    platform: requested === 'win32-x64' ? 'win32' : 'linux',
     architecture: 'x64',
     electronVersion,
     electronModuleAbi,

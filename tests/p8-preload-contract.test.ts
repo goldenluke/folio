@@ -26,7 +26,7 @@ describe('P8 — API estreita do preload', () => {
 
     expect(result).toMatchObject({ ok: true, value: { workspaceId: 'workspace_1' } });
     expect(calls).toEqual([{ channel: DESKTOP_CHANNELS.chooseWorkspace, value: undefined }]);
-    expect(Object.keys(api)).toEqual(['application', 'workspace', 'library', 'documents', 'editor', 'language', 'onEvent']);
+    expect(Object.keys(api)).toEqual(['application', 'workspace', 'library', 'research', 'documents', 'editor', 'language', 'onEvent']);
     expect(PROTOCOL_VERSION).toBe(1);
   });
 

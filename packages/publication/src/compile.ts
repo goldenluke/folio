@@ -417,10 +417,20 @@ export function compilarPublicacao(
   }
 
   const utils = { inline, blocos: (n: readonly BlockNode[]) => blocos(n) };
+  const elementosPosTextuais = profile.backMatter?.(doc, utils) ?? [];
+  /**
+   * A bibliografia é gerada pelo profile. Um `# Referências` vazio no fim do
+   * Markdown é apenas o marcador que autores costumam inserir e não deve
+   * produzir outra seção numerada antes do título pós-textual automático.
+   */
+  const filhosAutorais = elementosPosTextuais.length === 0 ? ast.document.children : ast.document.children.filter((node) => {
+    if (node.type !== 'section' || node.children.length > 0) return true;
+    return textoPuro(node.title).trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase('pt-BR') !== 'referencias';
+  });
   const corpo: PublicationBlock[] = [
     ...profile.frontMatter(doc, utils),
-    ...blocos(ast.document.children, 1),
-    ...(profile.backMatter?.(doc, utils) ?? []),
+    ...blocos(filhosAutorais, 1),
+    ...elementosPosTextuais,
   ];
 
   // Notas depois do corpo: a numeração depende de já termos percorrido o texto.

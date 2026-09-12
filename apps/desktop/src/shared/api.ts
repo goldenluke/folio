@@ -32,6 +32,8 @@ import {
   validarWorkspaceLibraryRemoveRequest,
   validarWorkspaceLibraryFormatRequest,
   validarWorkspaceLibraryResolveDoiRequest,
+  validarWorkspaceScholarlyIdentifierReviewRequest,
+  validarWorkspacePdfReconciliationRequest,
   validarWorkspaceWebCaptureExtractRequest,
   validarWorkspaceLibraryImportRequest,
   validarWorkspaceLibraryIntakePreviewRequest,
@@ -68,6 +70,23 @@ import {
   validarWorkspaceProfileValidationPreviewRequest,
   validarWorkspacePluginSetEnabledRequest,
   validarWorkspacePluginCommandRequest,
+  workspacePagesResponseSchema,
+  workspaceEnablePageRequestSchema,
+  workspaceSetPagePropertiesRequestSchema,
+  workspaceTogglePageTaskRequestSchema,
+  workspacePageDtoSchema,
+  workspaceHomeLayoutResponseSchema,
+  workspaceSetHomeLayoutRequestSchema,
+  workspaceThemesResponseSchema,
+  workspaceSetThemesRequestSchema,
+  workspaceResearchProjectsResponseSchema,
+  workspaceSetResearchProjectsRequestSchema,
+  workspaceReadingQueueResponseSchema,
+  workspaceSetReadingQueueRequestSchema,
+  workspaceImportLegacyResearchProjectsRequestSchema,
+  workspaceImportLegacyResearchProjectsResponseSchema,
+  workspaceImportLegacyReadingQueueRequestSchema,
+  workspaceImportLegacyReadingQueueResponseSchema,
   workspaceAcademicViewsResponseSchema,
   workspaceAcademicRelationsResponseSchema,
   referenceRelationDtoSchema,
@@ -136,6 +155,18 @@ import {
   workspaceProjectDashboardResponseSchema,
   workspaceLibraryListResponseSchema,
   workspaceLibraryEntryResponseSchema,
+  workspaceScholarlyIdentifierReviewResponseSchema,
+  workspacePdfReconciliationResponseSchema,
+  workspaceFullTextDiscoveryRequestSchema,
+  workspaceFullTextDiscoveryResponseSchema,
+  workspaceDownloadFullTextRequestSchema,
+  workspaceSystematicReviewResponseSchema,
+  workspaceSetSystematicReviewRequestSchema,
+  workspaceResearchDatasetsResponseSchema,
+  workspaceSetResearchDatasetsRequestSchema,
+  workspaceImportResearchDatasetRequestSchema,
+  workspaceResearchDatasetPreviewRequestSchema,
+  workspaceResearchDatasetPreviewResponseSchema,
   workspaceWebCaptureExtractResponseSchema,
   workspaceLibraryFormatResponseSchema,
   workspaceLibraryImportResponseSchema,
@@ -234,6 +265,20 @@ import {
   type WorkspaceLibraryRemoveRequest,
   type WorkspaceLibraryFormatRequest,
   type WorkspaceLibraryResolveDoiRequest,
+  type WorkspaceScholarlyIdentifierReviewRequest,
+  type WorkspaceScholarlyIdentifierReviewDto,
+  type WorkspacePdfReconciliationRequest,
+  type WorkspacePdfReconciliationDto,
+  type WorkspaceFullTextDiscoveryRequest,
+  type WorkspaceFullTextDiscoveryDto,
+  type WorkspaceDownloadFullTextRequest,
+  type WorkspaceSystematicReviewDto,
+  type WorkspaceSetSystematicReviewRequest,
+  type WorkspaceResearchDatasetsDto,
+  type WorkspaceSetResearchDatasetsRequest,
+  type WorkspaceImportResearchDatasetRequest,
+  type WorkspaceResearchDatasetPreviewRequest,
+  type WorkspaceResearchDatasetPreviewDto,
   type WorkspaceWebCaptureExtractRequest,
   type WorkspaceWebCaptureExtractResponseDto,
   type WorkspaceLibraryImportRequest,
@@ -276,6 +321,23 @@ import {
   type WorkspaceSetCollaborationRequest,
   type WorkspaceAcademicViewsDto,
   type WorkspaceSetAcademicViewsRequest,
+  type WorkspacePagesDto,
+  type WorkspacePageDto,
+  type WorkspaceEnablePageRequest,
+  type WorkspaceSetPagePropertiesRequest,
+  type WorkspaceTogglePageTaskRequest,
+  type WorkspaceHomeLayoutDto,
+  type WorkspaceSetHomeLayoutRequest,
+  type WorkspaceThemesDto,
+  type WorkspaceSetThemesRequest,
+  type WorkspaceResearchProjectsDto,
+  type WorkspaceSetResearchProjectsRequest,
+  type WorkspaceReadingQueueDto,
+  type WorkspaceSetReadingQueueRequest,
+  type WorkspaceImportLegacyResearchProjectsRequest,
+  type WorkspaceImportLegacyResearchProjectsResponse,
+  type WorkspaceImportLegacyReadingQueueRequest,
+  type WorkspaceImportLegacyReadingQueueResponse,
   type WorkspaceAcademicRelationsDto,
   type ReferenceRelationDto,
   type WorkspaceReferenceRelationsRequest,
@@ -335,6 +397,20 @@ export const DESKTOP_CHANNELS = {
   setCollaboration: 'abnt:workspace:set-collaboration',
   academicViews: 'abnt:workspace:academic-views',
   setAcademicViews: 'abnt:workspace:set-academic-views',
+  pages: 'abnt:workspace:pages',
+  enablePage: 'abnt:workspace:enable-page',
+  setPageProperties: 'abnt:workspace:set-page-properties',
+  togglePageTask: 'abnt:workspace:toggle-page-task',
+  homeLayout: 'abnt:workspace:home-layout',
+  setHomeLayout: 'abnt:workspace:set-home-layout',
+  themes: 'abnt:workspace:themes',
+  setThemes: 'abnt:workspace:set-themes',
+  researchProjects: 'abnt:workspace:research-projects',
+  setResearchProjects: 'abnt:workspace:set-research-projects',
+  readingQueue: 'abnt:workspace:reading-queue',
+  setReadingQueue: 'abnt:workspace:set-reading-queue',
+  importLegacyResearchProjects: 'abnt:workspace:import-legacy-research-projects',
+  importLegacyReadingQueue: 'abnt:workspace:import-legacy-reading-queue',
   academicRelations: 'abnt:workspace:academic-relations',
   referenceRelations: 'abnt:workspace:reference-relations',
   addReferenceRelation: 'abnt:workspace:add-reference-relation',
@@ -400,6 +476,16 @@ export const DESKTOP_CHANNELS = {
   libraryRemove: 'abnt:library:remove',
   libraryFormat: 'abnt:library:format',
   libraryResolveDoi: 'abnt:library:resolve-doi',
+  libraryReviewScholarlyIdentifier: 'abnt:library:review-scholarly-identifier',
+  libraryReconcilePdf: 'abnt:library:reconcile-pdf',
+  libraryDiscoverFullText: 'abnt:library:discover-full-text',
+  libraryDownloadFullText: 'abnt:library:download-full-text',
+  systematicReview: 'abnt:workspace:systematic-review',
+  systematicReviewSet: 'abnt:workspace:systematic-review-set',
+  researchDatasets: 'abnt:workspace:research-datasets',
+  researchDatasetsSet: 'abnt:workspace:research-datasets-set',
+  researchDatasetsImport: 'abnt:workspace:research-datasets-import',
+  researchDatasetPreview: 'abnt:workspace:research-dataset-preview',
   webCaptureExtract: 'abnt:library:web-capture-extract',
   libraryImport: 'abnt:library:import',
   libraryIntakePreview: 'abnt:library:intake-preview',
@@ -467,6 +553,20 @@ export interface AcademicDesktopApi {
     setCollaboration(request: WorkspaceSetCollaborationRequest): Promise<ProtocolResult<WorkspaceCollaborationDto>>;
     academicViews(): Promise<ProtocolResult<WorkspaceAcademicViewsDto>>;
     setAcademicViews(request: WorkspaceSetAcademicViewsRequest): Promise<ProtocolResult<WorkspaceAcademicViewsDto>>;
+    pages(): Promise<ProtocolResult<WorkspacePagesDto>>;
+    enablePage(request: WorkspaceEnablePageRequest): Promise<ProtocolResult<WorkspacePageDto>>;
+    setPageProperties(request: WorkspaceSetPagePropertiesRequest): Promise<ProtocolResult<WorkspacePageDto>>;
+    togglePageTask(request: WorkspaceTogglePageTaskRequest): Promise<ProtocolResult<WorkspacePageDto>>;
+    homeLayout(): Promise<ProtocolResult<WorkspaceHomeLayoutDto>>;
+    setHomeLayout(request: WorkspaceSetHomeLayoutRequest): Promise<ProtocolResult<WorkspaceHomeLayoutDto>>;
+    themes(): Promise<ProtocolResult<WorkspaceThemesDto>>;
+    setThemes(request: WorkspaceSetThemesRequest): Promise<ProtocolResult<WorkspaceThemesDto>>;
+    researchProjects(): Promise<ProtocolResult<WorkspaceResearchProjectsDto>>;
+    setResearchProjects(request: WorkspaceSetResearchProjectsRequest): Promise<ProtocolResult<WorkspaceResearchProjectsDto>>;
+    readingQueue(): Promise<ProtocolResult<WorkspaceReadingQueueDto>>;
+    setReadingQueue(request: WorkspaceSetReadingQueueRequest): Promise<ProtocolResult<WorkspaceReadingQueueDto>>;
+    importLegacyResearchProjects(request: WorkspaceImportLegacyResearchProjectsRequest): Promise<ProtocolResult<WorkspaceImportLegacyResearchProjectsResponse>>;
+    importLegacyReadingQueue(request: WorkspaceImportLegacyReadingQueueRequest): Promise<ProtocolResult<WorkspaceImportLegacyReadingQueueResponse>>;
     academicRelations(): Promise<ProtocolResult<WorkspaceAcademicRelationsDto>>;
     /** Onda BJ: relação explícita entre duas referências — nunca substitui merge de duplicata. */
     referenceRelations(request: WorkspaceReferenceRelationsRequest): Promise<ProtocolResult<WorkspaceReferenceRelationsDto>>;
@@ -540,6 +640,10 @@ export interface AcademicDesktopApi {
     remove(request: WorkspaceLibraryRemoveRequest): Promise<ProtocolResult<undefined>>;
     format(request: WorkspaceLibraryFormatRequest): Promise<ProtocolResult<string>>;
     resolveDoi(request: WorkspaceLibraryResolveDoiRequest): Promise<ProtocolResult<BibliographicEntityDto>>;
+    reviewScholarlyIdentifier(request: WorkspaceScholarlyIdentifierReviewRequest): Promise<ProtocolResult<WorkspaceScholarlyIdentifierReviewDto>>;
+    reconcilePdf(request: WorkspacePdfReconciliationRequest): Promise<ProtocolResult<WorkspacePdfReconciliationDto>>;
+    discoverFullText(request: WorkspaceFullTextDiscoveryRequest): Promise<ProtocolResult<WorkspaceFullTextDiscoveryDto>>;
+    downloadFullText(request: WorkspaceDownloadFullTextRequest): Promise<ProtocolResult<AttachmentDto>>;
     import(request: WorkspaceLibraryImportRequest): Promise<ProtocolResult<WorkspaceLibraryImportResponseDto>>;
     intakePreview(request: WorkspaceLibraryIntakePreviewRequest): Promise<ProtocolResult<WorkspaceLibraryIntakePreviewDto>>;
     duplicates(): Promise<ProtocolResult<readonly WorkspaceLibraryDuplicateDto[]>>;
@@ -557,6 +661,14 @@ export interface AcademicDesktopApi {
     createPdfAnnotation(request: WorkspaceCreatePdfAnnotationRequest): Promise<ProtocolResult<WorkspacePdfAnnotationDto>>;
     removePdfAnnotation(request: WorkspacePdfAnnotationRequest): Promise<ProtocolResult<undefined>>;
     linkPdfAnnotation(request: WorkspacePdfAnnotationRequest): Promise<ProtocolResult<WorkspacePdfAnnotationLinkDto>>;
+  };
+  readonly research: {
+    systematicReview(): Promise<ProtocolResult<WorkspaceSystematicReviewDto>>;
+    setSystematicReview(request: WorkspaceSetSystematicReviewRequest): Promise<ProtocolResult<WorkspaceSystematicReviewDto>>;
+    datasets(): Promise<ProtocolResult<WorkspaceResearchDatasetsDto>>;
+    setDatasets(request: WorkspaceSetResearchDatasetsRequest): Promise<ProtocolResult<WorkspaceResearchDatasetsDto>>;
+    importDataset(request: WorkspaceImportResearchDatasetRequest): Promise<ProtocolResult<WorkspaceResearchDatasetsDto>>;
+    datasetPreview(request: WorkspaceResearchDatasetPreviewRequest): Promise<ProtocolResult<WorkspaceResearchDatasetPreviewDto>>;
   };
   readonly documents: {
     read(request: WorkspaceReadRequest): Promise<ProtocolResult<WorkspaceReadResponse>>;
@@ -641,6 +753,20 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
         const checked = validarDto(workspaceSetAcademicViewsRequestSchema, request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setAcademicViews, checked.value, workspaceAcademicViewsResponseSchema) : checked;
       },
+      pages: () => invoke(bridge, DESKTOP_CHANNELS.pages, undefined, workspacePagesResponseSchema),
+      enablePage: async (request) => { const checked = validarDto(workspaceEnablePageRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.enablePage, checked.value, workspacePageDtoSchema) : checked; },
+      setPageProperties: async (request) => { const checked = validarDto(workspaceSetPagePropertiesRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setPageProperties, checked.value, workspacePageDtoSchema) : checked; },
+      togglePageTask: async (request) => { const checked = validarDto(workspaceTogglePageTaskRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.togglePageTask, checked.value, workspacePageDtoSchema) : checked; },
+      homeLayout: () => invoke(bridge, DESKTOP_CHANNELS.homeLayout, undefined, workspaceHomeLayoutResponseSchema),
+      setHomeLayout: async (request) => { const checked = validarDto(workspaceSetHomeLayoutRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setHomeLayout, checked.value, workspaceHomeLayoutResponseSchema) : checked; },
+      themes: () => invoke(bridge, DESKTOP_CHANNELS.themes, undefined, workspaceThemesResponseSchema),
+      setThemes: async (request) => { const checked = validarDto(workspaceSetThemesRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setThemes, checked.value, workspaceThemesResponseSchema) : checked; },
+      researchProjects: () => invoke(bridge, DESKTOP_CHANNELS.researchProjects, undefined, workspaceResearchProjectsResponseSchema),
+      setResearchProjects: async (request) => { const checked = validarDto(workspaceSetResearchProjectsRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setResearchProjects, checked.value, workspaceResearchProjectsResponseSchema) : checked; },
+      readingQueue: () => invoke(bridge, DESKTOP_CHANNELS.readingQueue, undefined, workspaceReadingQueueResponseSchema),
+      setReadingQueue: async (request) => { const checked = validarDto(workspaceSetReadingQueueRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.setReadingQueue, checked.value, workspaceReadingQueueResponseSchema) : checked; },
+      importLegacyResearchProjects: async (request) => { const checked = validarDto(workspaceImportLegacyResearchProjectsRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.importLegacyResearchProjects, checked.value, workspaceImportLegacyResearchProjectsResponseSchema) : checked; },
+      importLegacyReadingQueue: async (request) => { const checked = validarDto(workspaceImportLegacyReadingQueueRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.importLegacyReadingQueue, checked.value, workspaceImportLegacyReadingQueueResponseSchema) : checked; },
       academicRelations: () => invoke(bridge, DESKTOP_CHANNELS.academicRelations, undefined, workspaceAcademicRelationsResponseSchema),
       referenceRelations: async (request) => {
         const checked = validarWorkspaceReferenceRelationsRequest(request);
@@ -854,6 +980,22 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
         const checked = validarWorkspaceLibraryResolveDoiRequest(request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryResolveDoi, checked.value, workspaceLibraryEntryResponseSchema) : checked;
       },
+      reviewScholarlyIdentifier: async (request) => {
+        const checked = validarWorkspaceScholarlyIdentifierReviewRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryReviewScholarlyIdentifier, checked.value, workspaceScholarlyIdentifierReviewResponseSchema) : checked;
+      },
+      reconcilePdf: async (request) => {
+        const checked = validarWorkspacePdfReconciliationRequest(request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryReconcilePdf, checked.value, workspacePdfReconciliationResponseSchema) : checked;
+      },
+      discoverFullText: async (request) => {
+        const checked = validarDto(workspaceFullTextDiscoveryRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryDiscoverFullText, checked.value, workspaceFullTextDiscoveryResponseSchema) : checked;
+      },
+      downloadFullText: async (request) => {
+        const checked = validarDto(workspaceDownloadFullTextRequestSchema, request);
+        return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryDownloadFullText, checked.value, workspaceAttachmentResponseSchema) : checked;
+      },
       import: async (request) => {
         const checked = validarWorkspaceLibraryImportRequest(request);
         return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryImport, checked.value, workspaceLibraryImportResponseSchema) : checked;
@@ -888,6 +1030,14 @@ export function createAcademicDesktopApi(bridge: DesktopIpcBridge): AcademicDesk
       createPdfAnnotation: async (request) => { const checked=validarWorkspaceCreatePdfAnnotationRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryCreatePdfAnnotation, checked.value, workspacePdfAnnotationDtoSchema) : checked; },
       removePdfAnnotation: async (request) => { const checked=validarWorkspacePdfAnnotationRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryRemovePdfAnnotation, checked.value, emptyResponseSchema) : checked; },
       linkPdfAnnotation: async (request) => { const checked=validarWorkspacePdfAnnotationRequest(request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.libraryLinkPdfAnnotation, checked.value, workspacePdfAnnotationLinkResponseSchema) : checked; },
+    },
+    research: {
+      systematicReview: async () => invoke(bridge, DESKTOP_CHANNELS.systematicReview, {}, workspaceSystematicReviewResponseSchema),
+      setSystematicReview: async (request) => { const checked = validarDto(workspaceSetSystematicReviewRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.systematicReviewSet, checked.value, workspaceSystematicReviewResponseSchema) : checked; },
+      datasets: async () => invoke(bridge, DESKTOP_CHANNELS.researchDatasets, {}, workspaceResearchDatasetsResponseSchema),
+      setDatasets: async (request) => { const checked = validarDto(workspaceSetResearchDatasetsRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.researchDatasetsSet, checked.value, workspaceResearchDatasetsResponseSchema) : checked; },
+      importDataset: async (request) => { const checked = validarDto(workspaceImportResearchDatasetRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.researchDatasetsImport, checked.value, workspaceResearchDatasetsResponseSchema) : checked; },
+      datasetPreview: async (request) => { const checked = validarDto(workspaceResearchDatasetPreviewRequestSchema, request); return checked.ok ? invoke(bridge, DESKTOP_CHANNELS.researchDatasetPreview, checked.value, workspaceResearchDatasetPreviewResponseSchema) : checked; },
     },
     documents: {
       read: async (request) => {

@@ -37,6 +37,8 @@ import {
   validarWorkspaceLibraryRemoveRequest,
   validarWorkspaceLibraryFormatRequest,
   validarWorkspaceLibraryResolveDoiRequest,
+  validarWorkspaceScholarlyIdentifierReviewRequest,
+  validarWorkspacePdfReconciliationRequest,
   validarWorkspaceWebCaptureExtractRequest,
   validarWorkspaceLibraryImportRequest,
   validarWorkspaceLibraryIntakePreviewRequest,
@@ -73,6 +75,15 @@ import {
   validarWorkspaceProfileValidationPreviewRequest,
   validarWorkspacePluginSetEnabledRequest,
   validarWorkspacePluginCommandRequest,
+  workspaceEnablePageRequestSchema,
+  workspaceSetPagePropertiesRequestSchema,
+  workspaceTogglePageTaskRequestSchema,
+  workspaceSetHomeLayoutRequestSchema,
+  workspaceSetThemesRequestSchema,
+  workspaceSetResearchProjectsRequestSchema,
+  workspaceSetReadingQueueRequestSchema,
+  workspaceImportLegacyResearchProjectsRequestSchema,
+  workspaceImportLegacyReadingQueueRequestSchema,
   validarWorkspaceOpenRequest,
   validarLanguageCompletionRequest,
   validarLanguageDefinitionRequest,
@@ -96,6 +107,12 @@ import {
   workspaceJournalOpenRequestSchema,
   workspaceJournalCaptureRequestSchema,
   workspacePeekRequestSchema,
+  workspaceFullTextDiscoveryRequestSchema,
+  workspaceDownloadFullTextRequestSchema,
+  workspaceSetSystematicReviewRequestSchema,
+  workspaceSetResearchDatasetsRequestSchema,
+  workspaceImportResearchDatasetRequestSchema,
+  workspaceResearchDatasetPreviewRequestSchema,
   type DesktopEventDto,
   type SystemInformationDto,
 } from '@abnt/protocol';
@@ -258,6 +275,47 @@ export function registerDesktopIpc(
     [DESKTOP_CHANNELS.setAcademicViews, async (value) => {
       const checked = validarDto(workspaceSetAcademicViewsRequestSchema, value);
       return checked.ok ? workspace.client().setAcademicViews(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.pages, async () => workspace.client().pages()],
+    [DESKTOP_CHANNELS.enablePage, async (value) => {
+      const checked = validarDto(workspaceEnablePageRequestSchema, value);
+      return checked.ok ? workspace.client().enablePage(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.setPageProperties, async (value) => {
+      const checked = validarDto(workspaceSetPagePropertiesRequestSchema, value);
+      return checked.ok ? workspace.client().setPageProperties(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.togglePageTask, async (value) => {
+      const checked = validarDto(workspaceTogglePageTaskRequestSchema, value);
+      return checked.ok ? workspace.client().togglePageTask(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.homeLayout, async () => workspace.client().homeLayout()],
+    [DESKTOP_CHANNELS.setHomeLayout, async (value) => {
+      const checked = validarDto(workspaceSetHomeLayoutRequestSchema, value);
+      return checked.ok ? workspace.client().setHomeLayout(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.themes, async () => workspace.client().themes()],
+    [DESKTOP_CHANNELS.setThemes, async (value) => {
+      const checked = validarDto(workspaceSetThemesRequestSchema, value);
+      return checked.ok ? workspace.client().setThemes(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.researchProjects, async () => workspace.client().researchProjects()],
+    [DESKTOP_CHANNELS.setResearchProjects, async (value) => {
+      const checked = validarDto(workspaceSetResearchProjectsRequestSchema, value);
+      return checked.ok ? workspace.client().setResearchProjects(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.readingQueue, async () => workspace.client().readingQueue()],
+    [DESKTOP_CHANNELS.setReadingQueue, async (value) => {
+      const checked = validarDto(workspaceSetReadingQueueRequestSchema, value);
+      return checked.ok ? workspace.client().setReadingQueue(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.importLegacyResearchProjects, async (value) => {
+      const checked = validarDto(workspaceImportLegacyResearchProjectsRequestSchema, value);
+      return checked.ok ? workspace.client().importLegacyResearchProjects(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.importLegacyReadingQueue, async (value) => {
+      const checked = validarDto(workspaceImportLegacyReadingQueueRequestSchema, value);
+      return checked.ok ? workspace.client().importLegacyReadingQueue(checked.value) : checked;
     }],
     [DESKTOP_CHANNELS.academicRelations, async () => workspace.client().academicRelations()],
     [DESKTOP_CHANNELS.referenceRelations, async (value) => {
@@ -528,6 +586,28 @@ export function registerDesktopIpc(
       const checked = validarWorkspaceLibraryResolveDoiRequest(value);
       return checked.ok ? workspace.client().libraryResolveDoi(checked.value) : checked;
     }],
+    [DESKTOP_CHANNELS.libraryReviewScholarlyIdentifier, async (value) => {
+      const checked = validarWorkspaceScholarlyIdentifierReviewRequest(value);
+      return checked.ok ? workspace.client().reviewScholarlyIdentifier(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.libraryReconcilePdf, async (value) => {
+      const checked = validarWorkspacePdfReconciliationRequest(value);
+      return checked.ok ? workspace.client().reconcilePdf(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.libraryDiscoverFullText, async (value) => {
+      const checked = validarDto(workspaceFullTextDiscoveryRequestSchema, value);
+      return checked.ok ? workspace.client().discoverFullText(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.libraryDownloadFullText, async (value) => {
+      const checked = validarDto(workspaceDownloadFullTextRequestSchema, value);
+      return checked.ok ? workspace.client().downloadFullText(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.systematicReview, async () => workspace.client().systematicReview()],
+    [DESKTOP_CHANNELS.systematicReviewSet, async (value) => { const checked = validarDto(workspaceSetSystematicReviewRequestSchema, value); return checked.ok ? workspace.client().setSystematicReview(checked.value) : checked; }],
+    [DESKTOP_CHANNELS.researchDatasets, async () => workspace.client().researchDatasets()],
+    [DESKTOP_CHANNELS.researchDatasetsSet, async (value) => { const checked = validarDto(workspaceSetResearchDatasetsRequestSchema, value); return checked.ok ? workspace.client().setResearchDatasets(checked.value) : checked; }],
+    [DESKTOP_CHANNELS.researchDatasetsImport, async (value) => { const checked = validarDto(workspaceImportResearchDatasetRequestSchema, value); return checked.ok ? workspace.client().importResearchDataset(checked.value) : checked; }],
+    [DESKTOP_CHANNELS.researchDatasetPreview, async (value) => { const checked = validarDto(workspaceResearchDatasetPreviewRequestSchema, value); return checked.ok ? workspace.client().researchDatasetPreview(checked.value) : checked; }],
     [DESKTOP_CHANNELS.webCaptureExtract, async (value) => {
       const checked = validarWorkspaceWebCaptureExtractRequest(value);
       return checked.ok ? workspace.client().webCaptureExtract(checked.value) : checked;

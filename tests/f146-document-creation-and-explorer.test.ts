@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 
-import { buildWorkspaceFileTree } from '../apps/desktop/src/renderer/file-explorer.js';
+import { buildWorkspaceFileTree, directoryPathsFor } from '../apps/desktop/src/renderer/file-explorer.js';
 
 it('F146 — o explorador lateral preserva hierarquia de pastas sem transformar path em identidade', () => {
   const tree = buildWorkspaceFileTree([
@@ -23,4 +23,9 @@ it('F146 — uma pasta vazia materializada por .gitkeep aparece sem expor o marc
 
   expect(tree.directories).toHaveLength(1);
   expect(tree.directories[0]).toMatchObject({ name: 'notas', files: [] });
+});
+
+it('F146 — revelar um documento conhece todos os diretórios ancestrais', () => {
+  expect(directoryPathsFor('pesquisa/campo/notas.md')).toEqual(['pesquisa', 'pesquisa/campo']);
+  expect(directoryPathsFor('raiz.md')).toEqual([]);
 });

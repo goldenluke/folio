@@ -2268,6 +2268,193 @@ puros e testados) liberam BH.
       de integração via `MessagePort` real confirmando `citationCount`/
       autor/ano em `references()`).
 
+### Próximas ondas — integração de UI e produto
+
+Esta sequência fecha a distância entre modelos puros já testados e as
+superfícies desktop. Cada onda entrega package, protocolo, IPC, UI e teste de
+integração; nenhuma cria uma segunda fonte de verdade fora do workspace.
+
+#### Onda BQ — Intake acadêmico unificado
+
+- [x] **F508–F514** — intake acadêmico unificado: DOI, ISBN, PMID e arXiv
+      passam por registry de providers explícitos (`doi.org`, Open Library,
+      Europe PMC e arXiv), devolvendo candidato CSL-JSON, proveniência e
+      duplicatas antes de qualquer escrita. ADS informa que exige credencial
+      NASA ADS configurada, sem inventar metadata. O drop de PDF usa
+      `reconcilePdfText` e o mesmo registry, preserva o scanner literal sem
+      OCR e leva a referência candidata para a inbox existente, onde o usuário
+      escolhe criar ou anexar ao pai detectado. Protocolo, IPC e UI do intake
+      estão cobertos por teste MessagePort em `tests/f508-scholarly-intake-
+      protocol.test.ts`.
+
+#### Onda BR — Texto completo e integridade bibliográfica
+
+- [ ] **F515–F522** — integrar BI: providers explícitos de full text,
+      candidatos revisáveis e download confirmado para Attachment Model 2.0.
+      Incluir F460–F467: status de retratação/correção, refresh explícito e
+      avisos em biblioteca, citação e preflight.
+
+#### Onda BS — Assistentes de pesquisa estruturada
+
+- [x] **F523–F526 — IA acadêmica opt-in:** provider local configurado por
+      solicitação, contexto escolhido por item e disclosure com contagem de
+      caracteres antes da rede. A resposta é só sugestão: a inserção no
+      documento ativo exige segunda confirmação e usa a sessão do editor,
+      seguida de salvamento. Nenhum conteúdo do vault é enviado por padrão.
+- [x] **F527–F531 — revisão sistemática local-first:** recurso operacional
+      versionado em `.academic/systematic-review`, portátil no sync, para
+      protocolo, registros de busca, estudos, decisões por revisor, motivos de
+      exclusão, extração, qualidade e destinos de evidência. A tela oferece
+      triagem, sinaliza conflito/acordo entre revisores e mostra o fluxo PRISMA;
+      referências e Markdown continuam suas fontes canônicas.
+- [x] **F532–F534 — dados de pesquisa:** registry portátil em
+      `.academic/datasets`, importação binária exclusivamente pelo host,
+      SHA-256, linhagem de versões, preview read-only de CSV/TSV/JSON e
+      dicionário inferido. A interface também projeta citação CSL-JSON e
+      manifesto de reprodutibilidade para cópia. Nenhum arquivo é analisado ou
+      transformado sem a ação explícita de importação/preview do usuário.
+
+#### Onda BT — Views e formulários operacionais
+
+- [ ] **F535–F541** — adapters restantes de Academic Views (F296–F299), editor
+      visual de filtros/ordenação/agrupamento/colunas (F300) e fluxos reais dos
+      forms (F407), depois das auditorias Canvas e block composition (F405–F406).
+
+#### Onda BU — Colaboração e sync de produto
+
+- [ ] **F542–F551** — colaboração e sync de produto, deliberadamente em aberto.
+      A direção de produto é aproximar o Folio de um vault-sync local-first:
+      o vault legível permanece a fonte de verdade, a conta é opcional e só
+      autoriza destinos/dispositivos; SQLite, previews e caches nunca viajam.
+      A entrega será fatiada em BU.1 conta/dispositivo/status/fila offline;
+      BU.2 sync remoto incremental para texto, JSON operacional e binários por
+      hash; BU.3 comparação e resolução manual de conflitos; BU.4
+      compartilhamento de vault e permissões; e BU.5 E2EE somente depois de
+      ADR para chaves e recuperação. Não inclui CRDT, locking nem edição
+      simultânea: texto continua a exigir merge explícito quando divergir.
+      Colaboração existente (papéis, marcos, atribuições, menções, presença e
+      triagem) permanece uma camada operacional sincronizável sobre esse
+      modelo, não uma segunda fonte de verdade.
+
+#### Onda BV — Qualidade, perfis e distribuição
+
+#### Onda BW — Workspace híbrido de páginas (concluída)
+
+BW.1 entrega `@abnt/page-workspace`: páginas continuam arquivos Markdown e
+passam a aceitar frontmatter autoral `folio:` com ID estável, tipo, status,
+tags, aliases, prazo, projeto e relações declaradas. Checkboxes seguem no
+corpo Markdown e são projetados como tarefas; filtros, ordenação, grupos,
+wikilinks e backlinks são derivados, nunca uma segunda fonte de verdade.
+
+BW.2 registra páginas, propriedades, tarefas e layout da Home no protocolo,
+IPC e Workspace Service. Toda edição abre a sessão, exige revisão, despacha
+uma transação e chama `save()`; layouts ficam em `.academic/home/` como estado
+operacional portátil. Markdown sem `folio:` permanece plenamente válido e só
+vira página por ação explícita e idempotente.
+
+BW.3 substitui a Home fixa por blocos configuráveis (recentes, documentos,
+tarefas, projetos, bases, capturas, calendário, grafo e atalhos), com ordem,
+visibilidade e largura persistidas. A reordenação aceita arrastar e soltar e
+mantém botões de subir/descer como alternativa acessível por teclado. O cabeçalho do editor agora permite
+converter um documento em página e editar tipo, status, projeto, tags, aliases
+e prazo acima do
+Markdown. O shell abre com trilho compacto, explorador persistente, editor ao
+centro e Contexto à direita; explorador e Contexto são recolhíveis e suas
+larguras são redimensionáveis, persistidas no mesmo estado portátil da Home.
+Backlinks e relações abrem, a partir do cabeçalho da página, os painéis já
+derivados do índice e do grafo, sem criar arestas persistidas extras.
+Projeto é selecionado pela lista portátil de projetos e ainda explicita um
+vínculo órfão para que ele possa ser corrigido, em vez de trocar IDs silenciosamente.
+O layout de quadro das Academic Views agrupa dinamicamente pelo campo escolhido
+(inclusive rollups, fórmulas e relações derivadas), sem colunas ou cartões fixos.
+Views de documentos também projetam tipo, status e prazo de `folio:`; o
+calendário ordena o prazo real quando a página o declara.
+O explorador revela o documento ativo, expande resultados filtrados e permite
+recolher a árvore sem perder o estado do vault.
+O modo de personalização também inclui blocos ausentes, e Favoritos projeta os
+bookmarks portáteis já existentes, sem copiar dados ou criar uma coleção paralela.
+BW.4 amplia o manifesto declarativo de plugins com temas, painéis,
+blocos da Home, propriedades e renderizadores de view; essas contribuições
+continuam DTOs validados, sem DOM, vault ou IPC genérico.
+
+BW.5 adiciona temas claro/escuro portáveis em `.academic/themes/`, com tokens
+JSON restritos, aplicação por variáveis CSS e troca pela Home. Projetos agora
+são lidos e gravados pelo recurso portátil `.academic/research-projects/`; o
+endpoint de importação explícita e idempotente de dados legados aceita apenas
+registros minimamente identificáveis e deduplica por ID. A interface provisória
+de importação foi removida da Home para não expor a noção de “projeto legado”.
+A fila de leitura também foi normalizada como recurso portátil; Fluxo de
+pesquisa, intake e monitoramento acrescentam ou alteram itens por esse mesmo
+contrato. A regressão visual/smoke desktop completo permanece para o polimento
+seguinte.
+
+- [ ] **F552–F559** — fechar o polimento transversal do desktop, concluir a
+      família institucional APA e preparar Windows x64 sem declarar suporte
+      antes de uma execução nativa. A onda não muda as fontes de verdade do
+      workspace nem introduz sync, conta ou telemetria.
+
+  Entregas e critérios de aceite:
+
+  - [x] **F552 — teclado de diálogos:** Escape, Tab/Shift+Tab, foco inicial e
+        restauração do foco de origem para todos os modais; listas
+        virtualizadas mantêm setas, Page Up/Down, Home e End. O shell cobre
+        diálogos legados durante a transição e o algoritmo de borda é testado
+        em `tests/f552-dialog-navigation.test.ts`.
+  - [ ] **F553 — semântica acessível:** cada diálogo tem papel, `aria-modal`,
+        nome e descrição; campos, estados disabled, mensagens de erro e
+        contraste passam por auditoria manual.
+  - [ ] **F554 — estados assíncronos:** listagens e projeções distinguem
+        carregamento, vazio orientado e erro recuperável, sem apresentar uma
+        tela aparentemente vazia enquanto a requisição está pendente.
+  - [ ] **F555 — mutações seguras:** arquivar, remover, sobrescrever, mesclar
+        e mudanças em lote usam a mesma confirmação acessível, informando
+        alvos e efeito antes da escrita.
+  - [x] **F556 — APA institucional:** `apa-7-institutional` exige metadados
+        institucionais configuráveis; `apa-7-university-program` é a
+        composição declarativa para universidade e programa. Ambos preservam
+        `apa-7` como profile-base e não duplicam regras de citação.
+  - [x] **F557 — build nativo Windows:** `win32-x64` está habilitado no manifesto e
+        o pipeline recompila o addon no próprio runner Windows, sem reutilizar binário
+        Linux nem tentar cross-compile do `better-sqlite3`; a matriz e a
+        separação de cache são cobertas por `tests/p18-native-matrix.test.ts`.
+  - [ ] **F558 — pacote Windows:** gerar instalador NSIS x64 e executar smoke
+        real em `windows-2022`, atravessando vault, SQLite/FTS, edição,
+        preview, PDF e DOCX antes de promover o target.
+  - [ ] **F559 — publicação e suporte:** só após F558, atualizar a matriz de
+        distribuição e os links de download. Assinatura e atualização
+        automática continuam fora do escopo; macOS segue sem target até ter
+        runner, política de assinatura/notarização e smoke próprios.
+
+  Estado inicial: F556 está concluída. A configuração de build e pacote para
+  Windows existe, mas F558–F559 continuam abertos até a validação em um runner
+  `win32-x64`; o ambiente Linux não é evidência de compatibilidade Windows.
+
+  Plano de execução auditável:
+
+  - [x] **BV.1 — inventário e teclado:** os diálogos com `role=dialog` ou
+        `role=alertdialog` são governados pelo shell durante a transição; cada
+        modal novo adota o hook local. Escape, Tab/Shift+Tab, foco inicial e
+        restauração do foco de origem têm uma implementação única. Listas
+        longas mantêm setas, Page Up/Down, Home e End via `VirtualizedList`.
+  - [ ] **BV.2 — semântica e contraste:** aplicar `role=dialog`/`alertdialog`,
+        `aria-modal`, rótulo e descrição a cada janela; revisar labels de
+        campos, estados disabled, mensagens de erro e contraste de controles.
+        `useDialogAccessibility` é obrigatório para novas janelas, mas só
+        conta como concluído depois da auditoria das existentes.
+  - [ ] **BV.3 — estados assíncronos:** cada busca, listagem ou projeção deve
+        distinguir carregamento (`role=status`), vazio com próximo passo e erro
+        recuperável (`role=alert`); nenhum painel pode parecer vazio durante
+        uma requisição pendente.
+  - [ ] **BV.4 — mutações e operações em lote:** centralizar confirmação com
+        `requestConfirmation` para arquivar/reativar, remover, sobrescrever,
+        mesclar e aplicar mudanças em lote. A descrição precisa nomear os
+        alvos e o efeito; ações não destrutivas ainda mostram prévia quando
+        alteram múltiplas entidades.
+  - [ ] **BV.5 — regressão de UI:** adicionar testes de teclado/foco e de
+        estados loading/error para cada família de diálogo, executar typecheck,
+        testes relevantes, build desktop e uma revisão visual antes de marcar
+        F152–F155 como concluídas.
+
 ### F102 — Segunda família acadêmica: APA 7ª edição
 
 Escolha de produto: **APA 7ª edição**, por alcance internacional em ciências
@@ -2281,7 +2468,8 @@ própria — não uma única feature:
 - [x] F102D — publication profile (APA 7 Article registrado no Compiler Service)
 - [x] F102E — fixtures (publicação cobre citação e referência APA)
 - [x] F102F — visual regression (fixture APA 7 em PDF/PNG e baseline aprovado)
-- [ ] F102G — institutional variants
+- [x] F102G — institutional variants (`apa-7-institutional` configurável e
+      `apa-7-university-program` como composição declarativa de referência)
 
 O profile APA será implementado sem copiar texto protegido do manual: regras
 codificadas, fixtures autorais e referências públicas por edição/cláusula.

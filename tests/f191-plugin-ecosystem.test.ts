@@ -14,4 +14,9 @@ describe('F191–F204 — extensões declarativas', () => {
     expect(compatibleWithFolio(parsed, '0.1.0')).toBe(true); expect(compatibleWithFolio(parsed, '1.1.0')).toBe(false);
     expect(packageDescriptor(parsed)).toMatchObject({ format: 'folio-plugin-package-v1', id: 'org.exemplo' });
   });
+  it('aceita extensões de workspace apenas quando a capability correspondente foi declarada', () => {
+    const expanded = folioPluginManifestSchema.parse({ ...manifest, capabilities: [...manifest.capabilities, 'themes', 'panels', 'home-blocks', 'page-properties', 'view-renderers'], themes: [{ id: 'escuro', title: 'Escuro', tokens: { accent: '#4f46e5' } }], panels: [{ id: 'painel', title: 'Painel', body: 'Conteúdo declarativo' }], homeBlocks: [{ id: 'home', title: 'Home', body: 'Resumo declarativo' }], pageProperties: [{ id: 'campo', label: 'Campo', type: 'text' }], viewRenderers: [{ id: 'grade', title: 'Grade', source: 'documents' }] });
+    expect(expanded.themes?.[0]?.tokens.accent).toBe('#4f46e5');
+    expect(() => folioPluginManifestSchema.parse({ ...manifest, themes: [{ id: 'x', title: 'X', tokens: {} }] })).toThrow('themes exige capability');
+  });
 });

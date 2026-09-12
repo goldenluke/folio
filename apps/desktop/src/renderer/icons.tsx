@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 
 export type FolioIconName =
-  | 'back' | 'forward' | 'menu' | 'home' | 'search' | 'plugins' | 'command' | 'add' | 'folder' | 'file' | 'pdf' | 'chevronDown' | 'chevronRight' | 'expand' | 'collapse'
+  | 'back' | 'forward' | 'menu' | 'home' | 'search' | 'plugins' | 'command' | 'add' | 'close' | 'folder' | 'file' | 'pdf' | 'chevronDown' | 'chevronRight' | 'expand' | 'collapse'
   | 'preview' | 'split' | 'link' | 'externalLink' | 'format' | 'paragraph' | 'insert' | 'bold' | 'italic' | 'code' | 'strike' | 'heading1' | 'heading2' | 'quote' | 'list'
   | 'cut' | 'copy' | 'paste' | 'selectAll' | 'edit' | 'citation' | 'xref' | 'image' | 'table' | 'equation' | 'embed' | 'history' | 'compare' | 'problem' | 'review' | 'profile' | 'download' | 'inbox' | 'window' | 'backlinks' | 'metadata' | 'duplicate' | 'more' | 'panel' | 'gauge' | 'settings';
 
@@ -9,7 +9,7 @@ const paths: Record<FolioIconName, JSX.Element> = {
   back: <path d="m15 18-6-6 6-6" />, forward: <path d="m9 6 6 6-6 6" />,
   menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>, home: <><path d="m3 10 9-7 9 7v10H3z" /><path d="M9 21v-6h6v6" /></>,
   search: <><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></>, plugins: <><path d="M9 3v4M15 3v4M7 9H5a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2v4h10v-4h2a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-2V7H7z" /><path d="M9 12h.01M15 12h.01" /></>,
-  command: <><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="m7.5 9.5 3 2.5-3 2.5M12.5 15h4" /></>, add: <path d="M12 5v14M5 12h14" />,
+  command: <><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="m7.5 9.5 3 2.5-3 2.5M12.5 15h4" /></>, add: <path d="M12 5v14M5 12h14" />, close: <path d="m6 6 12 12M18 6 6 18" />,
   folder: <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z" />, file: <><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v5h5" /></>, pdf: <><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v5h5M8 16h8M8 12h5" /></>,
   chevronDown: <path d="m6 9 6 6 6-6" />, chevronRight: <path d="m9 6 6 6-6 6" />, expand: <><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5" /></>, collapse: <><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M3 15v6h6" /></>,
   preview: <><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.6" /></>, split: <><rect x="4" y="4" width="16" height="16" rx="1" /><path d="M12 4v16" /></>,

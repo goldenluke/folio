@@ -29,7 +29,7 @@ import {
   type LiteratureFeedInbox,
   type LiteratureSubscriptionSet,
 } from '@abnt/literature-monitoring';
-import { identifiersFromPdfText } from '@abnt/pdf-reconciliation';
+import { identifiersFromPdfText, reconcilePdfText } from '@abnt/pdf-reconciliation';
 import {
   addReferenceRelation as addReferenceRelationToSet,
   assertNotDuplicate,
@@ -117,6 +117,20 @@ import {
   type WorkspaceLibraryRemoveRequest,
   type WorkspaceLibraryFormatRequest,
   type WorkspaceLibraryResolveDoiRequest,
+  type WorkspaceScholarlyIdentifierReviewRequest,
+  type WorkspaceScholarlyIdentifierReviewDto,
+  type WorkspacePdfReconciliationRequest,
+  type WorkspacePdfReconciliationDto,
+  type WorkspaceFullTextDiscoveryRequest,
+  type WorkspaceFullTextDiscoveryDto,
+  type WorkspaceDownloadFullTextRequest,
+  type WorkspaceSystematicReviewDto,
+  type WorkspaceSetSystematicReviewRequest,
+  type WorkspaceResearchDatasetsDto,
+  type WorkspaceSetResearchDatasetsRequest,
+  type WorkspaceImportResearchDatasetRequest,
+  type WorkspaceResearchDatasetPreviewRequest,
+  type WorkspaceResearchDatasetPreviewDto,
   type WorkspaceWebCaptureExtractRequest,
   type WorkspaceWebCaptureExtractResponseDto,
   type WorkspaceLibraryImportRequest,
@@ -147,6 +161,13 @@ import {
   type WorkspaceSetCollaborationRequest,
   type WorkspaceAcademicViewsDto,
   type WorkspaceSetAcademicViewsRequest,
+  type WorkspacePagesDto,
+  type WorkspacePageDto,
+  type WorkspaceEnablePageRequest,
+  type WorkspaceSetPagePropertiesRequest,
+  type WorkspaceTogglePageTaskRequest,
+  type WorkspaceHomeLayoutDto,
+  type WorkspaceSetHomeLayoutRequest,
   type WorkspaceAcademicRelationsDto,
   type WorkspaceAcademicRelationDto,
   type WorkspaceBookmarksDto,
@@ -211,6 +232,8 @@ import {
 } from './reference-attachments.js';
 import { addPdfAnnotation, movePdfAnnotations, readPdfAnnotations, removeStoredPdfAnnotation, updatePdfAnnotation, type PdfAnnotation } from './pdf-annotations.js';
 import { resolveDoi } from './doi-resolver.js';
+import { createScholarlyIdentifierRegistry } from './scholarly-identifier-resolver.js';
+import { discoverFullText, downloadFullText } from './full-text-discovery.js';
 import { fetchFeedItems } from './literature-monitoring.js';
 import { extractWebCaptureCandidates } from './web-capture.js';
 import { scoreWebCaptureFields, type WebCaptureCandidate } from '@abnt/web-capture';
@@ -224,8 +247,10 @@ import { WorkspacePluginCatalog } from './plugins.js';
 import { JsonOperationalSyncAdapter } from './operational-sync.js';
 import { localCollaborator, type CollaborationRole } from '@abnt/collaboration';
 import { createAcademicView, createAcademicViewsDocument, parseAcademicViewsDocument } from '@abnt/academic-views';
+import { createWorkspaceHomeLayout, createWorkspaceThemes, defaultWorkspaceHomeLayout, defaultWorkspaceThemes, enablePageSource, pageSourceWithProperties, parsePageDocument } from '@abnt/page-workspace';
 import { appendJournalCapture, createBookmarks, createCaptureInbox, parseBookmarksDocument, parseCaptureInbox, researchJournalPath, researchJournalSource, type CaptureInboxItem, type WorkspaceBookmark } from '@abnt/workspace-navigation';
 import { createResearchCanvas, parseResearchCanvas, type ResearchCanvas } from '@abnt/research-canvas';
+import { inferSchema, registerDataset, tabularPreview } from '@abnt/research-data';
 
 type DesktopEventListener = (event: DesktopEventDto) => void;
 
@@ -241,6 +266,14 @@ const workspaceFileDto = (file: WorkspaceFile): WorkspaceFileDto => ({
   contentHash: String(file.contentHash),
   ...(file.mediaType !== undefined ? { mediaType: file.mediaType } : {}),
 });
+
+const duplicateCandidates = (library: Record<string, BibliographicEntity>, entry: BibliographicEntity): readonly WorkspaceLibraryDuplicateDto[] => {
+  const candidateId = '__scholarly_identifier_candidate__';
+  return findReferenceDuplicates({ ...library, [candidateId]: entry }).flatMap((pair) => {
+    if (pair.leftId !== candidateId && pair.rightId !== candidateId) return [];
+    return [{ leftId: candidateId, rightId: pair.leftId === candidateId ? pair.rightId : pair.leftId, score: pair.score, reasons: pair.reasons }];
+  });
+};
 
 const errorFor = (error: unknown): ProtocolError => {
   if (error instanceof WorkspaceConflictError) {
@@ -627,6 +660,112 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       const previous = await adapter.read('views');
       await adapter.write({ key: 'views', resource: 'academic-views', content: document as unknown as import('@abnt/workspace-core').WorkspaceJsonValue, contentHash: `sha256:${createHash('sha256').update(JSON.stringify(document)).digest('hex')}`, ...(previous === undefined ? {} : { expectedRevision: previous.revision }) });
       return this.#academicViewsDto(document);
+    });
+  }
+
+  async pages(): Promise<ProtocolResult<WorkspacePagesDto>> {
+    return this.#run(async () => {
+      const storage = this.#requireStorage();
+      const files = (await storage.list()).filter((file) => String(file.path).toLowerCase().endsWith('.md'));
+      return { pages: await Promise.all(files.map(async (file) => this.#pageDto(await storage.read(file.id)))) };
+    });
+  }
+
+  async enablePage(request: WorkspaceEnablePageRequest): Promise<ProtocolResult<WorkspacePageDto>> {
+    return this.#run(async () => this.#mutatePage(request.fileId, request.expectedRevision, (source) => enablePageSource(source, request.id)));
+  }
+
+  async setPageProperties(request: WorkspaceSetPagePropertiesRequest): Promise<ProtocolResult<WorkspacePageDto>> {
+    return this.#run(async () => this.#mutatePage(request.fileId, request.expectedRevision, (source) => pageSourceWithProperties(source, request.properties)));
+  }
+
+  async togglePageTask(request: WorkspaceTogglePageTaskRequest): Promise<ProtocolResult<WorkspacePageDto>> {
+    return this.#run(async () => this.#mutatePage(request.fileId, request.expectedRevision, (source) => {
+      const lineStart = source.lastIndexOf('\n', request.offset) + 1;
+      const end = source.indexOf('\n', lineStart);
+      const lineEnd = end < 0 ? source.length : end;
+      const line = source.slice(lineStart, lineEnd);
+      const next = line.replace(/^(\s*[-*+]\s+\[)[ xX](\])/u, `$1${request.completed ? 'x' : ' '}$2`);
+      if (next === line) throw new Error('A posição indicada não contém uma tarefa Markdown.');
+      return `${source.slice(0, lineStart)}${next}${source.slice(lineEnd)}`;
+    }));
+  }
+
+  async homeLayout(): Promise<ProtocolResult<WorkspaceHomeLayoutDto>> { return this.#run(async () => this.#readHomeLayout()); }
+  async setHomeLayout(request: WorkspaceSetHomeLayoutRequest): Promise<ProtocolResult<WorkspaceHomeLayoutDto>> {
+    return this.#run(async () => {
+      const layout = createWorkspaceHomeLayout(request);
+      await this.#writeOperational('workspace-home', 'layout', layout, ['.academic', 'home']);
+      return layout;
+    });
+  }
+  async themes(): Promise<ProtocolResult<import('@abnt/protocol').WorkspaceThemesDto>> { return this.#run(async () => this.#readThemes()); }
+  async setThemes(request: import('@abnt/protocol').WorkspaceSetThemesRequest): Promise<ProtocolResult<import('@abnt/protocol').WorkspaceThemesDto>> { return this.#run(async () => { const themes = createWorkspaceThemes(request); await this.#writeOperational('workspace-themes', 'themes', themes, ['.academic', 'themes']); return themes; }); }
+  async researchProjects(): Promise<ProtocolResult<import('@abnt/protocol').WorkspaceResearchProjectsDto>> { return this.#run(async () => this.#readResearchProjects()); }
+  async setResearchProjects(request: import('@abnt/protocol').WorkspaceSetResearchProjectsRequest): Promise<ProtocolResult<import('@abnt/protocol').WorkspaceResearchProjectsDto>> {
+    return this.#run(async () => {
+      const projects = request.projects.filter((project) => typeof project.id === 'string' && project.id.trim() !== '' && typeof project.title === 'string' && typeof project.createdAt === 'string' && typeof project.updatedAt === 'string');
+      const document = { version: 1 as const, projects };
+      await this.#writeOperational('research-projects', 'projects', document, ['.academic', 'research-projects']);
+      return document;
+    });
+  }
+  async readingQueue(): Promise<ProtocolResult<import('@abnt/protocol').WorkspaceReadingQueueDto>> { return this.#run(async () => this.#readReadingQueue()); }
+  async setReadingQueue(request: import('@abnt/protocol').WorkspaceSetReadingQueueRequest): Promise<ProtocolResult<import('@abnt/protocol').WorkspaceReadingQueueDto>> {
+    return this.#run(async () => {
+      await this.#writeOperational('reading-queue', 'queue', request, ['.academic', 'reading-queue']);
+      return request;
+    });
+  }
+  async importLegacyResearchProjects(request: import('@abnt/protocol').WorkspaceImportLegacyResearchProjectsRequest): Promise<ProtocolResult<import('@abnt/protocol').WorkspaceImportLegacyResearchProjectsResponse>> {
+    return this.#run(async () => {
+      const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'research-projects', 'projects', ['.academic', 'research-projects']).read('projects');
+      const current = stored?.content !== undefined && !Array.isArray(stored.content) && typeof stored.content === 'object' && Array.isArray((stored.content as { projects?: unknown }).projects) ? (stored.content as { projects: readonly unknown[] }).projects : [];
+      const ids = new Set(current.flatMap((item) => typeof item === 'object' && item !== null && typeof (item as { id?: unknown }).id === 'string' ? [(item as { id: string }).id] : []));
+      const valid = request.projects.filter((project) => typeof project.id === 'string' && project.id.trim() !== '' && typeof project.title === 'string' && typeof project.createdAt === 'string' && typeof project.updatedAt === 'string');
+      const additions = valid.filter((project) => !ids.has(project.id as string));
+      await this.#writeOperational('research-projects', 'projects', { version: 1, projects: [...current, ...additions] }, ['.academic', 'research-projects']);
+      return { imported: additions.length, skipped: request.projects.length - additions.length };
+    });
+  }
+  async importLegacyReadingQueue(request: import('@abnt/protocol').WorkspaceImportLegacyReadingQueueRequest): Promise<ProtocolResult<import('@abnt/protocol').WorkspaceImportLegacyReadingQueueResponse>> {
+    return this.#run(async () => {
+      const current = await this.#readReadingQueue();
+      const additions = Object.entries(request.entries).filter(([id]) => current.entries[id] === undefined);
+      const now = new Date().toISOString();
+      await this.#writeOperational('reading-queue', 'queue', { version: 1, entries: { ...current.entries, ...Object.fromEntries(additions.map(([id, state]) => [id, { state, updatedAt: now }])) } }, ['.academic', 'reading-queue']);
+      return { imported: additions.length, skipped: Object.keys(request.entries).length - additions.length };
+    });
+  }
+
+  async systematicReview(): Promise<ProtocolResult<WorkspaceSystematicReviewDto>> { return this.#run(async () => this.#readSystematicReview()); }
+  async setSystematicReview(request: WorkspaceSetSystematicReviewRequest): Promise<ProtocolResult<WorkspaceSystematicReviewDto>> {
+    return this.#run(async () => { await this.#writeOperational('systematic-review', 'review', request.review, ['.academic', 'systematic-review']); return request.review; });
+  }
+  async researchDatasets(): Promise<ProtocolResult<WorkspaceResearchDatasetsDto>> { return this.#run(async () => this.#readResearchDatasets()); }
+  async setResearchDatasets(request: WorkspaceSetResearchDatasetsRequest): Promise<ProtocolResult<WorkspaceResearchDatasetsDto>> {
+    return this.#run(async () => { await this.#writeOperational('research-datasets', 'datasets', request.datasets, ['.academic', 'datasets']); return request.datasets; });
+  }
+  async importResearchDataset(request: WorkspaceImportResearchDatasetRequest): Promise<ProtocolResult<WorkspaceResearchDatasetsDto>> {
+    return this.#run(async () => {
+      const storage = this.#requireStorage(); if (storage.createBinary === undefined) throw new Error('O backend do vault não suporta datasets binários.');
+      const bytes = Buffer.from(request.base64, 'base64'); const clean = basename(request.name).replace(/[^\p{L}\p{N}._-]/gu, '-') || 'dataset';
+      const existing = await this.#readResearchDatasets(); let path = `datasets/${clean}`; let suffix = 2; const files = await storage.list();
+      while (files.some((file) => String(file.path) === path)) { const dot = clean.lastIndexOf('.'); path = `datasets/${dot < 0 ? clean : clean.slice(0, dot)}-${suffix++}${dot < 0 ? '' : clean.slice(dot)}`; }
+      await storage.createBinary({ path: asWorkspacePath(path), bytes });
+      const record = registerDataset({ id: randomUUID(), path, metadata: request.metadata, bytes, ...(request.previousVersionId === undefined ? {} : { previousVersionId: request.previousVersionId }) });
+      const next: WorkspaceResearchDatasetsDto = { version: 1, datasets: [...existing.datasets, record] };
+      await this.#writeOperational('research-datasets', 'datasets', next, ['.academic', 'datasets']); return next;
+    });
+  }
+  async researchDatasetPreview(request: WorkspaceResearchDatasetPreviewRequest): Promise<ProtocolResult<WorkspaceResearchDatasetPreviewDto>> {
+    return this.#run(async () => {
+      const storage = this.#requireStorage(); const dataset = (await this.#readResearchDatasets()).datasets.find((item) => item.id === request.datasetId);
+      if (dataset === undefined) throw new WorkspaceFileNotFoundError(asWorkspaceFileId(request.datasetId));
+      if (storage.readBinary === undefined) throw new Error('O backend do vault não suporta preview de datasets.');
+      const file = (await storage.list()).find((item) => String(item.path) === dataset.path); if (file === undefined) throw new WorkspaceFileNotFoundError(asWorkspaceFileId(request.datasetId));
+      const bytes = await storage.readBinary(file.id); const preview = tabularPreview(Buffer.from(bytes.bytes).toString('utf8'), dataset.format as import('@abnt/research-data').DatasetFormat);
+      return { datasetId: dataset.id, ...(preview === undefined ? {} : { preview }), schema: preview === undefined ? [] : inferSchema(preview) };
     });
   }
 
@@ -1448,6 +1587,67 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
     return this.#run(async () => {
       const entry = await resolveDoi(request.doi);
       return { ...entry, id: String(entry.id) };
+    });
+  }
+
+  /** Onda BQ: resolução e detecção de duplicata são uma prévia, sem escrita em `library.json`. */
+  async reviewScholarlyIdentifier(request: WorkspaceScholarlyIdentifierReviewRequest): Promise<ProtocolResult<WorkspaceScholarlyIdentifierReviewDto>> {
+    return this.#run(async () => {
+      const library = await readLibrary(this.#requireStorage());
+      const review = await createScholarlyIdentifierRegistry().review(request.input, (entry) => duplicateCandidates(library, entry).map((item) => item.rightId));
+      const value: WorkspaceScholarlyIdentifierReviewDto = {
+        input: review.input,
+        provenance: review.resolution?.provenance ?? [],
+        duplicates: review.resolution === undefined ? [] : duplicateCandidates(library, review.resolution.entry),
+        ...(review.identifier === undefined ? {} : { identifier: review.identifier }),
+        ...(review.resolution === undefined ? {} : { entry: { ...review.resolution.entry, id: String(review.resolution.entry.id) } }),
+        ...(review.error === undefined ? {} : { error: review.error }),
+      };
+      return value;
+    });
+  }
+
+  /** Onda BQ: BG reaproveita exatamente o registry de BF; o PDF nunca recebe metadata por inferência. */
+  async reconcilePdf(request: WorkspacePdfReconciliationRequest): Promise<ProtocolResult<WorkspacePdfReconciliationDto>> {
+    return this.#run(async () => {
+      const library = await readLibrary(this.#requireStorage());
+      const candidate = await reconcilePdfText(request.text, createScholarlyIdentifierRegistry(), (entry) => duplicateCandidates(library, entry).map((item) => item.rightId));
+      return {
+        identifiers: candidate.identifiers,
+        reviews: candidate.reviews.map((review): WorkspaceScholarlyIdentifierReviewDto => ({
+          input: review.input,
+          provenance: review.resolution?.provenance ?? [],
+          duplicates: review.resolution === undefined ? [] : duplicateCandidates(library, review.resolution.entry),
+          ...(review.identifier === undefined ? {} : { identifier: review.identifier }),
+          ...(review.resolution === undefined ? {} : { entry: { ...review.resolution.entry, id: String(review.resolution.entry.id) } }),
+          ...(review.error === undefined ? {} : { error: review.error }),
+        })),
+      };
+    });
+  }
+
+  /** Onda BR: descoberta só devolve candidatos; nenhum download começa sem o clique seguinte. */
+  async discoverFullText(request: WorkspaceFullTextDiscoveryRequest): Promise<ProtocolResult<WorkspaceFullTextDiscoveryDto>> {
+    return this.#run(async () => {
+      const entry = (await readLibrary(this.#requireStorage()))[request.referenceId];
+      if (entry === undefined) throw new WorkspaceFileNotFoundError(asWorkspaceFileId(request.referenceId));
+      return discoverFullText(entry);
+    });
+  }
+
+  /** Download confirmado entra no Attachment Model 2.0 como PDF principal, sem substituir versões existentes. */
+  async downloadFullText(request: WorkspaceDownloadFullTextRequest): Promise<ProtocolResult<import('@abnt/protocol').AttachmentDto>> {
+    return this.#run(async () => {
+      const storage = this.#requireStorage();
+      const entry = (await readLibrary(storage))[request.referenceId];
+      if (entry === undefined) throw new WorkspaceFileNotFoundError(asWorkspaceFileId(request.referenceId));
+      if (storage.createBinary === undefined) throw new Error('O backend do vault não suporta recursos binários.');
+      const downloaded = await downloadFullText(request.url);
+      const filename = sanitizeAttachmentFileName(request.displayTitle ?? `${request.referenceId}.pdf`, `${request.referenceId}.pdf`);
+      const path = uniqueAttachmentPath(await storage.list(), filename.endsWith('.pdf') ? filename : `${filename}.pdf`);
+      const file = await storage.createBinary({ path: asWorkspacePath(path), bytes: Buffer.from(downloaded.base64, 'base64') });
+      const attachment = await addAttachmentToVault(storage, { referenceId: request.referenceId, role: 'primary', kind: 'file', mediaType: downloaded.mediaType, ...(request.displayTitle === undefined ? {} : { displayTitle: request.displayTitle }), version: { versionId: randomUUID(), createdAt: new Date().toISOString(), fileId: String(file.id), path } });
+      return this.#attachmentResultDto(storage, attachment);
     });
   }
 
@@ -2493,12 +2693,18 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       { accepts: (resource) => resource === 'vault-content', adapter: new WorkspaceStorageSyncAdapter(storage) },
       { accepts: (resource) => resource === 'collaboration', adapter: new JsonOperationalSyncAdapter(rootPath, 'collaboration', 'shared-project') },
       { accepts: (resource) => resource === 'academic-views', adapter: new JsonOperationalSyncAdapter(rootPath, 'academic-views', 'views', ['.academic', 'views']) },
+      { accepts: (resource) => resource === 'workspace-home', adapter: new JsonOperationalSyncAdapter(rootPath, 'workspace-home', 'layout', ['.academic', 'home']) },
+      { accepts: (resource) => resource === 'workspace-themes', adapter: new JsonOperationalSyncAdapter(rootPath, 'workspace-themes', 'themes', ['.academic', 'themes']) },
+      { accepts: (resource) => resource === 'research-projects', adapter: new JsonOperationalSyncAdapter(rootPath, 'research-projects', 'projects', ['.academic', 'research-projects']) },
+      { accepts: (resource) => resource === 'reading-queue', adapter: new JsonOperationalSyncAdapter(rootPath, 'reading-queue', 'queue', ['.academic', 'reading-queue']) },
       { accepts: (resource) => resource === 'research-canvases', adapter: new JsonOperationalSyncAdapter(rootPath, 'research-canvases', 'canvases', ['.academic', 'canvases']) },
       { accepts: (resource) => resource === 'academic-relations', adapter: new JsonOperationalSyncAdapter(rootPath, 'academic-relations', 'relations', ['.academic', 'relations']) },
       { accepts: (resource) => resource === 'reference-relations', adapter: new JsonOperationalSyncAdapter(rootPath, 'reference-relations', 'relations', ['.academic', 'relations']) },
       { accepts: (resource) => resource === 'annotation-color-semantics', adapter: new JsonOperationalSyncAdapter(rootPath, 'annotation-color-semantics', 'colors', ['.academic', 'annotations']) },
       { accepts: (resource) => resource === 'literature-subscriptions', adapter: new JsonOperationalSyncAdapter(rootPath, 'literature-subscriptions', 'subscriptions', ['.academic', 'literature-monitoring']) },
       { accepts: (resource) => resource === 'literature-feed-inbox', adapter: new JsonOperationalSyncAdapter(rootPath, 'literature-feed-inbox', 'items', ['.academic', 'literature-monitoring']) },
+      { accepts: (resource) => resource === 'systematic-review', adapter: new JsonOperationalSyncAdapter(rootPath, 'systematic-review', 'review', ['.academic', 'systematic-review']) },
+      { accepts: (resource) => resource === 'research-datasets', adapter: new JsonOperationalSyncAdapter(rootPath, 'research-datasets', 'datasets', ['.academic', 'datasets']) },
     ]);
   }
 
@@ -2531,6 +2737,71 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
     const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'academic-views', 'views', ['.academic', 'views']).read('views');
     if (stored?.content === undefined) return { version: 1, views: [] };
     return this.#academicViewsDto(parseAcademicViewsDocument(stored.content));
+  }
+
+  #pageDto(value: Awaited<ReturnType<WorkspaceStorage['read']>>): WorkspacePageDto {
+    const page = parsePageDocument({ fileId: String(value.file.id), path: String(value.file.path), source: value.content });
+    return { file: workspaceFileDto(value.file), title: page.title, properties: page.properties, tasks: page.tasks, diagnostics: page.diagnostics };
+  }
+
+  async #mutatePage(fileId: string, expectedRevision: number, mutation: (source: string) => string): Promise<WorkspacePageDto> {
+    const id = asWorkspaceFileId(fileId); const editors = this.#requireEditors();
+    const alreadyOpen = editors.controller(id) !== undefined;
+    const controller = alreadyOpen ? editors.controller(id)! : await editors.open(id);
+    try {
+      const snapshot = controller.snapshot();
+      if (snapshot.session.revision !== expectedRevision) throw new WorkspaceConflictError(id, expectedRevision, snapshot.session.revision);
+      const next = mutation(snapshot.session.content);
+      if (next !== snapshot.session.content) controller.dispatch({ edits: [{ range: { start: 0, end: snapshot.session.content.length }, text: next }] });
+      const saved = await controller.save();
+      return this.#pageDto({ file: saved.session.file, content: saved.session.content });
+    } finally { if (!alreadyOpen) editors.close(id); }
+  }
+
+  async #readHomeLayout(): Promise<WorkspaceHomeLayoutDto> {
+    this.#requireStorage();
+    const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'workspace-home', 'layout', ['.academic', 'home']).read('layout');
+    return stored?.content === undefined ? defaultWorkspaceHomeLayout() : createWorkspaceHomeLayout(stored.content as unknown as WorkspaceHomeLayoutDto);
+  }
+  async #readThemes(): Promise<import('@abnt/protocol').WorkspaceThemesDto> {
+    this.#requireStorage();
+    const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'workspace-themes', 'themes', ['.academic', 'themes']).read('themes');
+    return stored?.content === undefined ? defaultWorkspaceThemes() : createWorkspaceThemes(stored.content as unknown as import('@abnt/protocol').WorkspaceThemesDto);
+  }
+  async #readResearchProjects(): Promise<import('@abnt/protocol').WorkspaceResearchProjectsDto> {
+    this.#requireStorage();
+    const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'research-projects', 'projects', ['.academic', 'research-projects']).read('projects');
+    const content = stored?.content;
+    if (content === undefined || Array.isArray(content) || typeof content !== 'object') return { version: 1, projects: [] };
+    const projects = Array.isArray((content as { projects?: unknown }).projects) ? (content as { projects: readonly unknown[] }).projects : [];
+    return { version: 1, projects: projects.flatMap((project) => project !== null && typeof project === 'object' && !Array.isArray(project) ? [project as Readonly<Record<string, unknown>>] : []) };
+  }
+  async #readReadingQueue(): Promise<import('@abnt/protocol').WorkspaceReadingQueueDto> {
+    this.#requireStorage();
+    const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'reading-queue', 'queue', ['.academic', 'reading-queue']).read('queue');
+    const raw = stored?.content;
+    const entries = raw !== undefined && !Array.isArray(raw) && typeof raw === 'object' && (raw as { entries?: unknown }).entries !== undefined ? (raw as { entries: unknown }).entries : raw;
+    if (entries === undefined || Array.isArray(entries) || typeof entries !== 'object') return { version: 1, entries: {} };
+    const accepted = Object.entries(entries as Record<string, unknown>).flatMap(([id, value]) => {
+      const entry = value !== null && typeof value === 'object' && !Array.isArray(value) ? value as { state?: unknown; updatedAt?: unknown } : undefined;
+      const state = entry?.state ?? value;
+      return (state === 'to-read' || state === 'reading' || state === 'read' || state === 'reviewed') ? [[id, { state, updatedAt: typeof entry?.updatedAt === 'string' ? entry.updatedAt : new Date(0).toISOString() }] as const] : [];
+    });
+    return { version: 1, entries: Object.fromEntries(accepted) };
+  }
+
+  async #readSystematicReview(): Promise<WorkspaceSystematicReviewDto> {
+    const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'systematic-review', 'review', ['.academic', 'systematic-review']).read('review');
+    return stored?.content === undefined ? { version: 1, studies: [] } : stored.content as unknown as WorkspaceSystematicReviewDto;
+  }
+  async #readResearchDatasets(): Promise<WorkspaceResearchDatasetsDto> {
+    const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'research-datasets', 'datasets', ['.academic', 'datasets']).read('datasets');
+    return stored?.content === undefined ? { version: 1, datasets: [] } : stored.content as unknown as WorkspaceResearchDatasetsDto;
+  }
+  async #writeOperational(resource: import('@abnt/workspace-core').WorkspaceStateResource, key: string, content: unknown, directory: readonly string[]): Promise<void> {
+    const adapter = new JsonOperationalSyncAdapter(this.#rootPath!, resource, key, directory);
+    const previous = await adapter.read(key);
+    await adapter.write({ key, resource, content: content as import('@abnt/workspace-core').WorkspaceJsonValue, contentHash: `sha256:${createHash('sha256').update(JSON.stringify(content)).digest('hex')}`, ...(previous === undefined ? {} : { expectedRevision: previous.revision }) });
   }
 
   async #readBookmarks(): Promise<WorkspaceBookmarksDto> {

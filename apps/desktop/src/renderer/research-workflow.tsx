@@ -12,20 +12,6 @@ const labels: Record<ReadingState, string> = {
   reviewed: 'Revisado',
 };
 
-const readQueue = (workspaceId: string): ReadingQueue => {
-  try {
-    const parsed: unknown = JSON.parse(window.localStorage.getItem(`folio.reading-queue:${workspaceId}`) ?? '{}');
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
-    return Object.fromEntries(Object.entries(parsed).flatMap(([id, value]) => {
-      if (typeof value !== 'object' || value === null || Array.isArray(value)) return [];
-      const entry = value as { state?: unknown; updatedAt?: unknown };
-      return ['to-read', 'reading', 'read', 'reviewed'].includes(String(entry.state)) && typeof entry.updatedAt === 'string'
-        ? [[id, { state: entry.state as ReadingState, updatedAt: entry.updatedAt }]]
-        : [];
-    }));
-  } catch { return {}; }
-};
-
 const formatDate = (value: string | undefined): string => value === undefined ? 'Ainda não iniciado' : new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(new Date(value));
 
 function StatusSelect({ referenceId, queue, onChange }: { readonly referenceId: string; readonly queue: ReadingQueue; readonly onChange: (state: ReadingState) => void }): JSX.Element {
@@ -41,26 +27,26 @@ function EmptyValue({ children }: { readonly children: string | undefined }): JS
 export function ResearchWorkflowDialog({ workspaceId, onClose, onOpenDocument }: { readonly workspaceId: string; readonly onClose: () => void; readonly onOpenDocument: (fileId: string, path: string) => void }): JSX.Element {
   const [tab, setTab] = useState<'queue' | 'dashboard' | 'matrix'>('queue');
   const [overview, setOverview] = useState<WorkspaceResearchOverviewDto | undefined>(undefined);
-  const [queue, setQueue] = useState<ReadingQueue>(() => readQueue(workspaceId));
+  const [queue, setQueue] = useState<ReadingQueue>({});
   const [message, setMessage] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
     setOverview(undefined);
-    void window.academic.workspace.researchOverview({}).then((result) => {
+    void Promise.all([window.academic.workspace.researchOverview({}), window.academic.workspace.readingQueue()]).then(([overviewResult, queueResult]) => {
       if (cancelled) return;
-      if (result.ok) setOverview(result.value);
-      else setMessage(result.error.message);
+      if (overviewResult.ok) setOverview(overviewResult.value);
+      else setMessage(overviewResult.error.message);
+      if (queueResult.ok) setQueue(queueResult.value.entries);
+      else setMessage(queueResult.error.message);
     });
     return () => { cancelled = true; };
   }, [workspaceId]);
 
   const updateReading = (referenceId: string, state: ReadingState): void => {
-    setQueue((current) => {
-      const next = { ...current, [referenceId]: { state, updatedAt: new Date().toISOString() } };
-      window.localStorage.setItem(`folio.reading-queue:${workspaceId}`, JSON.stringify(next));
-      return next;
-    });
+    const next = { ...queue, [referenceId]: { state, updatedAt: new Date().toISOString() } };
+    setQueue(next);
+    void window.academic.workspace.setReadingQueue({ version: 1, entries: next }).then((result) => { if (!result.ok) setMessage(result.error.message); });
   };
   const createNote = (reference: WorkspaceResearchReferenceDto): void => {
     void window.academic.documents.createLiteratureNote({ referenceId: reference.referenceId }).then((result) => {

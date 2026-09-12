@@ -13,7 +13,7 @@ import { DesktopWorkspaceServiceHost } from '../apps/desktop/src/workspace/works
 it('F96/F97/F99 — manifests são declarativos e a composição institucional preserva o profile base', async () => {
   const manifests = profileManifests();
   const institutional = manifests.find((profile) => profile.id === 'institutional-tcc');
-  expect(manifests.map((profile) => profile.id)).toEqual(expect.arrayContaining(['abnt-artigo', 'abnt-artigo-numerico', 'abnt-tcc', 'web-article', 'institutional-tcc']));
+  expect(manifests.map((profile) => profile.id)).toEqual(expect.arrayContaining(['abnt-artigo', 'abnt-artigo-numerico', 'abnt-tcc', 'web-article', 'institutional-tcc', 'apa-7-institutional', 'apa-7-university-program']));
   expect(institutional).toMatchObject({
     version: '1.0.0',
     composition: { baseProfileId: 'abnt-tcc', overrides: expect.arrayContaining(['page.margin', 'requiredMetadata']) },

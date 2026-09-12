@@ -19,6 +19,8 @@ export interface WorkspacePluginDescriptor {
   readonly commands: readonly { readonly id: string; readonly title: string }[];
   readonly views: readonly { readonly id: string; readonly title: string; readonly body: string }[];
   readonly exports: readonly { readonly id: string; readonly title: string; readonly extension: string; readonly mimeType: string }[];
+  readonly homeBlocks: readonly { readonly id: string; readonly title: string; readonly body: string }[];
+  readonly panels: readonly { readonly id: string; readonly title: string; readonly body: string }[];
   readonly error?: string;
 }
 
@@ -54,7 +56,7 @@ export class WorkspacePluginCatalog {
       const entryPath = resolve(pluginDirectory, manifest.data.entry);
       if (!isInside(pluginDirectory, entryPath) || !(await stat(entryPath).then((value) => value.isFile()).catch(() => false))) { descriptors.push(this.#invalid(manifest.data.id, 'Entry do plugin não existe ou sai do diretório do plugin.')); continue; }
       if (this.#plugins.has(manifest.data.id)) { descriptors.push(this.#invalid(manifest.data.id, 'ID de plugin duplicado.')); continue; }
-      const descriptor: WorkspacePluginDescriptor = { id: manifest.data.id, version: manifest.data.version, apiVersion: manifest.data.apiVersion, capabilities: manifest.data.capabilities, enabled: this.#state.enabled[manifest.data.id] !== false, commands: manifest.data.commands ?? [], views: manifest.data.views ?? [], exports: manifest.data.exports ?? [] };
+      const descriptor: WorkspacePluginDescriptor = { id: manifest.data.id, version: manifest.data.version, apiVersion: manifest.data.apiVersion, capabilities: manifest.data.capabilities, enabled: this.#state.enabled[manifest.data.id] !== false, commands: manifest.data.commands ?? [], views: manifest.data.views ?? [], exports: manifest.data.exports ?? [], homeBlocks: manifest.data.homeBlocks ?? [], panels: manifest.data.panels ?? [] };
       this.#plugins.set(manifest.data.id, { manifest: manifest.data, entryPath, descriptor }); descriptors.push(descriptor);
     }
     this.#descriptors = descriptors; return descriptors;
@@ -89,7 +91,7 @@ export class WorkspacePluginCatalog {
 
   #enabled(id: string, capability: string): LoadedPlugin { const plugin = this.#plugins.get(id); if (plugin === undefined) throw new Error(`Plugin desconhecido: ${id}`); if (!plugin.descriptor.enabled) throw new Error(`Plugin desabilitado: ${id}`); if (!plugin.manifest.capabilities.includes(capability as never)) throw new Error(`Plugin não declarou capability ${capability}.`); return plugin; }
   async #assertIdentity(host: PluginHost, manifest: FolioPluginManifest): Promise<void> { const info = await host.ready(); if (info.id !== manifest.id || info.version !== manifest.version) throw new Error(`Identidade do entry diverge do manifesto de ${manifest.id}.`); }
-  #invalid(id: string, error: string): WorkspacePluginDescriptor { return { id, capabilities: [], enabled: false, commands: [], views: [], exports: [], error }; }
+  #invalid(id: string, error: string): WorkspacePluginDescriptor { return { id, capabilities: [], enabled: false, commands: [], views: [], exports: [], homeBlocks: [], panels: [], error }; }
   async #readState(): Promise<PluginState> { const raw = await readFile(join(this.#rootPath, STATE_PATH), 'utf8').catch(() => undefined); if (raw === undefined) return DEFAULT_STATE; try { const value: unknown = JSON.parse(raw); if (typeof value === 'object' && value !== null && (value as { schema?: unknown }).schema === 'folio-plugin-state' && (value as { version?: unknown }).version === 1 && typeof (value as { enabled?: unknown }).enabled === 'object' && (value as { enabled?: unknown }).enabled !== null) return value as PluginState; } catch { /* preferências corrompidas voltam ao padrão */ } return DEFAULT_STATE; }
   async #writeState(): Promise<void> { const target = join(this.#rootPath, STATE_PATH); await mkdir(join(this.#rootPath, '.academic'), { recursive: true }); const temporary = `${target}.tmp`; await writeFile(temporary, JSON.stringify(this.#state, null, 2), 'utf8'); await rename(temporary, target); }
 }

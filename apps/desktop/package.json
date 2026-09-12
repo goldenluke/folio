@@ -15,11 +15,18 @@
     "package:linux": "NODE_OPTIONS=--conditions=development tsx scripts/package-linux.ts",
     "smoke:package": "node scripts/package-smoke.mjs",
     "installer:linux": "NODE_OPTIONS=--conditions=development tsx scripts/installer-linux.ts",
-    "smoke:installer": "node scripts/installer-smoke.mjs"
+    "smoke:installer": "node scripts/installer-smoke.mjs",
+    "build:native:windows": "FOLIO_NATIVE_TARGET=win32-x64 NODE_OPTIONS=--conditions=development tsx scripts/build.ts",
+    "package:windows": "NODE_OPTIONS=--conditions=development tsx scripts/package-windows.ts",
+    "smoke:package:windows": "node scripts/package-windows-smoke.mjs"
   },
   "dependencies": {
     "@abnt/annotation-synthesis": "workspace:*",
     "@abnt/attachment-model": "workspace:*",
+    "@abnt/full-text-discovery": "workspace:*",
+    "@abnt/ai": "workspace:*",
+    "@abnt/systematic-review": "workspace:*",
+    "@abnt/research-data": "workspace:*",
     "@abnt/literature-monitoring": "workspace:*",
     "@abnt/pdf-reconciliation": "workspace:*",
     "@abnt/scholarly-identifiers": "workspace:*",
@@ -28,6 +35,7 @@
     "@abnt/web-capture": "workspace:*",
     "@abnt/block-composition": "workspace:*",
     "@abnt/academic-views": "workspace:*",
+    "@abnt/page-workspace": "workspace:*",
     "@abnt/academic-forms": "workspace:*",
     "@abnt/compiler": "workspace:*",
     "@abnt/collaboration": "workspace:*",

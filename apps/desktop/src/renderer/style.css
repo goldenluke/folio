@@ -101,6 +101,29 @@ textarea:focus-visible {
     box-shadow: -16px 0 40px rgb(15 23 42 / 0.03);
   }
 
+  .folio-panel-resizer {
+    position: relative;
+    z-index: 2;
+    width: 4px;
+    cursor: col-resize;
+    background: transparent;
+  }
+
+  .folio-panel-resizer::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 1px;
+    width: 2px;
+    border-radius: 99px;
+    content: "";
+    background: transparent;
+    transition: background 150ms ease;
+  }
+
+  .folio-panel-resizer:hover::after,
+  .folio-panel-resizer:focus-visible::after { background: #818cf8; }
+
   .folio-context-panel {
     position: relative;
     isolation: isolate;

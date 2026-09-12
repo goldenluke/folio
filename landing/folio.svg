@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Folio">
+  <defs><linearGradient id="folio" x1="90" y1="55" x2="420" y2="470" gradientUnits="userSpaceOnUse"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#312e81"/></linearGradient></defs>
+  <rect width="512" height="512" rx="112" fill="#ffffff"/>
+  <rect x="102" y="76" width="270" height="334" rx="66" fill="url(#folio)"/>
+  <path d="M205 166h118M205 217h88M205 268h118M205 319h70" stroke="white" stroke-width="30" stroke-linecap="round"/>
+  <path d="M372 145h20a42 42 0 0 1 42 42v197a42 42 0 0 1-42 42H205" stroke="#a5b4fc" stroke-width="25" stroke-linecap="round"/>
+</svg>

@@ -8,7 +8,7 @@
 export interface NativeAddonManifest {
   readonly schemaVersion: 1;
   readonly product: 'Folio';
-  readonly platform: 'linux';
+  readonly platform: 'linux' | 'win32';
   readonly architecture: 'x64';
   readonly electronVersion: string;
   readonly electronModuleAbi: string;
@@ -24,6 +24,12 @@ export const OFFICIAL_NATIVE_TARGETS = [
     platform: 'linux',
     architecture: 'x64',
     runner: 'ubuntu-22.04',
+    tier: 1,
+  },
+  {
+    platform: 'win32',
+    architecture: 'x64',
+    runner: 'windows-2022',
     tier: 1,
   },
 ] as const;

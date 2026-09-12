@@ -143,6 +143,9 @@ importers:
       '@abnt/academic-views':
         specifier: workspace:*
         version: link:../../packages/academic-views
+      '@abnt/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@abnt/annotation-synthesis':
         specifier: workspace:*
         version: link:../../packages/annotation-synthesis
@@ -170,12 +173,18 @@ importers:
       '@abnt/editor-core':
         specifier: workspace:*
         version: link:../../packages/editor-core
+      '@abnt/full-text-discovery':
+        specifier: workspace:*
+        version: link:../../packages/full-text-discovery
       '@abnt/language-service':
         specifier: workspace:*
         version: link:../../packages/language-service
       '@abnt/literature-monitoring':
         specifier: workspace:*
         version: link:../../packages/literature-monitoring
+      '@abnt/page-workspace':
+        specifier: workspace:*
+        version: link:../../packages/page-workspace
       '@abnt/pdf-reconciliation':
         specifier: workspace:*
         version: link:../../packages/pdf-reconciliation
@@ -203,6 +212,9 @@ importers:
       '@abnt/research-canvas':
         specifier: workspace:*
         version: link:../../packages/research-canvas
+      '@abnt/research-data':
+        specifier: workspace:*
+        version: link:../../packages/research-data
       '@abnt/scholarly-identifiers':
         specifier: workspace:*
         version: link:../../packages/scholarly-identifiers
@@ -212,6 +224,9 @@ importers:
       '@abnt/submission-integrations':
         specifier: workspace:*
         version: link:../../packages/submission-integrations
+      '@abnt/systematic-review':
+        specifier: workspace:*
+        version: link:../../packages/systematic-review
       '@abnt/web-capture':
         specifier: workspace:*
         version: link:../../packages/web-capture
@@ -493,6 +508,15 @@ importers:
       '@types/mdast':
         specifier: ^4.0.4
         version: 4.0.4
+
+  packages/page-workspace:
+    dependencies:
+      '@abnt/markdown':
+        specifier: workspace:*
+        version: link:../markdown
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
 
   packages/pdf-reconciliation:
     dependencies:

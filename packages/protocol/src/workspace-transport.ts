@@ -42,6 +42,14 @@ import {
   type WorkspaceLibraryRemoveRequest,
   type WorkspaceLibraryFormatRequest,
   type WorkspaceLibraryResolveDoiRequest,
+  type WorkspaceScholarlyIdentifierReviewRequest,
+  type WorkspacePdfReconciliationRequest,
+  type WorkspaceFullTextDiscoveryRequest,
+  type WorkspaceDownloadFullTextRequest,
+  type WorkspaceSetSystematicReviewRequest,
+  type WorkspaceSetResearchDatasetsRequest,
+  type WorkspaceImportResearchDatasetRequest,
+  type WorkspaceResearchDatasetPreviewRequest,
   type WorkspaceWebCaptureExtractRequest,
   type WorkspaceLibraryImportRequest,
   type WorkspaceLibraryIntakePreviewRequest,
@@ -83,6 +91,15 @@ import {
   type WorkspaceResolveSyncConflictRequest,
   type WorkspaceSetCollaborationRequest,
   type WorkspaceSetAcademicViewsRequest,
+  type WorkspaceEnablePageRequest,
+  type WorkspaceSetPagePropertiesRequest,
+  type WorkspaceTogglePageTaskRequest,
+  type WorkspaceSetHomeLayoutRequest,
+  type WorkspaceSetThemesRequest,
+  type WorkspaceSetResearchProjectsRequest,
+  type WorkspaceSetReadingQueueRequest,
+  type WorkspaceImportLegacyResearchProjectsRequest,
+  type WorkspaceImportLegacyReadingQueueRequest,
   type WorkspaceSetBookmarksRequest,
   type WorkspaceSetCaptureInboxRequest,
   type WorkspaceSetResearchCanvasesRequest,
@@ -151,6 +168,23 @@ import {
   workspacePeekRequestSchema,
   workspacePeekResponseSchema,
   workspaceSetAcademicViewsRequestSchema,
+  workspacePagesResponseSchema,
+  workspaceEnablePageRequestSchema,
+  workspaceSetPagePropertiesRequestSchema,
+  workspaceTogglePageTaskRequestSchema,
+  workspacePageDtoSchema,
+  workspaceHomeLayoutResponseSchema,
+  workspaceSetHomeLayoutRequestSchema,
+  workspaceThemesResponseSchema,
+  workspaceSetThemesRequestSchema,
+  workspaceResearchProjectsResponseSchema,
+  workspaceSetResearchProjectsRequestSchema,
+  workspaceReadingQueueResponseSchema,
+  workspaceSetReadingQueueRequestSchema,
+  workspaceImportLegacyResearchProjectsRequestSchema,
+  workspaceImportLegacyResearchProjectsResponseSchema,
+  workspaceImportLegacyReadingQueueRequestSchema,
+  workspaceImportLegacyReadingQueueResponseSchema,
   workspaceReadRequestSchema,
   workspaceReadResponseSchema,
   workspaceAssetPreviewRequestSchema,
@@ -186,6 +220,20 @@ import {
   workspaceLibraryFormatRequestSchema,
   workspaceLibraryFormatResponseSchema,
   workspaceLibraryResolveDoiRequestSchema,
+  workspaceScholarlyIdentifierReviewRequestSchema,
+  workspaceScholarlyIdentifierReviewResponseSchema,
+  workspacePdfReconciliationRequestSchema,
+  workspacePdfReconciliationResponseSchema,
+  workspaceFullTextDiscoveryRequestSchema,
+  workspaceFullTextDiscoveryResponseSchema,
+  workspaceDownloadFullTextRequestSchema,
+  workspaceSystematicReviewResponseSchema,
+  workspaceSetSystematicReviewRequestSchema,
+  workspaceResearchDatasetsResponseSchema,
+  workspaceSetResearchDatasetsRequestSchema,
+  workspaceImportResearchDatasetRequestSchema,
+  workspaceResearchDatasetPreviewRequestSchema,
+  workspaceResearchDatasetPreviewResponseSchema,
   workspaceWebCaptureExtractRequestSchema,
   workspaceWebCaptureExtractResponseSchema,
   workspaceLibraryImportRequestSchema,
@@ -311,6 +359,20 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
     setCollaboration: (request, signal) => call(request, workspaceSetCollaborationRequestSchema, workspaceCollaborationResponseSchema, service.setCollaboration.bind(service), signal),
     academicViews: (signal) => call(undefined, emptyResponseSchema, workspaceAcademicViewsResponseSchema, (_request, currentSignal) => service.academicViews(currentSignal), signal),
     setAcademicViews: (request, signal) => call(request, workspaceSetAcademicViewsRequestSchema, workspaceAcademicViewsResponseSchema, service.setAcademicViews.bind(service), signal),
+    pages: (signal) => call(undefined, emptyResponseSchema, workspacePagesResponseSchema, (_request, currentSignal) => service.pages(currentSignal), signal),
+    enablePage: (request, signal) => call(request, workspaceEnablePageRequestSchema, workspacePageDtoSchema, service.enablePage.bind(service), signal),
+    setPageProperties: (request, signal) => call(request, workspaceSetPagePropertiesRequestSchema, workspacePageDtoSchema, service.setPageProperties.bind(service), signal),
+    togglePageTask: (request, signal) => call(request, workspaceTogglePageTaskRequestSchema, workspacePageDtoSchema, service.togglePageTask.bind(service), signal),
+    homeLayout: (signal) => call(undefined, emptyResponseSchema, workspaceHomeLayoutResponseSchema, (_request, currentSignal) => service.homeLayout(currentSignal), signal),
+    setHomeLayout: (request, signal) => call(request, workspaceSetHomeLayoutRequestSchema, workspaceHomeLayoutResponseSchema, service.setHomeLayout.bind(service), signal),
+    themes: (signal) => call(undefined, emptyResponseSchema, workspaceThemesResponseSchema, (_request, currentSignal) => service.themes(currentSignal), signal),
+    setThemes: (request, signal) => call(request, workspaceSetThemesRequestSchema, workspaceThemesResponseSchema, service.setThemes.bind(service), signal),
+    researchProjects: (signal) => call(undefined, emptyResponseSchema, workspaceResearchProjectsResponseSchema, (_request, currentSignal) => service.researchProjects(currentSignal), signal),
+    setResearchProjects: (request, signal) => call(request, workspaceSetResearchProjectsRequestSchema, workspaceResearchProjectsResponseSchema, service.setResearchProjects.bind(service), signal),
+    readingQueue: (signal) => call(undefined, emptyResponseSchema, workspaceReadingQueueResponseSchema, (_request, currentSignal) => service.readingQueue(currentSignal), signal),
+    setReadingQueue: (request, signal) => call(request, workspaceSetReadingQueueRequestSchema, workspaceReadingQueueResponseSchema, service.setReadingQueue.bind(service), signal),
+    importLegacyResearchProjects: (request, signal) => call(request, workspaceImportLegacyResearchProjectsRequestSchema, workspaceImportLegacyResearchProjectsResponseSchema, service.importLegacyResearchProjects.bind(service), signal),
+    importLegacyReadingQueue: (request, signal) => call(request, workspaceImportLegacyReadingQueueRequestSchema, workspaceImportLegacyReadingQueueResponseSchema, service.importLegacyReadingQueue.bind(service), signal),
     academicRelations: (signal) => call(undefined, emptyResponseSchema, workspaceAcademicRelationsResponseSchema, (_request, currentSignal) => service.academicRelations(currentSignal), signal),
     referenceRelations: (request, signal) => call(request, workspaceReferenceRelationsRequestSchema, workspaceReferenceRelationsResponseSchema, service.referenceRelations.bind(service), signal),
     addReferenceRelation: (request, signal) => call(request, workspaceAddReferenceRelationRequestSchema, referenceRelationDtoSchema, service.addReferenceRelation.bind(service), signal),
@@ -415,6 +477,18 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
       call(request, workspaceLibraryFormatRequestSchema, workspaceLibraryFormatResponseSchema, service.libraryFormat.bind(service), signal),
     libraryResolveDoi: (request, signal) =>
       call(request, workspaceLibraryResolveDoiRequestSchema, workspaceLibraryEntryResponseSchema, service.libraryResolveDoi.bind(service), signal),
+    reviewScholarlyIdentifier: (request, signal) =>
+      call(request, workspaceScholarlyIdentifierReviewRequestSchema, workspaceScholarlyIdentifierReviewResponseSchema, service.reviewScholarlyIdentifier.bind(service), signal),
+    reconcilePdf: (request, signal) =>
+      call(request, workspacePdfReconciliationRequestSchema, workspacePdfReconciliationResponseSchema, service.reconcilePdf.bind(service), signal),
+    discoverFullText: (request, signal) => call(request, workspaceFullTextDiscoveryRequestSchema, workspaceFullTextDiscoveryResponseSchema, service.discoverFullText.bind(service), signal),
+    downloadFullText: (request, signal) => call(request, workspaceDownloadFullTextRequestSchema, workspaceAttachmentResponseSchema, service.downloadFullText.bind(service), signal),
+    systematicReview: (signal) => call(undefined, emptyResponseSchema, workspaceSystematicReviewResponseSchema, (_request, currentSignal) => service.systematicReview(currentSignal), signal),
+    setSystematicReview: (request, signal) => call(request, workspaceSetSystematicReviewRequestSchema, workspaceSystematicReviewResponseSchema, service.setSystematicReview.bind(service), signal),
+    researchDatasets: (signal) => call(undefined, emptyResponseSchema, workspaceResearchDatasetsResponseSchema, (_request, currentSignal) => service.researchDatasets(currentSignal), signal),
+    setResearchDatasets: (request, signal) => call(request, workspaceSetResearchDatasetsRequestSchema, workspaceResearchDatasetsResponseSchema, service.setResearchDatasets.bind(service), signal),
+    importResearchDataset: (request, signal) => call(request, workspaceImportResearchDatasetRequestSchema, workspaceResearchDatasetsResponseSchema, service.importResearchDataset.bind(service), signal),
+    researchDatasetPreview: (request, signal) => call(request, workspaceResearchDatasetPreviewRequestSchema, workspaceResearchDatasetPreviewResponseSchema, service.researchDatasetPreview.bind(service), signal),
     webCaptureExtract: (request, signal) =>
       call(request, workspaceWebCaptureExtractRequestSchema, workspaceWebCaptureExtractResponseSchema, service.webCaptureExtract.bind(service), signal),
     libraryImport: (request, signal) =>
@@ -507,6 +581,34 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.academicViews(controller.signal);
           case 'workspace/academic-views-set':
             return local.setAcademicViews(envelope.payload as WorkspaceSetAcademicViewsRequest, controller.signal);
+          case 'workspace/pages':
+            return local.pages(controller.signal);
+          case 'workspace/page-enable':
+            return local.enablePage(envelope.payload as WorkspaceEnablePageRequest, controller.signal);
+          case 'workspace/page-properties-set':
+            return local.setPageProperties(envelope.payload as WorkspaceSetPagePropertiesRequest, controller.signal);
+          case 'workspace/page-task-toggle':
+            return local.togglePageTask(envelope.payload as WorkspaceTogglePageTaskRequest, controller.signal);
+          case 'workspace/home-layout':
+            return local.homeLayout(controller.signal);
+          case 'workspace/home-layout-set':
+            return local.setHomeLayout(envelope.payload as WorkspaceSetHomeLayoutRequest, controller.signal);
+          case 'workspace/themes':
+            return local.themes(controller.signal);
+          case 'workspace/themes-set':
+            return local.setThemes(envelope.payload as WorkspaceSetThemesRequest, controller.signal);
+          case 'workspace/research-projects':
+            return local.researchProjects(controller.signal);
+          case 'workspace/research-projects-set':
+            return local.setResearchProjects(envelope.payload as WorkspaceSetResearchProjectsRequest, controller.signal);
+          case 'workspace/reading-queue':
+            return local.readingQueue(controller.signal);
+          case 'workspace/reading-queue-set':
+            return local.setReadingQueue(envelope.payload as WorkspaceSetReadingQueueRequest, controller.signal);
+          case 'workspace/research-projects-import-legacy':
+            return local.importLegacyResearchProjects(envelope.payload as WorkspaceImportLegacyResearchProjectsRequest, controller.signal);
+          case 'workspace/reading-queue-import-legacy':
+            return local.importLegacyReadingQueue(envelope.payload as WorkspaceImportLegacyReadingQueueRequest, controller.signal);
           case 'workspace/academic-relations':
             return local.academicRelations(controller.signal);
           case 'workspace/reference-relations':
@@ -616,6 +718,20 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.libraryFormat(envelope.payload as WorkspaceLibraryFormatRequest, controller.signal);
           case 'workspace/library-resolve-doi':
             return local.libraryResolveDoi(envelope.payload as WorkspaceLibraryResolveDoiRequest, controller.signal);
+          case 'workspace/review-scholarly-identifier':
+            return local.reviewScholarlyIdentifier(envelope.payload as WorkspaceScholarlyIdentifierReviewRequest, controller.signal);
+          case 'workspace/reconcile-pdf':
+            return local.reconcilePdf(envelope.payload as WorkspacePdfReconciliationRequest, controller.signal);
+          case 'workspace/discover-full-text':
+            return local.discoverFullText(envelope.payload as WorkspaceFullTextDiscoveryRequest, controller.signal);
+          case 'workspace/download-full-text':
+            return local.downloadFullText(envelope.payload as WorkspaceDownloadFullTextRequest, controller.signal);
+          case 'workspace/systematic-review': return local.systematicReview(controller.signal);
+          case 'workspace/systematic-review-set': return local.setSystematicReview(envelope.payload as WorkspaceSetSystematicReviewRequest, controller.signal);
+          case 'workspace/research-datasets': return local.researchDatasets(controller.signal);
+          case 'workspace/research-datasets-set': return local.setResearchDatasets(envelope.payload as WorkspaceSetResearchDatasetsRequest, controller.signal);
+          case 'workspace/research-datasets-import': return local.importResearchDataset(envelope.payload as WorkspaceImportResearchDatasetRequest, controller.signal);
+          case 'workspace/research-dataset-preview': return local.researchDatasetPreview(envelope.payload as WorkspaceResearchDatasetPreviewRequest, controller.signal);
           case 'workspace/web-capture-extract':
             return local.webCaptureExtract(envelope.payload as WorkspaceWebCaptureExtractRequest, controller.signal);
           case 'workspace/library-import':
@@ -790,6 +906,20 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
     setCollaboration: (value, signal) => request('workspace/collaboration-set', value, workspaceSetCollaborationRequestSchema, workspaceCollaborationResponseSchema, signal),
     academicViews: (signal) => request('workspace/academic-views', undefined, emptyResponseSchema, workspaceAcademicViewsResponseSchema, signal),
     setAcademicViews: (value, signal) => request('workspace/academic-views-set', value, workspaceSetAcademicViewsRequestSchema, workspaceAcademicViewsResponseSchema, signal),
+    pages: (signal) => request('workspace/pages', undefined, emptyResponseSchema, workspacePagesResponseSchema, signal),
+    enablePage: (value, signal) => request('workspace/page-enable', value, workspaceEnablePageRequestSchema, workspacePageDtoSchema, signal),
+    setPageProperties: (value, signal) => request('workspace/page-properties-set', value, workspaceSetPagePropertiesRequestSchema, workspacePageDtoSchema, signal),
+    togglePageTask: (value, signal) => request('workspace/page-task-toggle', value, workspaceTogglePageTaskRequestSchema, workspacePageDtoSchema, signal),
+    homeLayout: (signal) => request('workspace/home-layout', undefined, emptyResponseSchema, workspaceHomeLayoutResponseSchema, signal),
+    setHomeLayout: (value, signal) => request('workspace/home-layout-set', value, workspaceSetHomeLayoutRequestSchema, workspaceHomeLayoutResponseSchema, signal),
+    themes: (signal) => request('workspace/themes', undefined, emptyResponseSchema, workspaceThemesResponseSchema, signal),
+    setThemes: (value, signal) => request('workspace/themes-set', value, workspaceSetThemesRequestSchema, workspaceThemesResponseSchema, signal),
+    researchProjects: (signal) => request('workspace/research-projects', undefined, emptyResponseSchema, workspaceResearchProjectsResponseSchema, signal),
+    setResearchProjects: (value, signal) => request('workspace/research-projects-set', value, workspaceSetResearchProjectsRequestSchema, workspaceResearchProjectsResponseSchema, signal),
+    readingQueue: (signal) => request('workspace/reading-queue', undefined, emptyResponseSchema, workspaceReadingQueueResponseSchema, signal),
+    setReadingQueue: (value, signal) => request('workspace/reading-queue-set', value, workspaceSetReadingQueueRequestSchema, workspaceReadingQueueResponseSchema, signal),
+    importLegacyResearchProjects: (value, signal) => request('workspace/research-projects-import-legacy', value, workspaceImportLegacyResearchProjectsRequestSchema, workspaceImportLegacyResearchProjectsResponseSchema, signal),
+    importLegacyReadingQueue: (value, signal) => request('workspace/reading-queue-import-legacy', value, workspaceImportLegacyReadingQueueRequestSchema, workspaceImportLegacyReadingQueueResponseSchema, signal),
     academicRelations: (signal) => request('workspace/academic-relations', undefined, emptyResponseSchema, workspaceAcademicRelationsResponseSchema, signal),
     referenceRelations: (value, signal) => request('workspace/reference-relations', value, workspaceReferenceRelationsRequestSchema, workspaceReferenceRelationsResponseSchema, signal),
     addReferenceRelation: (value, signal) => request('workspace/add-reference-relation', value, workspaceAddReferenceRelationRequestSchema, referenceRelationDtoSchema, signal),
@@ -886,6 +1016,18 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
       request('workspace/library-format', value, workspaceLibraryFormatRequestSchema, workspaceLibraryFormatResponseSchema, signal),
     libraryResolveDoi: (value, signal) =>
       request('workspace/library-resolve-doi', value, workspaceLibraryResolveDoiRequestSchema, workspaceLibraryEntryResponseSchema, signal),
+    reviewScholarlyIdentifier: (value, signal) =>
+      request('workspace/review-scholarly-identifier', value, workspaceScholarlyIdentifierReviewRequestSchema, workspaceScholarlyIdentifierReviewResponseSchema, signal),
+    reconcilePdf: (value, signal) =>
+      request('workspace/reconcile-pdf', value, workspacePdfReconciliationRequestSchema, workspacePdfReconciliationResponseSchema, signal),
+    discoverFullText: (value, signal) => request('workspace/discover-full-text', value, workspaceFullTextDiscoveryRequestSchema, workspaceFullTextDiscoveryResponseSchema, signal),
+    downloadFullText: (value, signal) => request('workspace/download-full-text', value, workspaceDownloadFullTextRequestSchema, workspaceAttachmentResponseSchema, signal),
+    systematicReview: (signal) => request('workspace/systematic-review', undefined, emptyResponseSchema, workspaceSystematicReviewResponseSchema, signal),
+    setSystematicReview: (value, signal) => request('workspace/systematic-review-set', value, workspaceSetSystematicReviewRequestSchema, workspaceSystematicReviewResponseSchema, signal),
+    researchDatasets: (signal) => request('workspace/research-datasets', undefined, emptyResponseSchema, workspaceResearchDatasetsResponseSchema, signal),
+    setResearchDatasets: (value, signal) => request('workspace/research-datasets-set', value, workspaceSetResearchDatasetsRequestSchema, workspaceResearchDatasetsResponseSchema, signal),
+    importResearchDataset: (value, signal) => request('workspace/research-datasets-import', value, workspaceImportResearchDatasetRequestSchema, workspaceResearchDatasetsResponseSchema, signal),
+    researchDatasetPreview: (value, signal) => request('workspace/research-dataset-preview', value, workspaceResearchDatasetPreviewRequestSchema, workspaceResearchDatasetPreviewResponseSchema, signal),
     webCaptureExtract: (value, signal) =>
       request('workspace/web-capture-extract', value, workspaceWebCaptureExtractRequestSchema, workspaceWebCaptureExtractResponseSchema, signal),
     libraryImport: (value, signal) =>

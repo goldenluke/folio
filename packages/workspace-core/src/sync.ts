@@ -29,12 +29,17 @@ export type WorkspaceStateResource =
   | 'citation-intents'
   | 'collaboration'
   | 'academic-views'
+  | 'workspace-home'
+  | 'workspace-themes'
+  | 'workspace-extensions'
   | 'research-canvases'
   | 'academic-relations'
   | 'reference-relations'
   | 'annotation-color-semantics'
   | 'literature-subscriptions'
   | 'literature-feed-inbox'
+  | 'systematic-review'
+  | 'research-datasets'
   | 'bookmarks'
   | 'recent-files'
   | 'window-layout'
@@ -75,12 +80,17 @@ export const WORKSPACE_STATE_POLICIES: readonly WorkspaceStatePolicy[] = [
   { resource: 'citation-intents', classification: 'portable-operational', reason: 'Intenções de citação são anotações locais, não conteúdo normativo.' },
   { resource: 'collaboration', classification: 'portable-operational', reason: 'Papéis, threads, atribuições e marcos pertencem ao projeto compartilhado, fora do Markdown.' },
   { resource: 'academic-views', classification: 'portable-operational', reason: 'Definições de views são configuração portátil; linhas e totais continuam projeções reconstruíveis.' },
+  { resource: 'workspace-home', classification: 'portable-operational', reason: 'A composição da Home aponta para dados existentes e acompanha o vault sem copiar conteúdo.' },
+  { resource: 'workspace-themes', classification: 'portable-operational', reason: 'Temas são preferências declarativas e validadas do workspace, não CSS executável.' },
+  { resource: 'workspace-extensions', classification: 'portable-operational', reason: 'Configuração e permissões declaradas de extensões acompanham o workspace, sem conceder acesso implícito.' },
   { resource: 'research-canvases', classification: 'portable-operational', reason: 'Canvas organiza referências e argumentos sem alterar a autoria Markdown.' },
   { resource: 'academic-relations', classification: 'portable-operational', reason: 'Vínculos de projeto, dataset e evidência organizam entidades existentes sem copiar conteúdo.' },
   { resource: 'reference-relations', classification: 'portable-operational', reason: 'Relação explícita entre duas referências (versão/extensão/réplica/revisão/correção) organiza a biblioteca sem copiar CSL-JSON.' },
   { resource: 'annotation-color-semantics', classification: 'portable-operational', reason: 'Mapa cor→rótulo é preferência de pesquisa reutilizável entre sessões, não conteúdo do PDF nem da anotação em si.' },
   { resource: 'literature-subscriptions', classification: 'portable-operational', reason: 'Assinaturas de feed são configuração de monitoramento do pesquisador, não conteúdo autoral.' },
   { resource: 'literature-feed-inbox', classification: 'portable-operational', reason: 'Itens de feed aguardando revisão nunca são a biblioteca canônica; é fila operacional, como o reference-inbox.' },
+  { resource: 'systematic-review', classification: 'portable-operational', reason: 'Protocolo, triagem e extração organizam revisão reproduzível sem substituir Markdown ou CSL-JSON.' },
+  { resource: 'research-datasets', classification: 'portable-operational', reason: 'Metadados, hashes e proveniência descrevem datasets armazenados no vault sem duplicar seus bytes.' },
   { resource: 'bookmarks', classification: 'portable-operational', reason: 'Atalhos apontam para entidades existentes e acompanham o vault sem duplicar conteúdo.' },
   { resource: 'recent-files', classification: 'machine-local', reason: 'Recência depende da máquina e não altera o vault.' },
   { resource: 'window-layout', classification: 'machine-local', reason: 'Layout depende de tela e preferência do dispositivo.' },
@@ -129,12 +139,17 @@ export interface PortableWorkspaceStateEntry {
     | 'citation-intents'
     | 'collaboration'
     | 'academic-views'
+    | 'workspace-home'
+    | 'workspace-themes'
+    | 'workspace-extensions'
     | 'research-canvases'
     | 'academic-relations'
     | 'reference-relations'
     | 'annotation-color-semantics'
     | 'literature-subscriptions'
     | 'literature-feed-inbox'
+    | 'systematic-review'
+    | 'research-datasets'
     | 'bookmarks'>;
   /** Revisão da entidade operacional, independente da revisão de um Markdown. */
   readonly revision: string;

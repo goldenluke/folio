@@ -3,7 +3,7 @@ import type { DiagnosticDto, PublicationDocument, ResolvedDocumentDto } from '@a
 /** A versão do contrato de produto; manifestos incompatíveis nunca são ativados. */
 export const FOLIO_PLUGIN_API_VERSION = 1;
 
-export type FolioPluginCapability = 'lint' | 'commands' | 'views' | 'language-diagnostics' | 'export' | 'read-document' | 'read-library' | 'network' | 'write-operational-state';
+export type FolioPluginCapability = 'lint' | 'commands' | 'views' | 'language-diagnostics' | 'export' | 'read-document' | 'read-library' | 'network' | 'write-operational-state' | 'themes' | 'panels' | 'home-blocks' | 'page-properties' | 'view-renderers';
 export type FolioPluginSetting = { readonly id: string; readonly label: string; readonly type: 'string' | 'boolean' | 'enum' | 'number'; readonly default?: string | boolean | number; readonly options?: readonly string[]; };
 export interface FolioPluginProjectContribution { readonly id: string; readonly title: string; readonly metric: string; }
 export interface FolioPluginIntakeContribution { readonly id: string; readonly title: string; }
@@ -12,6 +12,11 @@ export interface FolioPluginIntakeContribution { readonly id: string; readonly t
 export interface FolioPluginViewContribution { readonly id: string; readonly title: string; readonly body: string; }
 export interface FolioPluginCommandContribution { readonly id: string; readonly title: string; }
 export interface FolioPluginExportContribution { readonly id: string; readonly title: string; readonly extension: string; readonly mimeType: string; }
+export interface FolioPluginThemeContribution { readonly id: string; readonly title: string; readonly tokens: Readonly<Record<string, string>>; }
+export interface FolioPluginPanelContribution { readonly id: string; readonly title: string; readonly body: string; }
+export interface FolioPluginHomeBlockContribution { readonly id: string; readonly title: string; readonly body: string; }
+export interface FolioPluginPagePropertyContribution { readonly id: string; readonly label: string; readonly type: 'text' | 'select' | 'date'; }
+export interface FolioPluginViewRendererContribution { readonly id: string; readonly title: string; readonly source: string; }
 
 /** Manifesto localizado em `.academic/plugins/<plugin>/plugin.json`. */
 export interface FolioPluginManifest {
@@ -31,6 +36,11 @@ export interface FolioPluginManifest {
   readonly searchProviders?: readonly { readonly id: string; readonly title: string }[];
   readonly publicationProfiles?: readonly { readonly id: string; readonly title: string }[];
   readonly templates?: readonly { readonly id: string; readonly title: string }[];
+  readonly themes?: readonly FolioPluginThemeContribution[];
+  readonly panels?: readonly FolioPluginPanelContribution[];
+  readonly homeBlocks?: readonly FolioPluginHomeBlockContribution[];
+  readonly pageProperties?: readonly FolioPluginPagePropertyContribution[];
+  readonly viewRenderers?: readonly FolioPluginViewRendererContribution[];
 }
 
 export interface PluginCommandContext { readonly activeFileId?: string; readonly activeRevision?: number; }

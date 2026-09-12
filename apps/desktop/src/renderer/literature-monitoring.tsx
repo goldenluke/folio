@@ -2,42 +2,51 @@ import { useEffect, useState, type JSX } from 'react';
 
 import type { LiteratureFeedInboxItemDto, LiteratureSubscriptionDto } from '@abnt/protocol';
 
-import { readResearchProjects, writeResearchProjects } from './research-projects.js';
+import type { ResearchProject } from './research-projects.js';
+import { requestConfirmation } from './text-prompt.js';
 
-/** Mesma chave/forma de `folio.reading-queue:{workspaceId}` que research-workflow.tsx já usa (preferência local, sem protocolo). */
-const markToRead = (workspaceId: string, referenceId: string): void => {
-  try {
-    const key = `folio.reading-queue:${workspaceId}`;
-    const parsed: unknown = JSON.parse(window.localStorage.getItem(key) ?? '{}');
-    const current = typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
-    window.localStorage.setItem(key, JSON.stringify({ ...current, [referenceId]: { state: 'to-read', updatedAt: new Date().toISOString() } }));
-  } catch { /* preferência local; falha aqui não deve travar a importação */ }
+/** Entrada na fila é estado operacional portátil, nunca uma preferência do navegador. */
+const markToRead = (referenceId: string): void => {
+  void window.academic.workspace.readingQueue().then((result) => {
+    if (!result.ok) return;
+    return window.academic.workspace.setReadingQueue({ version: 1, entries: { ...result.value.entries, [referenceId]: { state: 'to-read', updatedAt: new Date().toISOString() } } });
+  });
 };
 
-const addReferenceToProject = (workspaceId: string, projectId: string, referenceId: string): void => {
-  const projects = readResearchProjects(workspaceId);
-  writeResearchProjects(workspaceId, projects.map((project) => project.id === projectId && !project.referenceIds.includes(referenceId)
-    ? { ...project, referenceIds: [...project.referenceIds, referenceId], updatedAt: new Date().toISOString() }
-    : project));
+const addReferenceToProject = (projectId: string, referenceId: string): void => {
+  void window.academic.workspace.researchProjects().then((result) => {
+    if (!result.ok) return;
+    const projects = result.value.projects as unknown as readonly ResearchProject[];
+    return window.academic.workspace.setResearchProjects({ version: 1, projects: projects.map((project) => project.id === projectId && !project.referenceIds.includes(referenceId)
+      ? { ...project, referenceIds: [...project.referenceIds, referenceId], updatedAt: new Date().toISOString() }
+      : project) as unknown as readonly Readonly<Record<string, unknown>>[] });
+  });
 };
 
-export function LiteratureMonitoringDialog({ workspaceId, onClose, onMessage }: {
-  readonly workspaceId: string;
+export function LiteratureMonitoringDialog({ onClose, onMessage }: {
   readonly onClose: () => void;
   readonly onMessage: (message: string) => void;
 }): JSX.Element {
   const [subscriptions, setSubscriptions] = useState<readonly LiteratureSubscriptionDto[]>([]);
   const [items, setItems] = useState<readonly LiteratureFeedInboxItemDto[]>([]);
-  const [projects] = useState(() => readResearchProjects(workspaceId).filter((project) => project.archivedAt === undefined));
+  const [projects, setProjects] = useState<readonly ResearchProject[]>([]);
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [projectId, setProjectId] = useState<string | undefined>(undefined);
   const [keywordsText, setKeywordsText] = useState('');
   const [busyId, setBusyId] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string>();
 
   const load = (): void => {
-    void window.academic.workspace.literatureSubscriptions().then((result) => { if (result.ok) setSubscriptions(result.value.subscriptions); });
-    void window.academic.workspace.literatureFeedInbox().then((result) => { if (result.ok) setItems(result.value.items); });
+    setLoading(true); setLoadError(undefined);
+    void Promise.all([window.academic.workspace.literatureSubscriptions(), window.academic.workspace.literatureFeedInbox(), window.academic.workspace.researchProjects()]).then(([nextSubscriptions, nextItems, nextProjects]) => {
+      const failed = [nextSubscriptions, nextItems, nextProjects].find((result) => !result.ok);
+      if (failed !== undefined && !failed.ok) { setLoadError(failed.error.message); return; }
+      if (nextSubscriptions.ok) setSubscriptions(nextSubscriptions.value.subscriptions);
+      if (nextItems.ok) setItems(nextItems.value.items);
+      if (nextProjects.ok) setProjects((nextProjects.value.projects as unknown as readonly ResearchProject[]).filter((project) => project.archivedAt === undefined));
+    }, () => setLoadError('Não foi possível carregar o monitoramento de literatura.')).finally(() => setLoading(false));
   };
   useEffect(load, []);
 
@@ -54,6 +63,8 @@ export function LiteratureMonitoringDialog({ workspaceId, onClose, onMessage }: 
     load();
   };
   const removeSubscription = async (id: string): Promise<void> => {
+    const subscription = subscriptions.find((item) => item.id === id);
+    if (!await requestConfirmation({ title: 'Remover assinatura?', description: `O feed “${subscription?.title ?? id}” deixará de ser consultado. Os itens já importados na biblioteca serão preservados.`, confirmLabel: 'Remover assinatura' })) return;
     const result = await window.academic.workspace.removeLiteratureSubscription({ id });
     if (!result.ok) { onMessage(result.error.message); return; }
     load();
@@ -67,6 +78,8 @@ export function LiteratureMonitoringDialog({ workspaceId, onClose, onMessage }: 
     load();
   };
   const dismiss = async (id: string): Promise<void> => {
+    const item = items.find((entry) => entry.id === id);
+    if (!await requestConfirmation({ title: 'Descartar item do inbox?', description: `“${item?.title ?? 'Este item'}” será removido da fila sem criar referência.`, confirmLabel: 'Descartar item' })) return;
     const result = await window.academic.workspace.dismissFeedInboxItem({ id });
     if (!result.ok) { onMessage(result.error.message); return; }
     load();
@@ -74,16 +87,18 @@ export function LiteratureMonitoringDialog({ workspaceId, onClose, onMessage }: 
   const importItem = async (item: LiteratureFeedInboxItemDto): Promise<void> => {
     const result = await window.academic.workspace.importFeedInboxItem({ id: item.id });
     if (!result.ok) { onMessage(result.error.message); return; }
-    markToRead(workspaceId, result.value.id);
+    markToRead(result.value.id);
     const subscription = subscriptions.find((entry) => entry.id === item.subscriptionId);
-    if (subscription?.projectId !== undefined) addReferenceToProject(workspaceId, subscription.projectId, result.value.id);
+    if (subscription?.projectId !== undefined) addReferenceToProject(subscription.projectId, result.value.id);
     onMessage(`Referência ${result.value.id} criada e marcada para leitura.`);
     load();
   };
 
   return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-5" role="presentation"><section role="dialog" aria-modal="true" aria-labelledby="literature-monitoring-title" className="grid h-[min(86vh,54rem)] w-full max-w-4xl grid-cols-[18rem_1fr] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
     <aside className="overflow-auto border-r border-slate-200 bg-slate-50 p-4">
-      <div className="flex items-center"><h2 id="literature-monitoring-title" className="font-bold text-slate-900">Monitoramento</h2><button type="button" className="ml-auto text-lg text-slate-500" onClick={onClose}>×</button></div>
+      <div className="flex items-center"><h2 id="literature-monitoring-title" className="font-bold text-slate-900">Monitoramento</h2><button type="button" aria-label="Fechar monitoramento" className="ml-auto text-lg text-slate-500" onClick={onClose}>×</button></div>
+      {loading && <p role="status" className="mt-3 text-sm text-slate-500">Carregando assinaturas e inbox…</p>}
+      {loadError !== undefined && <div role="alert" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800"><p>{loadError}</p><button type="button" className="mt-2 rounded border border-rose-300 px-2 py-1 font-medium" onClick={load}>Tentar novamente</button></div>}
       <ul className="mt-3 grid gap-2">{subscriptions.length === 0 ? <li className="text-sm text-slate-500">Nenhuma assinatura.</li> : subscriptions.map((subscription) => <li key={subscription.id} className="rounded-lg border border-slate-200 bg-white p-2 text-sm"><strong className="block truncate">{subscription.title}</strong><span className="block truncate text-xs text-slate-500">{subscription.url}</span>{subscription.keywords !== undefined && subscription.keywords.length > 0 && <span className="mt-1 block text-xs text-indigo-600">{subscription.keywords.join(', ')}</span>}<div className="mt-2 flex gap-2"><button type="button" disabled={busyId === subscription.id} className="rounded bg-indigo-600 px-2 py-1 text-xs font-semibold text-white disabled:opacity-40" onClick={() => void poll(subscription.id)}>{busyId === subscription.id ? 'Buscando…' : 'Buscar agora'}</button><button type="button" className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-rose-600" onClick={() => void removeSubscription(subscription.id)}>Remover</button></div></li>)}</ul>
       <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nova assinatura</p>

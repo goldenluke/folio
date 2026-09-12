@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 
 import { applyViewColumns, academicChartSeries, groupedAcademicView, type AcademicViewRow } from '@abnt/academic-views';
-import type { BibliographicEntityDto, WorkspaceAcademicRelationDto, WorkspaceAcademicViewColumnDto, WorkspaceAcademicViewDto, WorkspaceAcademicViewLayoutDto, WorkspaceAcademicViewSourceDto, WorkspaceDashboardBlockDto, WorkspaceFileDto, WorkspaceResearchOverviewDto } from '@abnt/protocol';
+import type { BibliographicEntityDto, WorkspaceAcademicRelationDto, WorkspaceAcademicViewColumnDto, WorkspaceAcademicViewDto, WorkspaceAcademicViewLayoutDto, WorkspaceAcademicViewSourceDto, WorkspaceDashboardBlockDto, WorkspaceFileDto, WorkspacePageDto, WorkspacePdfAnnotationDto, WorkspaceResearchDatasetsDto, WorkspaceResearchOverviewDto, WorkspaceSystematicReviewDto } from '@abnt/protocol';
 
 import { VirtualizedList } from './virtualized-list.js';
 import { requestConfirmation } from './text-prompt.js';
@@ -17,15 +17,15 @@ const layouts: readonly { readonly value: WorkspaceAcademicViewLayoutDto; readon
 const relationKinds: readonly { readonly value: WorkspaceAcademicRelationDto['kind']; readonly label: string }[] = [
   { value: 'cites', label: 'Cita' }, { value: 'annotates', label: 'Anota' }, { value: 'belongs-to-project', label: 'Pertence a projeto' }, { value: 'uses-dataset', label: 'Usa dataset' }, { value: 'evidence-for', label: 'Evidência para' },
 ];
-interface Row { readonly id: string; readonly title: string; readonly authors: string; readonly year: string; readonly type: string; readonly readingState: string; readonly path?: string; readonly derived?: Readonly<Record<string, string | number | boolean | undefined>>; }
+interface Row { readonly id: string; readonly title: string; readonly authors: string; readonly year: string; readonly type: string; readonly readingState: string; readonly path?: string; readonly due?: string; readonly derived?: Readonly<Record<string, string | number | boolean | undefined>>; }
 const referenceRow = (entry: BibliographicEntityDto): Row => ({ id: entry.id, title: entry.title ?? entry.id, authors: (entry.author ?? []).map((author) => [author.family, author.given].filter(Boolean).join(', ')).join('; ') || '—', year: String(entry.issued?.['date-parts']?.[0]?.[0] ?? '—'), type: entry.type, readingState: 'A revisar' });
-const documentRow = (file: WorkspaceFileDto): Row => ({ id: file.fileId, title: file.path.split('/').at(-1) ?? file.path, authors: '—', year: '—', type: 'documento', readingState: '—', path: file.path });
+const documentRow = (file: WorkspaceFileDto, page: WorkspacePageDto | undefined): Row => ({ id: file.fileId, title: page?.title ?? file.path.split('/').at(-1) ?? file.path, authors: '—', year: page?.properties.due?.slice(0, 4) ?? '—', type: page?.properties.type ?? 'documento', readingState: page?.properties.status ?? '—', path: file.path, ...(page?.properties.due === undefined ? {} : { due: page.properties.due }) });
 const literatureNoteRow = (reference: WorkspaceResearchOverviewDto['references'][number]): Row | undefined => reference.literatureNote === undefined ? undefined : ({ id: reference.literatureNote.fileId, title: reference.literatureNote.path.split('/').at(-1) ?? reference.literatureNote.path, authors: reference.authors.join('; ') || reference.referenceId, year: '—', type: reference.review.method ?? 'nota de literatura', readingState: reference.review.topic ?? '—', path: reference.literatureNote.path });
 const defaultColumns = (source: WorkspaceAcademicViewSourceDto) => source === 'references'
   ? [{ field: 'title', label: 'Título' }, { field: 'authors', label: 'Autores' }, { field: 'year', label: 'Ano' }, { field: 'readingState', label: 'Leitura' }]
-  : [{ field: 'title', label: 'Documento' }, { field: 'path', label: 'Caminho' }, { field: 'type', label: 'Tipo' }];
+  : [{ field: 'title', label: 'Documento' }, { field: 'path', label: 'Caminho' }, { field: 'type', label: 'Tipo' }, { field: 'readingState', label: 'Status' }, { field: 'due', label: 'Prazo' }];
 const field = (row: Row, key: string): string => String(row.derived?.[key] ?? row[key as keyof Row] ?? '—');
-const toAcademicRow = (row: Row): AcademicViewRow => ({ id: row.id, title: row.title, fields: { authors: row.authors, year: row.year, type: row.type, readingState: row.readingState } });
+const toAcademicRow = (row: Row): AcademicViewRow => ({ id: row.id, title: row.title, fields: { authors: row.authors, year: row.year, type: row.type, readingState: row.readingState, ...(row.due === undefined ? {} : { due: row.due }), ...row.derived } });
 /** Bars CSS simples — sem dependência de biblioteca de gráficos. */
 function ChartBars({ series }: { readonly series: readonly { readonly label: string; readonly value: number }[] }): JSX.Element {
   const max = Math.max(1, ...series.map((entry) => entry.value));
@@ -62,8 +62,12 @@ function ViewProjection({ view, rows }: { readonly view: WorkspaceAcademicViewDt
     return <div className="grid max-h-[23rem] gap-4 overflow-auto p-1">{Object.entries(grouped).map(([key, items]) => <section key={key} className="overflow-hidden rounded-xl border border-slate-200"><h4 className="border-b border-slate-200 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">{key} · {items.length}</h4><div className="divide-y divide-slate-100">{items.map((item) => { const row = byId.get(item.id); return row === undefined ? null : <div key={row.id} className="px-4 py-2"><strong className="block truncate text-sm text-slate-800">{row.title}</strong><span className="block truncate text-xs text-slate-500">{row.authors} · {row.year}</span></div>; })}</div></section>)}</div>;
   }
   if (view.layout === 'cards') return <div className="grid max-h-[23rem] grid-cols-1 gap-3 overflow-auto p-1 sm:grid-cols-2 lg:grid-cols-3">{rows.map((row) => <article key={row.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><span className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">{row.type}</span><h3 className="mt-1 font-semibold text-slate-800">{row.title}</h3><p className="mt-2 text-xs text-slate-500">{row.authors}</p><p className="mt-1 text-xs text-slate-500">{row.year}</p></article>)}</div>;
-  if (view.layout === 'board') return <div className="grid gap-3 overflow-auto sm:grid-cols-3">{['A revisar', 'Em leitura', 'Concluído'].map((column) => <section key={column} className="min-h-60 rounded-xl bg-slate-100 p-3"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-600">{column}</h3><div className="mt-3 grid gap-2">{(column === 'A revisar' ? rows : []).map((row) => <article key={row.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm"><strong className="block text-slate-800">{row.title}</strong><span className="mt-1 block text-xs text-slate-500">{row.year}</span></article>)}</div></section>)}</div>;
-  if (view.layout === 'calendar') return <div className="grid gap-3 sm:grid-cols-3">{rows.map((row) => <article key={row.id} className="rounded-xl border border-slate-200 bg-white p-4"><span className="text-xs font-bold text-indigo-600">{row.year === '—' ? 'Sem data' : row.year}</span><strong className="mt-2 block text-sm text-slate-800">{row.title}</strong></article>)}</div>;
+  if (view.layout === 'board') {
+    const boardField = view.group?.field ?? 'readingState';
+    const boardGroups = groupedAcademicView(rows.map(toAcademicRow), boardField);
+    return <div className="grid auto-cols-[minmax(14rem,1fr)] grid-flow-col gap-3 overflow-auto pb-2">{Object.entries(boardGroups).map(([column, items]) => <section key={column} className="min-h-60 rounded-xl bg-slate-100 p-3"><h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-600"><span className="truncate">{column}</span><span className="ml-auto rounded-full bg-white px-1.5 py-0.5 text-[10px] text-slate-500">{items.length}</span></h3><div className="mt-3 grid gap-2">{items.map((item) => { const row = byId.get(item.id); return row === undefined ? null : <article key={row.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm"><strong className="block text-slate-800">{row.title}</strong><span className="mt-1 block text-xs text-slate-500">{row.authors} · {row.year}</span></article>; })}</div></section>)}</div>;
+  }
+  if (view.layout === 'calendar') return <div className="grid gap-3 sm:grid-cols-3">{[...rows].sort((left, right) => (left.due ?? '9999-12-31').localeCompare(right.due ?? '9999-12-31')).map((row) => <article key={row.id} className="rounded-xl border border-slate-200 bg-white p-4"><span className="text-xs font-bold text-indigo-600">{row.due ?? (row.year === '—' ? 'Sem data' : row.year)}</span><strong className="mt-2 block text-sm text-slate-800">{row.title}</strong><span className="mt-1 block text-xs text-slate-500">{row.readingState}</span></article>)}</div>;
   return <ol className="relative ml-3 border-l border-indigo-200 pl-6">{rows.map((row) => <li key={row.id} className="relative pb-6"><span className="absolute -left-[1.87rem] top-1 h-3 w-3 rounded-full bg-indigo-500 ring-4 ring-indigo-50" /><span className="text-xs font-bold text-indigo-600">{row.year}</span><strong className="mt-1 block text-sm text-slate-800">{row.title}</strong><span className="text-xs text-slate-500">{row.authors}</span></li>)}</ol>;
 }
 
@@ -76,13 +80,18 @@ const draftToColumn = (draft: DraftColumn): WorkspaceAcademicViewColumnDto => ({
     : { kind: 'relation', ...(draft.targetKind.trim() === '' ? {} : { targetKind: draft.targetKind.trim() }) },
 });
 
-export function AcademicViewsDialog({ files, onClose, onMessage }: { readonly files: readonly WorkspaceFileDto[]; readonly onClose: () => void; readonly onMessage: (message: string) => void }): JSX.Element {
+export function AcademicViewsDialog({ files, workspaceId, onClose, onMessage }: { readonly files: readonly WorkspaceFileDto[]; readonly workspaceId: string; readonly onClose: () => void; readonly onMessage: (message: string) => void }): JSX.Element {
   const dialog = useRef<HTMLElement>(null);
   const [stored, setStored] = useState<readonly WorkspaceAcademicViewDto[] | undefined>(undefined);
   const [dashboards, setDashboards] = useState<readonly WorkspaceDashboardBlockDto[]>([]);
   const [relations, setRelations] = useState<readonly WorkspaceAcademicRelationDto[]>([]);
   const [references, setReferences] = useState<readonly BibliographicEntityDto[]>([]);
   const [researchOverview, setResearchOverview] = useState<WorkspaceResearchOverviewDto | undefined>();
+  const [datasets, setDatasets] = useState<WorkspaceResearchDatasetsDto>({ version: 1, datasets: [] });
+  const [review, setReview] = useState<WorkspaceSystematicReviewDto>({ version: 1, studies: [] });
+  const [annotations, setAnnotations] = useState<readonly WorkspacePdfAnnotationDto[]>([]);
+  const [pages, setPages] = useState<readonly WorkspacePageDto[]>([]);
+  const [projects, setProjects] = useState<readonly Row[]>([]);
   const [loadError, setLoadError] = useState<string | undefined>();
   const [panel, setPanel] = useState<'views' | 'dashboards'>('views');
   const [activeId, setActiveId] = useState<string | undefined>();
@@ -90,7 +99,9 @@ export function AcademicViewsDialog({ files, onClose, onMessage }: { readonly fi
   const [layout, setLayout] = useState<WorkspaceAcademicViewLayoutDto>('table');
   const [name, setName] = useState('Referências em leitura');
   const [filterQuery, setFilterQuery] = useState('');
+  const [sortField, setSortField] = useState(''); const [sortDirection, setSortDirection] = useState<'ascending' | 'descending'>('ascending'); const [groupField, setGroupField] = useState('');
   const [draftColumns, setDraftColumns] = useState<readonly DraftColumn[]>([]);
+  const viewControls = <div className="mt-2 grid gap-1"><input value={sortField} placeholder="Ordenar por (ex.: title)" onChange={(event) => setSortField(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs" /><select value={sortDirection} onChange={(event) => setSortDirection(event.target.value as 'ascending' | 'descending')} className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs"><option value="ascending">Ordem crescente</option><option value="descending">Ordem decrescente</option></select><input value={groupField} placeholder="Agrupar por (ex.: type)" onChange={(event) => setGroupField(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs" /></div>;
   const [draftField, setDraftField] = useState('');
   const [draftKind, setDraftKind] = useState<'rollup' | 'formula' | 'relation'>('rollup');
   const [draftRelationKind, setDraftRelationKind] = useState<WorkspaceAcademicRelationDto['kind']>('cites');
@@ -101,20 +112,22 @@ export function AcademicViewsDialog({ files, onClose, onMessage }: { readonly fi
   const [blockTitle, setBlockTitle] = useState('');
   const [blockKind, setBlockKind] = useState<WorkspaceDashboardBlockDto['kind']>('metric');
   const [blockViewId, setBlockViewId] = useState<string | undefined>();
+  void viewControls;
   useDialogAccessibility(dialog, onClose);
-  useEffect(() => { void Promise.all([window.academic.workspace.academicViews(), window.academic.library.list({}), window.academic.workspace.researchOverview({}), window.academic.workspace.academicRelations()]).then(([views, library, overview, academicRelations]) => { if (views.ok) { setStored(views.value.views); setDashboards(views.value.dashboards ?? []); setActiveId(views.value.views[0]?.id); } else { setLoadError(views.error.message); onMessage(views.error.message); } if (library.ok) setReferences(library.value); else setLoadError(library.error.message); if (overview.ok) setResearchOverview(overview.value); else setLoadError(overview.error.message); if (academicRelations.ok) setRelations(academicRelations.value.relations); }); }, [onMessage]);
+  useEffect(() => { void Promise.all([window.academic.workspace.academicViews(), window.academic.library.list({}), window.academic.workspace.researchOverview({}), window.academic.workspace.academicRelations(), window.academic.research.datasets(), window.academic.research.systematicReview(), window.academic.workspace.annotations({}), window.academic.workspace.researchProjects(), window.academic.workspace.pages()]).then(([views, library, overview, academicRelations, loadedDatasets, loadedReview, loadedAnnotations, loadedProjects, loadedPages]) => { if (views.ok) { setStored(views.value.views); setDashboards(views.value.dashboards ?? []); setActiveId(views.value.views[0]?.id); } else { setLoadError(views.error.message); onMessage(views.error.message); } if (library.ok) setReferences(library.value); else setLoadError(library.error.message); if (overview.ok) setResearchOverview(overview.value); else setLoadError(overview.error.message); if (academicRelations.ok) setRelations(academicRelations.value.relations); if (loadedDatasets.ok) setDatasets(loadedDatasets.value); if (loadedReview.ok) setReview(loadedReview.value); if (loadedAnnotations.ok) setAnnotations(loadedAnnotations.value); if (loadedProjects.ok) setProjects(loadedProjects.value.projects.flatMap((project) => typeof project.id === 'string' && typeof project.title === 'string' && typeof project.createdAt === 'string' ? [{ id: project.id, title: project.title, authors: '—', year: project.createdAt.slice(0, 4), type: 'projeto', readingState: typeof project.archivedAt === 'string' ? 'Arquivado' : 'Ativo' }] : [])); if (loadedPages.ok) setPages(loadedPages.value.pages); }); }, [onMessage, workspaceId]);
   const active = stored?.find((view) => view.id === activeId) ?? stored?.[0];
   const rowsForView = (view: WorkspaceAcademicViewDto | undefined): readonly Row[] => {
     if (view === undefined) return [];
-    const all = view.source === 'references' ? references.map(referenceRow) : view.source === 'documents' ? files.filter((file) => file.path.endsWith('.md')).map(documentRow) : view.source === 'literature-notes' ? (researchOverview?.references.map(literatureNoteRow).filter((row): row is Row => row !== undefined) ?? []) : [];
+    const pagesByFileId = new Map(pages.map((page) => [page.file.fileId, page]));
+    const all = view.source === 'references' ? references.map(referenceRow) : view.source === 'documents' ? files.filter((file) => file.path.endsWith('.md')).map((file) => documentRow(file, pagesByFileId.get(file.fileId))) : view.source === 'literature-notes' ? (researchOverview?.references.map(literatureNoteRow).filter((row): row is Row => row !== undefined) ?? []) : view.source === 'projects' ? projects : view.source === 'datasets' ? datasets.datasets.map((dataset) => ({ id: dataset.id, title: dataset.metadata.title, authors: dataset.metadata.creator ?? '—', year: dataset.metadata.collectedAt?.slice(0, 4) ?? '—', type: dataset.format, readingState: dataset.metadata.version ?? '—', path: dataset.path })) : view.source === 'review-studies' ? review.studies.map((study) => ({ id: study.id, title: study.title, authors: study.decisions.map((decision) => decision.reviewerId).join(', ') || '—', year: '—', type: 'estudo', readingState: study.stage })) : annotations.map((annotation) => ({ id: annotation.id, title: annotation.quote, authors: annotation.referenceId, year: '—', type: 'anotação', readingState: `p. ${annotation.page}` }));
     const query = view.filterQuery?.trim().toLowerCase();
     const filtered = query === undefined || query === '' ? all : all.filter((row) => { const year = /^year:(\d{4})$/u.exec(query)?.[1]; return year === undefined ? `${row.title} ${row.authors} ${row.year}`.toLowerCase().includes(query) : row.year === year; });
-    if (view.columns?.some((column) => column.derived !== undefined) !== true) return filtered;
+    if (view.columns?.some((column) => column.derived !== undefined) !== true) return view.sort === undefined ? filtered : [...filtered].sort((a, b) => field(a, view.sort![0]?.field ?? 'title').localeCompare(field(b, view.sort![0]?.field ?? 'title')) * (view.sort![0]?.direction === 'descending' ? -1 : 1));
     const projected = applyViewColumns(filtered.map(toAcademicRow), relations, view.columns ?? []);
     const byId = new Map(projected.map((row) => [row.id, row.fields]));
-    return filtered.map((row) => { const derived = byId.get(row.id); return derived === undefined ? row : { ...row, derived }; });
+    const result = filtered.map((row) => { const derived = byId.get(row.id); return derived === undefined ? row : { ...row, derived }; }); return view.sort === undefined ? result : [...result].sort((a, b) => field(a, view.sort![0]?.field ?? 'title').localeCompare(field(b, view.sort![0]?.field ?? 'title')) * (view.sort![0]?.direction === 'descending' ? -1 : 1));
   };
-  const rows = useMemo(() => rowsForView(active), [active, files, references, researchOverview, relations]);
+  const rows = useMemo(() => rowsForView(active), [active, files, references, researchOverview, relations, datasets, review, annotations, projects, pages, workspaceId]);
   const addDraftColumn = (): void => {
     const field = draftField.trim(); if (field === '') { onMessage('Dê um nome ao campo da coluna derivada.'); return; }
     setDraftColumns([...draftColumns, { field, kind: draftKind, relationKind: draftRelationKind, operation: draftOperation, expression: draftExpression.trim(), inputsText: draftInputsText.trim(), targetKind: draftTargetKind.trim() }]);
@@ -123,7 +136,7 @@ export function AcademicViewsDialog({ files, onClose, onMessage }: { readonly fi
   const save = async (): Promise<void> => {
     const normalized = name.trim(); if (normalized === '') { onMessage('Dê um nome à view.'); return; }
     const columns = [...defaultColumns(source), ...draftColumns.map(draftToColumn)];
-    const view: WorkspaceAcademicViewDto = { version: 1, id: crypto.randomUUID(), name: normalized, source, layout, ...(filterQuery.trim() === '' ? {} : { filterQuery: filterQuery.trim() }), columns };
+    const view: WorkspaceAcademicViewDto = { version: 1, id: crypto.randomUUID(), name: normalized, source, layout, ...(filterQuery.trim() === '' ? {} : { filterQuery: filterQuery.trim() }), ...(sortField.trim() === '' ? {} : { sort: [{ field: sortField.trim(), direction: sortDirection }] }), ...(groupField.trim() === '' ? {} : { group: { field: groupField.trim() } }), columns };
     const next = [...(stored ?? []), view]; const result = await window.academic.workspace.setAcademicViews({ version: 1, views: next, dashboards });
     if (!result.ok) { onMessage(result.error.message); return; }
     setStored(result.value.views); setActiveId(view.id); setDraftColumns([]); onMessage(`View “${view.name}” salva no vault.`);

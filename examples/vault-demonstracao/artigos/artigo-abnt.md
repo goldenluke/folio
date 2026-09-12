@@ -1,15 +1,28 @@
 ---
-title: "Rastreabilidade para pesquisa acadêmica local"
+title: Rastreabilidade para pesquisa acadêmica local
 authors:
-  - name: "Beatriz Nascimento"
-    affiliation: "Universidade do Exemplo"
-abstract: "Este artigo demonstra um fluxo local de pesquisa e escrita acadêmica que preserva evidências, versões e decisões editoriais. O estudo acompanha a passagem entre coleta de referências, fichamentos, formulação de argumentos, redação em Markdown e publicação sob um profile explícito. A avaliação usa um vault demonstrativo com artigos, trabalho de conclusão, links internos, bibliografia compartilhada e recursos visuais. Os resultados indicam que a separação entre autoria e apresentação reduz a perda de contexto durante a revisão. Conclui-se que um ambiente local pode favorecer a rastreabilidade sem impor uma estrutura proprietária aos documentos produzidos, permitindo inspeção, manutenção e colaboração em longo prazo."
-keywords: [pesquisa reprodutível, autoria local, rastreabilidade]
+  - name: Beatriz Nascimento
+abstract: Este artigo demonstra um fluxo local de pesquisa e escrita acadêmica
+  que preserva evidências, versões e decisões editoriais. O estudo acompanha a
+  passagem entre coleta de referências, fichamentos, formulação de argumentos,
+  redação em Markdown e publicação sob um profile explícito. A avaliação usa um
+  vault demonstrativo com artigos, trabalho de conclusão, links internos,
+  bibliografia compartilhada e recursos visuais. Os resultados indicam que a
+  separação entre autoria e apresentação reduz a perda de contexto durante a
+  revisão. Conclui-se que um ambiente local pode favorecer a rastreabilidade sem
+  impor uma estrutura proprietária aos documentos produzidos, permitindo
+  inspeção, manutenção e colaboração em longo prazo.
+keywords:
+  - pesquisa reprodutível
+  - autoria local
+  - rastreabilidade
 lang: pt-BR
 profile: abnt-artigo
-bibliography: ../referencias.bib
+bibliography:
+  - ../referencias.bib
+contributors: []
+properties: {}
 ---
-
 # Introdução
 
 Um vault torna a relação entre fonte, referência e publicação rastreável
@@ -42,7 +55,7 @@ Fonte: dados fictícios da demonstração.
 O cálculo de redução pode ser expresso por:
 
 $$
-redução = \frac{antes - depois}{antes}
+reducão = \frac{antes - depois}{antes}
 $$
 {#eq-reducao}
 

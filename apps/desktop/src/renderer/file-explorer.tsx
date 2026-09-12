@@ -47,6 +47,12 @@ export function buildWorkspaceFileTree(files: readonly WorkspaceFileDto[]): File
   return freeze(root);
 }
 
+export function directoryPathsFor(filePath: string): readonly string[] {
+  const parts = filePath.split('/').filter((part) => part !== '');
+  parts.pop();
+  return parts.map((_, index) => parts.slice(0, index + 1).join('/'));
+}
+
 const fileName = (path: string): string => path.split('/').at(-1) ?? path;
 const fileIconName = (path: string): FolioIconName => path.toLowerCase().endsWith('.pdf') ? 'pdf' : 'file';
 const draggedFileMimeType = 'application/x-folio-file-id';
@@ -112,6 +118,14 @@ export function WorkspaceFileExplorer({
   });
   const closeContextMenu = (): void => setContextMenu(undefined);
   const canDrag = onMoveFile !== undefined;
+  const reveal = (fileId = activeFileId): void => {
+    const active = files.find((file) => file.fileId === fileId);
+    if (active === undefined) return;
+    const ancestors = new Set(directoryPathsFor(active.path));
+    setCollapsed((current) => new Set([...current].filter((path) => !ancestors.has(path))));
+  };
+
+  useEffect(() => { reveal(); }, [activeFileId, files]);
 
   useEffect(() => {
     if (contextMenu === undefined) return undefined;
@@ -145,10 +159,11 @@ export function WorkspaceFileExplorer({
   };
 
   const renderDirectory = (directory: FileTreeDirectory, depth: number): JSX.Element[] => {
-    const hidden = directory.path !== '' && collapsed.has(directory.path);
+    const filtering = filterQuery.trim() !== '';
+    const hidden = !filtering && directory.path !== '' && collapsed.has(directory.path);
     const rows: JSX.Element[] = [];
     for (const child of directory.directories) {
-      const childHidden = collapsed.has(child.path);
+      const childHidden = !filtering && collapsed.has(child.path);
       rows.push(<li key={`directory:${child.path}`}><button
         type="button"
         className={`flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-slate-600 transition-colors hover:bg-white hover:text-indigo-700 ${dragOverPath === child.path ? 'bg-indigo-100 ring-2 ring-inset ring-indigo-400' : ''}`}
@@ -184,9 +199,11 @@ export function WorkspaceFileExplorer({
     <header className="flex items-center gap-2 border-b border-slate-200 pb-3">
       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-700"><FolioIcon name="folder" className="h-4 w-4" /></span>
       <div className="min-w-0 flex-1"><h2 className="text-sm font-bold text-slate-800">Explorador</h2><p className="text-[11px] text-slate-400">{files.length} {files.length === 1 ? 'arquivo' : 'arquivos'} no vault</p></div>
+      <button type="button" title="Revelar documento ativo" aria-label="Revelar documento ativo" disabled={activeFileId === undefined} className="folio-control grid h-8 w-8 place-items-center rounded-lg text-slate-500 disabled:opacity-40" onClick={() => reveal()}><FolioIcon name="file" className="h-3.5 w-3.5" /></button>
+      <button type="button" title="Recolher pastas" aria-label="Recolher pastas" className="folio-control grid h-8 w-8 place-items-center rounded-lg text-slate-500" onClick={() => setCollapsed(new Set(tree.directories.map((directory) => directory.path)))}><FolioIcon name="collapse" className="h-3.5 w-3.5" /></button>
       <button type="button" title="Criar pasta" aria-label="Criar pasta" className="folio-control relative grid h-8 w-8 place-items-center rounded-lg text-slate-500" onClick={onCreateFolder}><FolioIcon name="folder" className="h-3.5 w-3.5" /><FolioIcon name="add" className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-white" /></button>
       <button type="button" title="Criar documento" aria-label="Criar documento" className="folio-primary grid h-8 w-8 place-items-center rounded-lg" onClick={onCreate}><FolioIcon name="add" className="h-3.5 w-3.5" /></button>
-      {onToggleExpanded !== undefined && <button type="button" title="Fechar explorador" aria-label="Fechar explorador" className="folio-control grid h-8 w-8 place-items-center rounded-lg text-lg leading-none text-slate-500" onClick={onToggleExpanded}>×</button>}
+      {onToggleExpanded !== undefined && <button type="button" title="Fechar explorador" aria-label="Fechar explorador" className="folio-control grid h-8 w-8 place-items-center rounded-lg text-slate-500" onClick={onToggleExpanded}><FolioIcon name="close" className="h-3.5 w-3.5" /></button>}
     </header>
     <div className="py-3"><label className="sr-only" htmlFor="explorer-filter">Filtrar arquivos</label><div className="relative"><FolioIcon name="search" className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" /><input id="explorer-filter" type="search" value={filterQuery} onChange={(event) => setFilterQuery(event.target.value)} placeholder="Filtrar arquivos…" className="folio-input w-full rounded-xl py-2 pl-9 pr-3 text-xs" /></div></div>
     <ul

@@ -59,4 +59,13 @@ module.exports = {
     packageCategory: 'editors',
     priority: 'optional',
   },
+  win: {
+    target: ['nsis'],
+    artifactName: 'Folio-${version}-win-x64-setup.${ext}',
+  },
+  nsis: {
+    oneClick: false,
+    perMachine: false,
+    allowToChangeInstallationDirectory: true,
+  },
 };

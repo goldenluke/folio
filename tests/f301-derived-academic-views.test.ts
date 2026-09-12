@@ -15,6 +15,11 @@ describe('F301–F306 — relações dentro de Academic Views', () => {
     expect(result[0]?.fields).toMatchObject({ notes: 2, annotations: 1 });
   });
   it('reutiliza a mesma projeção para agrupamento, gráfico e dashboard', () => { expect(groupedAcademicView(rows, 'year')['2025']).toHaveLength(1); expect(academicChartSeries(rows, 'year')).toEqual([{ label: '2025', value: 1 }]); expect(dashboardBlocks([{ id: 'b', viewId: 'v', title: 'Visão geral', kind: 'chart' }])).toHaveLength(1); });
+  it('agrupa o quadro por qualquer campo, inclusive uma projeção derivada', () => {
+    const board = groupedAcademicView([{ id: 'a', title: 'A', fields: { workflow: 'Rascunho' } }, { id: 'b', title: 'B', fields: { workflow: 'Revisão' } }, { id: 'c', title: 'C', fields: { workflow: 'Rascunho' } }], 'workflow');
+    expect(board.Rascunho?.map((row) => row.id)).toEqual(['a', 'c']);
+    expect(board.Revisão?.map((row) => row.id)).toEqual(['b']);
+  });
   it('documento de views persiste e revalida dashboards, com checagem referencial', () => {
     const view = createAcademicView({ id: 'v1', name: 'Referências', source: 'references', layout: 'table' });
     const dashboards = [{ id: 'b1', viewId: 'v1', title: 'Total', kind: 'metric' as const }];

@@ -2,14 +2,19 @@ import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type JSX
 
 import type { BibliographicEntityDto } from '@abnt/protocol';
 
-import { captureUrl, doiFromPdfText, inboxSummary, type IntakeItem, type IntakeSource } from './shell/research-intake.js';
+import { captureUrl, inboxSummary, type IntakeItem, type IntakeSource } from './shell/research-intake.js';
 
 type PendingPdf = { readonly name: string; readonly base64: string };
 const storageKey = (workspaceId: string): string => `folio.reference-inbox:${workspaceId}`;
 const sourceLabel: Record<IntakeSource, string> = { bibtex: 'BibTeX', ris: 'RIS', 'csl-json': 'CSL-JSON', doi: 'DOI', url: 'URL', pdf: 'PDF' };
 const isItem = (value: unknown): value is IntakeItem => typeof value === 'object' && value !== null && typeof (value as IntakeItem).id === 'string' && typeof (value as IntakeItem).source === 'string' && Array.isArray((value as IntakeItem).provenance) && Array.isArray((value as IntakeItem).duplicates);
 const loadInbox = (workspaceId: string): readonly IntakeItem[] => { try { const parsed: unknown = JSON.parse(window.localStorage.getItem(storageKey(workspaceId)) ?? '[]'); return Array.isArray(parsed) ? parsed.filter(isItem) : []; } catch { return []; } };
-const updateReadingQueue = (workspaceId: string, referenceId: string): void => { try { const raw: unknown = JSON.parse(window.localStorage.getItem(`folio.reading-queue:${workspaceId}`) ?? '{}'); const queue = typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? raw : {}; window.localStorage.setItem(`folio.reading-queue:${workspaceId}`, JSON.stringify({ ...queue, [referenceId]: { state: 'to-read', updatedAt: new Date().toISOString() } })); } catch { /* preferências locais são opcionais */ } };
+const updateReadingQueue = (referenceId: string): void => {
+  void window.academic.workspace.readingQueue().then((result) => {
+    if (!result.ok) return;
+    return window.academic.workspace.setReadingQueue({ version: 1, entries: { ...result.value.entries, [referenceId]: { state: 'to-read', updatedAt: new Date().toISOString() } } });
+  });
+};
 const fileAsBase64 = async (file: File): Promise<string> => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onerror = () => reject(reader.error); reader.onload = () => resolve(String(reader.result).replace(/^data:[^;]+;base64,/u, '')); reader.readAsDataURL(file); });
 const fileHash = async (file: File): Promise<string> => { const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer()); return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join(''); };
 
@@ -41,18 +46,22 @@ export function ResearchIntakeDialog({ workspaceId, onClose, onMessage }: { read
       await preview('url', { entry }, best === undefined ? ['URL fornecida pelo usuário'] : [`URL fornecida pelo usuário, metadata pré-preenchida via ${best.extractorId} (revise antes de confirmar)`]);
       setIdentifier(''); return;
     }
-    const result = await window.academic.library.resolveDoi({ doi: value }); if (!result.ok) { setMessage(result.error.message); return; }
-    await preview('doi', { entry: result.value }, ['DOI resolvido pelo provider configurado']); setIdentifier('');
+    const result = await window.academic.library.reviewScholarlyIdentifier({ input: value });
+    if (!result.ok) { setMessage(result.error.message); return; }
+    if (result.value.entry === undefined) { setMessage(result.value.error ?? 'Identificador reconhecido, mas sem candidato bibliográfico.'); return; }
+    const provider = result.value.provenance.map((item) => item.provider).filter((item, index, all) => all.indexOf(item) === index).join(', ');
+    await preview('doi', { entry: result.value.entry }, [`${result.value.identifier?.type.toUpperCase() ?? 'Identificador'} resolvido por ${provider || 'provider configurado'}`]); setIdentifier('');
   };
   const importFile = async (file: File): Promise<void> => {
     const lower = file.name.toLowerCase();
     if (lower.endsWith('.pdf') || file.type === 'application/pdf') {
       const bytes = await file.arrayBuffer(); const [base64, sha256] = await Promise.all([fileAsBase64(file), fileHash(file)]);
-      const doi = doiFromPdfText(new TextDecoder('latin1').decode(bytes)); let entry: BibliographicEntityDto | undefined;
-      if (doi !== undefined) { const result = await window.academic.library.resolveDoi({ doi }); if (result.ok) entry = result.value; else setMessage(result.error.message); }
+      const reconciled = await window.academic.library.reconcilePdf({ text: new TextDecoder('latin1').decode(bytes) });
+      const resolved = reconciled.ok ? reconciled.value.reviews.find((review) => review.entry !== undefined) : undefined;
+      const entry: BibliographicEntityDto | undefined = resolved?.entry;
       const id = crypto.randomUUID(); pendingPdfs.current.set(id, { name: file.name, base64 });
-      if (entry === undefined) { add('pdf', undefined, ['PDF sem DOI legível; metadata não foi inventada'], [], { name: file.name, sha256 }, id); setMessage('PDF entrou na inbox sem metadata; revise ou informe um DOI.'); }
-      else await preview('pdf', { entry }, [`DOI ${doi} encontrado literalmente no PDF`], { name: file.name, sha256 }, id);
+      if (entry === undefined) { add('pdf', undefined, ['PDF sem identificador acadêmico resolvível; metadata não foi inventada'], [], { name: file.name, sha256 }, id); setMessage(reconciled.ok && reconciled.value.identifiers.length > 0 ? (reconciled.value.reviews.find((review) => review.error !== undefined)?.error ?? 'Nenhum identificador do PDF gerou metadata revisável.') : 'PDF entrou na inbox sem identificador legível; revise ou informe DOI, ISBN, PMID ou arXiv.'); }
+      else await preview('pdf', { entry }, [`${resolved?.identifier?.type.toUpperCase() ?? 'Identificador'} ${resolved?.identifier?.value ?? ''} encontrado literalmente no PDF`], { name: file.name, sha256 }, id);
       return;
     }
     const source = lower.endsWith('.ris') ? 'ris' : lower.endsWith('.json') ? 'csl-json' : 'bibtex';
@@ -67,7 +76,7 @@ export function ResearchIntakeDialog({ workspaceId, onClose, onMessage }: { read
     const referenceId = existingId ?? item.entry!.id;
     if (existingId === undefined) { const saved = await window.academic.library.upsert({ entry: item.entry! }); if (!saved.ok) { setMessage(saved.error.message); return; } }
     const pdf = pendingPdfs.current.get(item.id); if (pdf !== undefined) { const attached = await window.academic.library.attachPdfData({ referenceId, name: pdf.name, base64: pdf.base64 }); if (!attached.ok) { setMessage(attached.error.message); return; } }
-    updateReadingQueue(workspaceId, referenceId); pendingPdfs.current.delete(item.id); setItems((current) => current.filter((candidate) => candidate.id !== item.id)); onMessage(`Referência ${referenceId} confirmada e adicionada à fila de leitura.`);
+    updateReadingQueue(referenceId); pendingPdfs.current.delete(item.id); setItems((current) => current.filter((candidate) => candidate.id !== item.id)); onMessage(`Referência ${referenceId} confirmada e adicionada à fila de leitura.`);
   };
   const summary = inboxSummary(items);
 

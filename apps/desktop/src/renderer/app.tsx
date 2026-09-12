@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type JSX, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type JSX, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
 
 import type {
   ProtocolResult,
@@ -24,6 +24,7 @@ import type {
 import { captureInboxItem } from '@abnt/workspace-navigation';
 import type { LanguageLocation } from '@abnt/language-service';
 import type { EditorController } from '@abnt/editor-core';
+import { PAGE_TYPES } from '@abnt/page-workspace';
 
 import { EditorPane, type EditorPaneHandle } from './editor-pane.js';
 import { requestConfirmation, requestText, TextPromptHost } from './text-prompt.js';
@@ -42,8 +43,10 @@ import { CaptureInboxDialog } from './capture-inbox.js';
 import { ResearchCanvasDialog } from './research-canvas.js';
 import { AcademicFormsDialog } from './academic-forms.js';
 import { AcademicViewsDialog } from './academic-views.js';
+import { StructuredResearchDialog } from './structured-research.js';
 import { WorkspaceNavigationDialog } from './workspace-navigation.js';
 import { WorkspaceHome } from './workspace-home.js';
+import { useGlobalDialogAccessibility } from './dialog-accessibility.js';
 import { SubmissionIntegrationsDialog } from './submission-integrations-dialog.js';
 import { WorkspaceFileExplorer } from './file-explorer.js';
 import { WritingWorkflowDialog } from './writing-workflow.js';
@@ -402,6 +405,7 @@ function EditorDocumentPane({
           {fileFolder !== '' && <div className="truncate text-[11px] text-slate-400">{fileFolder}</div>}
         </div>
       </div>
+      <PageDocumentHeader fileId={view.fileId} revision={view.snapshot.session.revision} onError={onError} onCommand={onCommand} />
       <EditorToolbar onCommand={onCommand} />
       <EditorPane
         key={view.id}
@@ -422,6 +426,22 @@ function EditorDocumentPane({
       )}
     </div>
   );
+}
+
+function PageDocumentHeader({ fileId, revision, onError, onCommand }: { readonly fileId: string; readonly revision: number; readonly onError: (message: string) => void; readonly onCommand: (id: string) => void }): JSX.Element {
+  const [page, setPage] = useState<import('@abnt/protocol').WorkspacePageDto>();
+  const [status, setStatus] = useState(''); const [tags, setTags] = useState(''); const [due, setDue] = useState(''); const [type, setType] = useState(''); const [project, setProject] = useState(''); const [aliases, setAliases] = useState('');
+  const [projects, setProjects] = useState<readonly { readonly id: string; readonly title: string }[]>([]);
+  useEffect(() => { let cancelled = false; void Promise.all([window.academic.workspace.pages(), window.academic.workspace.researchProjects()]).then(([pageList, projectList]) => { if (cancelled) return; if (pageList.ok) { const current = pageList.value.pages.find((item) => item.file.fileId === fileId); setPage(current); setStatus(current?.properties.status ?? ''); setTags(current?.properties.tags.join(', ') ?? ''); setDue(current?.properties.due ?? ''); setType(current?.properties.type ?? ''); setProject(current?.properties.project ?? ''); setAliases(current?.properties.aliases.join(', ') ?? ''); } else onError(pageList.error.message); if (projectList.ok) setProjects(projectList.value.projects.flatMap((item) => typeof item.id === 'string' && typeof item.title === 'string' ? [{ id: item.id, title: item.title }] : [])); else onError(projectList.error.message); }); return () => { cancelled = true; }; }, [fileId, revision, onError]);
+  const save = (): void => {
+    if (page === undefined || page.properties.id === undefined) return;
+    const { status: _oldStatus, due: _oldDue, type: _oldType, project: _oldProject, ...rest } = page.properties;
+    const properties = { ...rest, ...(status.trim() === '' ? {} : { status: status.trim() }), ...(due.trim() === '' ? {} : { due: due.trim() }), ...(type === '' ? {} : { type: type as typeof PAGE_TYPES[number] }), ...(project.trim() === '' ? {} : { project: project.trim() }), tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean), aliases: aliases.split(',').map((alias) => alias.trim()).filter(Boolean) };
+    void window.academic.workspace.setPageProperties({ fileId, expectedRevision: revision, properties }).then((result) => { if (!result.ok) onError(result.error.message); else setPage(result.value); });
+  };
+  if (page === undefined) return <div className="border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs text-slate-400">Carregando propriedades…</div>;
+  if (page.properties.id === undefined) return <div className="flex flex-wrap items-center gap-3 border-b border-indigo-100 bg-indigo-50 px-4 py-2"><span className="text-xs text-indigo-800">Este Markdown continua normal. Transforme-o em página para usar propriedades e relações.</span><button type="button" className="rounded-md bg-white px-2 py-1 text-xs font-bold text-indigo-700 ring-1 ring-indigo-200" onClick={() => void window.academic.workspace.enablePage({ fileId, expectedRevision: revision, id: crypto.randomUUID() }).then((result) => { if (!result.ok) onError(result.error.message); else setPage(result.value); })}>Transformar em página</button></div>;
+  return <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2.5"><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Tipo<select className="w-28 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={type} onChange={(event) => setType(event.target.value)} onBlur={save}><option value="">Página</option>{PAGE_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Status<input className="w-28 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={status} onChange={(event) => setStatus(event.target.value)} onBlur={save} /></label><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Projeto<select className="w-40 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={project} onChange={(event) => setProject(event.target.value)} onBlur={save}><option value="">Sem projeto</option>{project !== '' && !projects.some((item) => item.id === project) && <option value={project}>Projeto removido ({project})</option>}{projects.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Tags<input className="w-44 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={tags} onChange={(event) => setTags(event.target.value)} onBlur={save} placeholder="método, revisão" /></label><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Aliases<input className="w-40 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={aliases} onChange={(event) => setAliases(event.target.value)} onBlur={save} placeholder="nome alternativo" /></label><label className="grid gap-1 text-[11px] font-semibold text-slate-500">Prazo<input type="date" className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-normal text-slate-700" value={due} onChange={(event) => setDue(event.target.value)} onBlur={save} /></label>{page.tasks.length > 0 && <span className="pb-1 text-xs text-slate-500">{page.tasks.filter((task) => task.completed).length}/{page.tasks.length} tarefas</span>}<div className="flex items-center gap-1 pb-0.5"><button type="button" className="rounded-md px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-50" onClick={() => onCommand('document.backlinks')}>Backlinks</button>{page.properties.relations.length > 0 && <button type="button" className="rounded-md px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-50" onClick={() => onCommand('graph.open')}>Relações ({page.properties.relations.length})</button>}</div></div>;
 }
 
 function SystemInformationDialog({ information, onClose }: {
@@ -1016,6 +1036,7 @@ function ReferenceLibraryDialog({ onClose, onOpenLiteratureNote }: { readonly on
   const [relations, setRelations] = useState<readonly ReferenceRelationDto[]>([]);
   const [relationKind, setRelationKind] = useState<ReferenceRelationKindDto>('version-of');
   const [relationTargetId, setRelationTargetId] = useState<string | undefined>(undefined);
+  const [fullTextCandidates, setFullTextCandidates] = useState<readonly import('@abnt/protocol').FullTextCandidateDto[]>([]);
   const selected = entries.find((entry) => entry.id === selectedId);
   const visibleEntries = entries.filter((entry) => `${entry.id} ${entry.title ?? ''} ${entry.author?.map((author) => author.literal ?? [author.family, author.given].filter(Boolean).join(' ')).join(' ') ?? ''}`.toLocaleLowerCase('pt-BR').includes(query.trim().toLocaleLowerCase('pt-BR')));
   const attachmentsForSelected = selectedId === undefined ? [] : attachmentItems.filter((item) => item.referenceId === selectedId);
@@ -1110,6 +1131,20 @@ function ReferenceLibraryDialog({ onClose, onOpenLiteratureNote }: { readonly on
     const result = await window.academic.workspace.removeReferenceRelation({ id });
     if (result.ok) load(); else setPreview(result.error.message);
   };
+  const findFullText = async (): Promise<void> => {
+    if (selectedId === undefined) return;
+    const result = await window.academic.library.discoverFullText({ referenceId: selectedId });
+    if (!result.ok) { setPreview(result.error.message); return; }
+    setFullTextCandidates(result.value.candidates);
+    if (result.value.failures.length > 0) setPreview(result.value.failures.map((failure) => `${failure.provider}: ${failure.message}`).join(' · '));
+  };
+  const downloadCandidate = async (url: string): Promise<void> => {
+    if (selectedId === undefined) return;
+    const result = await window.academic.library.downloadFullText({ referenceId: selectedId, url, ...(selected?.title === undefined ? {} : { displayTitle: selected.title }) });
+    if (!result.ok) { setPreview(result.error.message); return; }
+    setFullTextCandidates([]); load();
+  };
+  const fullTextControls = selectedId === undefined ? null : <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/50 p-4"><div className="flex items-center gap-3"><div><h3 className="text-xs font-bold uppercase tracking-[0.14em] text-sky-800">Texto completo</h3><p className="mt-1 text-xs text-slate-600">Descoberta revisável; o download só começa após sua confirmação.</p></div><button type="button" className="ml-auto rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-semibold text-sky-800" onClick={() => void findFullText()}>Buscar</button></div>{fullTextCandidates.length > 0 && <ul className="mt-3 grid gap-2">{fullTextCandidates.map((candidate) => <li key={candidate.url} className="flex flex-wrap items-center gap-2 rounded-xl border border-sky-100 bg-white p-2.5 text-xs"><span className="font-semibold text-slate-800">{candidate.provider}</span><span className="rounded bg-sky-100 px-1.5 py-0.5 text-sky-800">{candidate.license}</span><span className="text-slate-500">{Math.round(candidate.confidence * 100)}%</span><span className="min-w-0 flex-1 truncate text-slate-600">{candidate.url}</span><button type="button" className="rounded bg-sky-700 px-2.5 py-1.5 font-semibold text-white" onClick={() => void downloadCandidate(candidate.url)}>Baixar e anexar</button></li>)}</ul>}</div>;
   const relationControls = selectedId === undefined ? null : <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
     <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-600">Relações</h3>
     <ul className="mt-3 grid gap-2">{relationsForSelected.length === 0 ? <li className="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">Nenhuma relação registrada.</li> : relationsForSelected.map((relation) => {
@@ -1172,7 +1207,7 @@ function ReferenceLibraryDialog({ onClose, onOpenLiteratureNote }: { readonly on
           </header>
           <div className="mx-auto max-w-4xl p-5 md:p-7">
             <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:p-5"><div className="grid gap-4 sm:grid-cols-2">{field('id', 'Chave de citação', 'silva2024')}<label className="grid gap-1.5 text-sm font-medium text-slate-700"><span>Tipo</span><select value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as ReferenceDraft['type'] })} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100">{REFERENCE_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>{field('title', 'Título')}{field('authors', 'Autores (um por linha: Sobrenome, Nome)')}{field('containerTitle', draft.type === 'article-journal' ? 'Periódico' : 'Obra / evento')}{field('publisher', 'Editora')}{field('year', 'Ano', '2024')}{field('doi', 'DOI')}{field('url', 'URL')}</div><div className="mt-4 flex justify-end"><button type="button" disabled={draft.doi.trim() === ''} onClick={() => void importDoi()} className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40">Resolver DOI e revisar</button></div></section>
-            {attachmentControls}{relationControls}
+            {fullTextControls}{attachmentControls}{relationControls}
             <section className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4"><h3 className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-700">Preview ABNT</h3><p className="mt-2 text-sm leading-6 text-slate-700">{preview}</p></section>
             <footer className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 pt-5"><button type="button" disabled={selectedId === undefined} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40" onClick={duplicate}>Duplicar</button><button type="button" disabled={selectedId === undefined} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 disabled:opacity-40" onClick={() => void remove()}>Excluir</button><button type="button" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100" onClick={onClose}>Cancelar</button><button type="button" disabled={draft.id.trim() === ''} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40" onClick={() => void save()}>Salvar referência</button></footer>
           </div>
@@ -1475,9 +1510,23 @@ function KnowledgeWorkspaceDialog({ state, query, activeFile, onClose, onRunSear
 }
 
 export function App(): JSX.Element {
+  useGlobalDialogAccessibility();
   const [files, setFiles] = useState<readonly WorkspaceFileDto[]>([]);
   const [workspaceFiles, setWorkspaceFiles] = useState<readonly WorkspaceFileDto[]>([]);
   const [workspaceId, setWorkspaceId] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (workspaceId === undefined) return;
+    let cancelled = false;
+    void window.academic.workspace.themes().then((result) => {
+      if (cancelled || !result.ok) return;
+      const theme = result.value.themes.find((item) => item.id === result.value.activeId);
+      if (theme === undefined) return;
+      const root = document.documentElement;
+      for (const [key, value] of Object.entries(theme.tokens)) root.style.setProperty(`--folio-${key.replace(/[A-Z]/gu, (letter) => `-${letter.toLowerCase()}`)}`, value);
+      root.dataset.folioTheme = theme.mode;
+    });
+    return () => { cancelled = true; };
+  }, [workspaceId]);
   const [message, setMessage] = useState('Abra um vault para começar.');
   const [views, setViews] = useState<readonly ViewState[]>([]);
   const [activeId, setActiveId] = useState<ViewId | undefined>(undefined);
@@ -1500,10 +1549,14 @@ export function App(): JSX.Element {
   const [activeLayoutId, setActiveLayoutId] = useState<string | undefined>(undefined);
   const [workspaceLayouts, setWorkspaceLayouts] = useState<readonly WorkspaceLayout[]>(defaultLayouts);
   const [layoutVisibilityOverride, setLayoutVisibilityOverride] = useState<Partial<Pick<WorkspaceLayout, 'showNavigation' | 'showContext'>>>({});
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [fileExplorerExpanded, setFileExplorerExpanded] = useState(false);
+  // O shell abre como um workspace de escrita: trilho compacto, explorador
+  // persistente e contexto à direita. Cada área continua recolhível quando a
+  // escrita pedir mais espaço, mas o vault não fica escondido por padrão.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [fileExplorerExpanded, setFileExplorerExpanded] = useState(true);
   const [searchSidebarOpen, setSearchSidebarOpen] = useState(false);
   const [contextCollapsed, setContextCollapsed] = useState(false);
+  const [panelWidths, setPanelWidths] = useState({ explorer: 288, context: 272 });
   const [draggedTabId, setDraggedTabId] = useState<ViewId | undefined>(undefined);
   const [workspaceActivity, setWorkspaceActivity] = useState<readonly WorkspaceActivity[]>([]);
   const [recentCommandIds, setRecentCommandIds] = useState<readonly string[]>([]);
@@ -1537,6 +1590,7 @@ export function App(): JSX.Element {
   const [academicFormsOpen, setAcademicFormsOpen] = useState(false);
   const [pendingCapture, setPendingCapture] = useState<WorkspaceCaptureInboxItemDto | undefined>(undefined);
   const [academicViewsOpen, setAcademicViewsOpen] = useState(false);
+  const [structuredResearchOpen, setStructuredResearchOpen] = useState(false);
   const [workspaceNavigationOpen, setWorkspaceNavigationOpen] = useState(false);
   const [automationOpen, setAutomationOpen] = useState(false);
   const [customKeybindings, setCustomKeybindings] = useState<CustomKeybindings>({});
@@ -1603,16 +1657,34 @@ export function App(): JSX.Element {
       : undefined;
   const activePanel = panelRegistry.list().find((panel) => panel.id === activePanelId);
   const sidebarWidth = sidebarCollapsed ? '56px' : '220px';
-  const explorerColumnWidth = '288px';
-  const contextWidth = contextCollapsed ? '56px' : '272px';
-  const explorerExpandedVisible = activeLayout.showNavigation && fileExplorerExpanded && !sidebarCollapsed;
+  const explorerColumnWidth = `${panelWidths.explorer}px`;
+  const contextWidth = contextCollapsed ? '56px' : `${panelWidths.context}px`;
+  // O trilho e o explorador são áreas independentes: comprimir o trilho não
+  // deve esconder a árvore do vault.
+  const explorerExpandedVisible = activeLayout.showNavigation && fileExplorerExpanded;
   const searchSidebarVisible = activeLayout.showNavigation && searchSidebarOpen && !sidebarCollapsed;
   const shellGridColumns = [
     ...(activeLayout.showNavigation ? [sidebarWidth] : []),
-    ...(explorerExpandedVisible || searchSidebarVisible ? [explorerColumnWidth] : []),
+    ...(explorerExpandedVisible || searchSidebarVisible ? [explorerColumnWidth, '4px'] : []),
     'minmax(0, 1fr)',
-    ...(activeLayout.showContext ? [contextWidth] : []),
+    ...(activeLayout.showContext ? ['4px', contextWidth] : []),
   ].join(' ');
+
+  const persistPanelWidths = (next: { readonly explorer: number; readonly context: number }): void => {
+    setPanelWidths(next);
+    if (workspaceId === undefined) return;
+    void window.academic.workspace.homeLayout().then((result) => {
+      if (!result.ok) { setMessage(result.error.message); return; }
+      return window.academic.workspace.setHomeLayout({ ...result.value, panels: { explorerWidth: next.explorer, contextWidth: next.context } }).then((saved) => { if (!saved.ok) setMessage(saved.error.message); });
+    });
+  };
+  const beginPanelResize = (panel: 'explorer' | 'context', event: ReactPointerEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    const startX = event.clientX; const initial = panelWidths[panel]; let finalWidth = initial;
+    const move = (next: PointerEvent): void => { const delta = panel === 'explorer' ? next.clientX - startX : startX - next.clientX; finalWidth = Math.max(220, Math.min(440, initial + delta)); setPanelWidths((current) => ({ ...current, [panel]: finalWidth })); };
+    const end = (): void => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', end); persistPanelWidths({ ...panelWidths, [panel]: finalWidth }); };
+    document.addEventListener('pointermove', move); document.addEventListener('pointerup', end);
+  };
 
   const createWorkspaceFolder = async (): Promise<void> => {
     const folder = await requestText('Caminho da nova pasta no vault:', 'notas');
@@ -1778,16 +1850,17 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     if (workspaceId === undefined) {
-      setWorkspaceLayouts(defaultLayouts); setWorkspaceActivity([]); setRecentCommandIds([]); setOnboardingVisible(false); setActiveLayoutId(undefined); setLayoutVisibilityOverride({}); setSidebarCollapsed(false); setFileExplorerExpanded(false); setSearchSidebarOpen(false); setContextCollapsed(false); setWorkspaceFiles([]);
+      setWorkspaceLayouts(defaultLayouts); setWorkspaceActivity([]); setRecentCommandIds([]); setOnboardingVisible(false); setActiveLayoutId(undefined); setLayoutVisibilityOverride({}); setSidebarCollapsed(true); setFileExplorerExpanded(true); setSearchSidebarOpen(false); setContextCollapsed(false); setPanelWidths({ explorer: 288, context: 272 }); setWorkspaceFiles([]);
       return;
     }
     setWorkspaceLayouts(loadLayouts(workspaceId));
     setActiveLayoutId(undefined);
     setLayoutVisibilityOverride({});
-    setSidebarCollapsed(false);
-    setFileExplorerExpanded(false);
+    setSidebarCollapsed(true);
+    setFileExplorerExpanded(true);
     setSearchSidebarOpen(false);
     setContextCollapsed(false);
+    void window.academic.workspace.homeLayout().then((result) => { if (result.ok) setPanelWidths({ explorer: result.value.panels.explorerWidth, context: result.value.panels.contextWidth }); });
     setWorkspaceActivity(loadActivity(workspaceId));
     setRecentCommandIds(loadRecentCommands(workspaceId));
     setOnboardingVisible(window.localStorage.getItem(onboardingStorageKey(workspaceId)) !== 'done');
@@ -1902,6 +1975,20 @@ export function App(): JSX.Element {
       unregisterCitationExplorer();
     };
   }, [panelRegistry]);
+
+  // Plugins só entregam título e texto já validados pelo manifesto. O painel
+  // continua um componente do Folio: não há React, HTML ou callback remoto.
+  useEffect(() => {
+    const unregister = pluginContributions
+      .filter((plugin) => plugin.enabled)
+      .flatMap((plugin) => plugin.panels.map((panel) => panelRegistry.register({
+        id: `plugin:${plugin.id}:${panel.id}`,
+        title: panel.title,
+        render: () => <article className="rounded-lg border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-indigo-600">Extensão · {plugin.id}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{panel.body}</p></article>,
+      })));
+    setNavigationVersion((version) => version + 1);
+    return () => { unregister.forEach((dispose) => dispose()); setNavigationVersion((version) => version + 1); };
+  }, [panelRegistry, pluginContributions]);
 
   /** FTS5 é rápido, mas debounce evita uma consulta a cada tecla enquanto o usuário digita. */
   useEffect(() => {
@@ -2403,6 +2490,7 @@ export function App(): JSX.Element {
         run() { setResearchCanvasOpen(true); },
       }),
       commandRegistry.register({ id: 'forms.open', title: 'Abrir formulários acadêmicos', category: 'Pesquisa', aliases: ['extração', 'dataset', 'revisar referência'], isEnabled: () => workspaceId !== undefined, run() { setAcademicFormsOpen(true); } }),
+      commandRegistry.register({ id: 'research.structured', title: 'Abrir pesquisa estruturada', category: 'Pesquisa', aliases: ['revisão sistemática', 'datasets', 'prisma'], isEnabled: () => workspaceId !== undefined, run() { setStructuredResearchOpen(true); } }),
       commandRegistry.register({ id: 'submission.integrations', title: 'Abrir integrações de submissão', category: 'Submissão', aliases: ['orcid', 'crossref', 'ojs', 'revisão'], isEnabled: () => workspaceId !== undefined, run() { setSubmissionIntegrationsOpen(true); } }),
       commandRegistry.register({ id: 'forms.applyReferenceType', title: 'Aplicar tipo de referência em lote', category: 'Pesquisa', async run(_context, args) { const input = args as { ids?: unknown; type?: unknown }; const ids = Array.isArray(input.ids) ? input.ids.filter((id): id is string => typeof id === 'string') : []; const type = typeof input.type === 'string' ? input.type : ''; if (ids.length === 0 || type === '') return; if (!await requestConfirmation({ title: 'Atualizar referências', description: `${ids.length} referência(s) receberão o tipo “${type}”.`, confirmLabel: 'Aplicar tipo', destructive: false })) return; const listed = await window.academic.library.list({}); if (!listed.ok) { setMessage(listed.error.message); return; } for (const id of ids) { const entry = listed.value.find((item) => item.id === id); if (entry === undefined) continue; const result = await window.academic.library.upsert({ entry: { ...entry, type: type as BibliographicEntityDto['type'] } }); if (!result.ok) { setMessage(result.error.message); return; } } setMessage(`${ids.length} referência(s) atualizada(s).`); } }),
       commandRegistry.register({
@@ -3013,6 +3101,7 @@ export function App(): JSX.Element {
           }}
         />
       )}
+      {(explorerExpandedVisible || searchSidebarVisible) && <div role="separator" aria-orientation="vertical" aria-label="Redimensionar explorador" tabIndex={0} className="folio-panel-resizer" onPointerDown={(event) => beginPanelResize('explorer', event)} />}
       <section className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-white/50">
         <div className="folio-contextbar flex min-h-14 items-center gap-2 overflow-hidden border-b px-3" role="tablist" aria-label="Documentos abertos">
           <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-2">
@@ -3101,6 +3190,7 @@ export function App(): JSX.Element {
             recentFileIds={recentFileIds}
             activities={workspaceActivity}
             onboardingVisible={onboardingVisible}
+            pluginHomeBlocks={pluginContributions.filter((plugin) => plugin.enabled).flatMap((plugin) => plugin.homeBlocks.map((block) => ({ pluginId: plugin.id, ...block })))}
             onOpenFile={(fileId, path) => void openDocument(fileId, path)}
             onCommand={(id) => {
               const next = id === 'writing.open' && activeEditorView === undefined ? 'template.createDocument' : id;
@@ -3132,6 +3222,7 @@ export function App(): JSX.Element {
           <PreviewPane view={activeView} />
         )}
       </section>
+      {activeLayout.showContext && <div role="separator" aria-orientation="vertical" aria-label="Redimensionar contexto" tabIndex={0} className="folio-panel-resizer" onPointerDown={(event) => beginPanelResize('context', event)} />}
       {activeLayout.showContext && <aside className={`folio-panel folio-context-panel flex min-h-0 flex-col border-l ${contextCollapsed ? 'items-center gap-3 px-2 py-4' : 'gap-4 p-4'}`}>
         {contextCollapsed ? <>
           <button type="button" aria-label="Expandir contexto" title="Expandir contexto" className="folio-context-collapse folio-control grid h-9 w-9 place-items-center rounded-xl" onClick={() => setContextCollapsed(false)}><FolioIcon name="back" /></button>
@@ -3391,7 +3482,16 @@ export function App(): JSX.Element {
       {researchCanvasOpen && <ResearchCanvasDialog files={workspaceFiles} onClose={() => setResearchCanvasOpen(false)} onMessage={setMessage} onInsertWriting={(text) => { if (activeEditorView === undefined) { setMessage('Abra um documento para inserir a prévia do canvas.'); return; } const offset = activeEditorView.snapshot.selection.head; activeEditorView.controller.dispatch({ edits: [{ range: { start: offset, end: offset }, text: `\n${text}\n` }], selection: { anchor: offset + text.length + 2, head: offset + text.length + 2 } }); setResearchCanvasOpen(false); setMessage('Prévia do canvas inserida; revise o texto autoral.'); }} />}
       {academicFormsOpen && <AcademicFormsDialog onClose={() => setAcademicFormsOpen(false)} onMessage={setMessage} onBatchReferenceType={(ids, type) => commandRegistry.execute('forms.applyReferenceType', paletteContext, { ids, type })} />}
       {researchProjectsOpen && workspaceId !== undefined && <ResearchProjectsDialog workspaceId={workspaceId} files={files} knowledge={knowledgeWorkspace} {...(activeEditorView === undefined ? {} : { activeFile: { fileId: activeEditorView.fileId, path: activeEditorView.path, revision: activeEditorView.snapshot.session.revision, contentHash: activeEditorView.snapshot.session.contentHash ?? '', mediaType: 'text/markdown' } })} onClose={() => setResearchProjectsOpen(false)} />}
-      {academicViewsOpen && <AcademicViewsDialog files={workspaceFiles} onClose={() => setAcademicViewsOpen(false)} onMessage={setMessage} />}
+      {academicViewsOpen && workspaceId !== undefined && <AcademicViewsDialog files={workspaceFiles} workspaceId={workspaceId} onClose={() => setAcademicViewsOpen(false)} onMessage={setMessage} />}
+      {structuredResearchOpen && <StructuredResearchDialog onClose={() => setStructuredResearchOpen(false)} onMessage={setMessage} onApplySuggestion={async (suggestion) => {
+        const active = viewsModel.active();
+        if (active?.type !== 'editor') { setMessage('Abra um documento para inserir a sugestão.'); return; }
+        if (!await requestConfirmation({ title: 'Inserir sugestão?', description: 'A sugestão será acrescentada ao fim do documento ativo e continuará editável.', confirmLabel: 'Inserir sugestão', destructive: false })) return;
+        const offset = active.snapshot.session.content.length;
+        active.controller.dispatch({ edits: [{ range: { start: offset, end: offset }, text: `\n\n${suggestion.trim()}\n` }], selection: { anchor: offset + suggestion.trim().length + 2, head: offset + suggestion.trim().length + 2 } });
+        await active.controller.save();
+        setMessage('Sugestão inserida no documento ativo.');
+      }} />}
       {workspaceNavigationOpen && workspaceId !== undefined && <WorkspaceNavigationDialog workspaceId={workspaceId} files={workspaceFiles} searches={knowledgeWorkspace.searches} commandRegistry={commandRegistry} onClose={() => setWorkspaceNavigationOpen(false)} onOpenFile={(file) => { setWorkspaceNavigationOpen(false); void openDocument(file.fileId, file.path); }} />}
       {writingWorkflowOpen && workspaceId !== undefined && activeEditorView !== undefined && writingStatistics !== undefined && <WritingWorkflowDialog workspaceId={workspaceId} fileId={activeEditorView.fileId} profileId={metadataFromSource(activeEditorView.snapshot.session.content).profile || 'abnt-artigo'} outline={activeEditorView.snapshot.outline} diagnostics={activeEditorView.snapshot.diagnostics} statistics={writingStatistics} onClose={() => setWritingWorkflowOpen(false)} onNavigate={(offset) => activeEditorView.controller.dispatch({ selection: { anchor: offset, head: offset } })} />}
       {referenceMaintenanceOpen && <ReferenceMaintenanceDialog onClose={() => setReferenceMaintenanceOpen(false)} />}
@@ -3399,7 +3499,7 @@ export function App(): JSX.Element {
       {referenceLibraryEditor && <ReferenceLibraryDialog onClose={() => setReferenceLibraryEditor(false)} onOpenLiteratureNote={(fileId, path) => { setReferenceLibraryEditor(false); void openDocument(fileId, path); }} />}
       {referenceHealth && <ReferenceHealthDialog onClose={() => setReferenceHealth(false)} />}
       {annotationSynthesisOpen && <AnnotationSynthesisDialog {...(activeEditorView === undefined ? {} : { activeFileId: activeEditorView.fileId })} onClose={() => setAnnotationSynthesisOpen(false)} onOpenDocument={(fileId, path) => void openDocument(fileId, path)} />}
-      {literatureMonitoringOpen && workspaceId !== undefined && <LiteratureMonitoringDialog workspaceId={workspaceId} onClose={() => setLiteratureMonitoringOpen(false)} onMessage={setMessage} />}
+      {literatureMonitoringOpen && workspaceId !== undefined && <LiteratureMonitoringDialog onClose={() => setLiteratureMonitoringOpen(false)} onMessage={setMessage} />}
       {tableEditor !== undefined && activeEditorView !== undefined && <TableDialog {...(tableEditor.initial === undefined ? {} : { initial: tableEditor.initial })} onClose={() => setTableEditor(undefined)} onApply={(text) => { const start = tableEditor.range.start; activeEditorView.controller.dispatch({ edits: [{ range: tableEditor.range, text }], selection: { anchor: start + text.length, head: start + text.length } }); setTableEditor(undefined); }} />}
       {figureEditor !== undefined && <FigureDialog fileId={figureEditor.fileId} sourcePath={figureEditor.path} assets={workspaceFiles.filter((file) => file.path.startsWith('assets/') && file.mediaType?.startsWith('image/') === true)} onClose={() => setFigureEditor(undefined)} onError={setMessage} onApply={(input) => { const view = viewsModel.active(); if (view?.type !== 'editor' || view.fileId !== figureEditor.fileId) { setMessage('O documento ativo mudou; abra a figura novamente.'); setFigureEditor(undefined); return; } const text = `\n\n${figureSource(input)}\n\n`; view.controller.dispatch({ edits: [{ range: figureEditor.range, text }], selection: { anchor: figureEditor.range.start + text.length, head: figureEditor.range.start + text.length } }); setFigureEditor(undefined); }} />}
       {imageViewer !== undefined && <ImageViewerDialog image={imageViewer} onClose={() => setImageViewer(undefined)} />}

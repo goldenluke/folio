@@ -4,7 +4,7 @@ import { GlobalWorkerOptions, getDocument, TextLayer, type PDFDocumentProxy } fr
 import type { WorkspacePdfAnnotationDto } from '@abnt/protocol';
 
 import { ANNOTATION_HIGHLIGHT_COLORS } from './annotation-synthesis.js';
-import { requestText } from './text-prompt.js';
+import { requestConfirmation, requestText } from './text-prompt.js';
 import { timePerformance, timePerformanceSync } from './shell/performance.js';
 
 // Vite transforma esta URL em um asset local do renderer; nenhum worker/CDN é
@@ -147,6 +147,11 @@ export function PdfReaderDialog({ referenceId, onClose, onOpenLiteratureNote }: 
     onOpenLiteratureNote(result.value.literatureNote.fileId, result.value.literatureNote.path);
   };
   const removeAnnotation = async (annotation: WorkspacePdfAnnotationDto): Promise<void> => {
+    if (!await requestConfirmation({
+      title: 'Remover destaque?',
+      description: 'O destaque e seu comentário serão removidos desta referência. A nota vinculada, se existir, será preservada.',
+      confirmLabel: 'Remover destaque',
+    })) return;
     const result = await window.academic.library.removePdfAnnotation({ referenceId, id: annotation.id });
     if (!result.ok) { setStatus(result.error.message); return; }
     setAnnotations((current) => current.filter((item) => item.id !== annotation.id));

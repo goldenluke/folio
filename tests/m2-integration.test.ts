@@ -41,6 +41,15 @@ describe('M2 de ponta a ponta', () => {
     expect(result.html.match(/<p class="s-reference">/g)).toHaveLength(6);
   });
 
+  it('reutiliza um marcador autoral vazio de referências sem duplicar o título', async () => {
+    const result = await compilar('Texto [@silva2024].\n\n# Referências', {
+      references: { silva2024: reference('silva2024', 'Obra de teste', 2024) },
+    });
+
+    expect(result.html.match(/Referências/g)).toHaveLength(1);
+    expect(result.html).not.toContain('1 Referências');
+  });
+
   it('desambigua mesmo autor/ano fora da AST e ordena a chamada parentética', async () => {
     const references: Registry<BibliographicEntity> = {
       b: reference('b', 'Zonas replicadas', 2024),
