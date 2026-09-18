@@ -44,7 +44,16 @@ export interface FolioPluginManifest {
 }
 
 export interface PluginCommandContext { readonly activeFileId?: string; readonly activeRevision?: number; }
-export interface PluginCommandResult { readonly kind: 'notice' | 'open-view'; readonly message?: string; readonly viewId?: string; }
+/** Um plugin pode abrir somente superfícies conhecidas pelo renderer. */
+export interface PluginCommandResult {
+  readonly kind: 'notice' | 'open-view' | 'open-intake' | 'open-template' | 'open-structured-research';
+  readonly message?: string;
+  readonly viewId?: string;
+  /** Formato pré-selecionado na inbox; o conteúdo continua sendo escolhido pelo usuário. */
+  readonly intakeFormat?: 'bibtex' | 'ris' | 'csl-json';
+  /** Template built-in escolhido pelo usuário; o renderer continua criando o arquivo. */
+  readonly templateKind?: 'article' | 'institutional-article' | 'tcc' | 'institutional-tcc' | 'dissertation' | 'thesis' | 'abstract' | 'reading-note' | 'research-project';
+}
 export interface PluginExportResult { readonly content: string; }
 
 /**

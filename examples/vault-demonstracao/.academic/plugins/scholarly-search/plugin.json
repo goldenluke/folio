@@ -1,0 +1,10 @@
+{
+  "id": "folio.scholarly-search",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "entry": "index.mjs",
+  "capabilities": ["commands", "views", "network"],
+  "searchProviders": [{ "id": "openalex", "title": "OpenAlex" }, { "id": "crossref", "title": "Crossref" }],
+  "commands": [{ "id": "resolve-identifier", "title": "Buscar por DOI, PMID, ISBN, arXiv ou ADS" }],
+  "views": [{ "id": "guide", "title": "Busca acadêmica", "body": "Provedores de busca devem pedir uma consulta explícita e apresentar candidatos antes de criar referências. Use DOI, PMID, ISBN, arXiv ou ADS na inbox do Folio para resolver metadata por provedores configurados. Nenhuma busca é executada silenciosamente por este plugin." }]
+}

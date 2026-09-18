@@ -38,6 +38,7 @@ import {
   validarWorkspaceLibraryFormatRequest,
   validarWorkspaceLibraryResolveDoiRequest,
   validarWorkspaceScholarlyIdentifierReviewRequest,
+  validarWorkspaceScholarlyIdentifierBatchReviewRequest,
   validarWorkspacePdfReconciliationRequest,
   validarWorkspaceWebCaptureExtractRequest,
   validarWorkspaceLibraryImportRequest,
@@ -47,6 +48,7 @@ import {
   validarWorkspaceLibraryKeyPreviewRequest,
   validarWorkspaceLibraryRenameKeyRequest,
   validarWorkspaceReferenceHealthRequest,
+  workspaceSetReferenceIntegrityRequestSchema,
   validarWorkspaceLibraryMaintenanceRequest,
   validarWorkspaceReferenceRelationsRequest,
   validarWorkspaceAddReferenceRelationRequest,
@@ -110,6 +112,7 @@ import {
   workspaceFullTextDiscoveryRequestSchema,
   workspaceDownloadFullTextRequestSchema,
   workspaceSetSystematicReviewRequestSchema,
+  workspaceSetEvidenceSynthesisRequestSchema,
   workspaceSetResearchDatasetsRequestSchema,
   workspaceImportResearchDatasetRequestSchema,
   workspaceResearchDatasetPreviewRequestSchema,
@@ -177,11 +180,26 @@ export function registerDesktopIpc(
     }
   };
   const lastVaultFile = join(app.getPath('userData'), 'last-vault.json');
+  const vaultRecentsFile = join(app.getPath('userData'), 'vault-recents.json');
   const syncMirrorsFile = join(app.getPath('userData'), 'sync-mirrors.json');
   let activeRootPath: string | undefined;
+  type VaultRecent = { readonly rootPath: string; readonly name: string; readonly lastOpenedAt: string };
+  const readVaultRecents = async (): Promise<readonly VaultRecent[]> => {
+    try {
+      const value: unknown = JSON.parse(await readFile(vaultRecentsFile, 'utf8'));
+      if (!Array.isArray(value)) return [];
+      return value.flatMap((entry): readonly VaultRecent[] => typeof entry === 'object' && entry !== null && typeof (entry as VaultRecent).rootPath === 'string' && typeof (entry as VaultRecent).name === 'string' && typeof (entry as VaultRecent).lastOpenedAt === 'string' ? [entry as VaultRecent] : []);
+    } catch { return []; }
+  };
   const rememberLastVault = async (rootPath: string): Promise<void> => {
+    const absolute = resolve(rootPath);
+    const recent: VaultRecent = { rootPath: absolute, name: basename(absolute) || 'Vault sem nome', lastOpenedAt: new Date().toISOString() };
+    const others = (await readVaultRecents()).filter((entry) => entry.rootPath !== absolute);
     await mkdir(app.getPath('userData'), { recursive: true });
-    await writeFile(lastVaultFile, JSON.stringify({ rootPath }), 'utf8');
+    await Promise.all([
+      writeFile(lastVaultFile, JSON.stringify({ rootPath: absolute }), 'utf8'),
+      writeFile(vaultRecentsFile, JSON.stringify([recent, ...others].slice(0, 12)), 'utf8'),
+    ]);
   };
   const readSyncMirrors = async (): Promise<Readonly<Record<string, string>>> => {
     try {
@@ -198,7 +216,8 @@ export function registerDesktopIpc(
   const openWorkspace = async (rootPath: string) => {
     const opened = await workspace.client().open({ rootPath });
     if (!opened.ok) return opened;
-    activeRootPath = rootPath;
+    activeRootPath = resolve(rootPath);
+    await rememberLastVault(activeRootPath);
     const mirror = (await readSyncMirrors())[resolve(rootPath)];
     if (mirror !== undefined) await workspace.client().configureSync({ mirrorRootPath: mirror });
     return opened;
@@ -234,8 +253,26 @@ export function registerDesktopIpc(
         return protocolError('CANCELLED', 'Seleção de vault cancelada.');
       }
       const opened = await openWorkspace(selected.filePaths[0]);
-      if (opened.ok) await rememberLastVault(selected.filePaths[0]);
       return opened;
+    }],
+    [DESKTOP_CHANNELS.vaults, async () => protocolOk(await readVaultRecents())],
+    [DESKTOP_CHANNELS.createVault, async (_value, sender) => {
+      const options = { title: 'Criar vault acadêmico', properties: ['openDirectory', 'createDirectory'] as const, buttonLabel: 'Criar vault' };
+      const parent = senderWindow(sender);
+      const selected = await (parent === undefined ? dialog.showOpenDialog({ ...options, properties: [...options.properties] }) : dialog.showOpenDialog(parent, { ...options, properties: [...options.properties] }));
+      if (selected.canceled || selected.filePaths[0] === undefined) return protocolError('CANCELLED', 'Criação de vault cancelada.');
+      const rootPath = selected.filePaths[0];
+      await mkdir(rootPath, { recursive: true });
+      try { await writeFile(join(rootPath, 'README.md'), '# Novo vault\n\nComece a escrever aqui.\n', { encoding: 'utf8', flag: 'wx' }); } catch (error) { if (!(error instanceof Error) || !('code' in error) || error.code !== 'EEXIST') throw error; }
+      return openWorkspace(rootPath);
+    }],
+    [DESKTOP_CHANNELS.forgetVault, async (value) => {
+      if (typeof value !== 'object' || value === null || !('rootPath' in value) || typeof value.rootPath !== 'string') return protocolError('VALIDATION', 'Vault inválido.');
+      const rootPath = resolve(value.rootPath);
+      const recents = (await readVaultRecents()).filter((entry) => entry.rootPath !== rootPath);
+      await mkdir(app.getPath('userData'), { recursive: true });
+      await writeFile(vaultRecentsFile, JSON.stringify(recents), 'utf8');
+      return protocolOk(undefined);
     }],
     [DESKTOP_CHANNELS.restoreWorkspace, async () => restoreLastVault()],
     [DESKTOP_CHANNELS.openWorkspace, async (value) => {
@@ -590,6 +627,10 @@ export function registerDesktopIpc(
       const checked = validarWorkspaceScholarlyIdentifierReviewRequest(value);
       return checked.ok ? workspace.client().reviewScholarlyIdentifier(checked.value) : checked;
     }],
+    [DESKTOP_CHANNELS.libraryReviewScholarlyIdentifiersBatch, async (value) => {
+      const checked = validarWorkspaceScholarlyIdentifierBatchReviewRequest(value);
+      return checked.ok ? workspace.client().reviewScholarlyIdentifiersBatch(checked.value) : checked;
+    }],
     [DESKTOP_CHANNELS.libraryReconcilePdf, async (value) => {
       const checked = validarWorkspacePdfReconciliationRequest(value);
       return checked.ok ? workspace.client().reconcilePdf(checked.value) : checked;
@@ -604,6 +645,8 @@ export function registerDesktopIpc(
     }],
     [DESKTOP_CHANNELS.systematicReview, async () => workspace.client().systematicReview()],
     [DESKTOP_CHANNELS.systematicReviewSet, async (value) => { const checked = validarDto(workspaceSetSystematicReviewRequestSchema, value); return checked.ok ? workspace.client().setSystematicReview(checked.value) : checked; }],
+    [DESKTOP_CHANNELS.evidenceSynthesis, async () => workspace.client().evidenceSynthesis()],
+    [DESKTOP_CHANNELS.evidenceSynthesisSet, async (value) => { const checked = validarDto(workspaceSetEvidenceSynthesisRequestSchema, value); return checked.ok ? workspace.client().setEvidenceSynthesis(checked.value) : checked; }],
     [DESKTOP_CHANNELS.researchDatasets, async () => workspace.client().researchDatasets()],
     [DESKTOP_CHANNELS.researchDatasetsSet, async (value) => { const checked = validarDto(workspaceSetResearchDatasetsRequestSchema, value); return checked.ok ? workspace.client().setResearchDatasets(checked.value) : checked; }],
     [DESKTOP_CHANNELS.researchDatasetsImport, async (value) => { const checked = validarDto(workspaceImportResearchDatasetRequestSchema, value); return checked.ok ? workspace.client().importResearchDataset(checked.value) : checked; }],
@@ -663,7 +706,7 @@ export function registerDesktopIpc(
       const checked = validarWorkspaceReferenceAttachmentRequest(value); return checked.ok ? workspace.client().referencePdf(checked.value) : checked;
     }],
     [DESKTOP_CHANNELS.libraryPdfAnnotations, async (value) => {
-      const checked = validarWorkspaceReferenceAttachmentRequest(value); return checked.ok ? workspace.client().pdfAnnotations(checked.value) : checked;
+      const checked = validarWorkspaceAnnotationsRequest(value); return checked.ok ? workspace.client().pdfAnnotations(checked.value) : checked;
     }],
     [DESKTOP_CHANNELS.libraryCreatePdfAnnotation, async (value) => {
       const checked = validarWorkspaceCreatePdfAnnotationRequest(value); return checked.ok ? workspace.client().createPdfAnnotation(checked.value) : checked;
@@ -677,6 +720,11 @@ export function registerDesktopIpc(
     [DESKTOP_CHANNELS.referenceHealth, async (value) => {
       const checked = validarWorkspaceReferenceHealthRequest(value);
       return checked.ok ? workspace.client().referenceHealth(checked.value) : checked;
+    }],
+    [DESKTOP_CHANNELS.referenceIntegrity, async () => workspace.client().referenceIntegrity()],
+    [DESKTOP_CHANNELS.referenceIntegritySet, async (value) => {
+      const checked = validarDto(workspaceSetReferenceIntegrityRequestSchema, value);
+      return checked.ok ? workspace.client().setReferenceIntegrity(checked.value) : checked;
     }],
     [DESKTOP_CHANNELS.libraryMaintenanceOverview, async (value) => {
       const checked = validarWorkspaceLibraryMaintenanceRequest(value);

@@ -29,6 +29,7 @@ const withVault = async (run: (root: string) => Promise<void>): Promise<void> =>
   try {
     await mkdir(join(root, 'referencias'), { recursive: true });
     await writeFile(join(root, 'artigo.md'), ARTICLE, 'utf8');
+    await writeFile(join(root, 'fonte.pdf'), '%PDF-1.4\n', 'utf8');
     await writeFile(join(root, 'notas.md'), '# Notas\n\nConhecimento relacionado em @tanenbaum2017.\n^conhecimento\n', 'utf8');
     await writeFile(join(root, 'referencias', 'referencias.bib'), '@book{tanenbaum2017, title={Distributed Systems}}\n', 'utf8');
     await run(root);
@@ -79,7 +80,7 @@ describe('P5 — language service headless', () => {
         hashContent: hash,
         autoCompile: false,
       });
-      const language = WorkspaceLanguageService.create({ storage, index, sessions, references: catalog });
+      const language = WorkspaceLanguageService.create({ storage, index, sessions, references: catalog, pdfAnnotation: async (id) => { const target = (await storage.list()).find((file) => file.path === 'fonte.pdf'); return id === 'ann-1' && target !== undefined ? { fileId: target.id, path: target.path, page: 7, annotationId: id } : undefined; } });
 
       try {
         await sessions.open(article.id);
@@ -98,6 +99,30 @@ describe('P5 — language service headless', () => {
         await expect(language.definition({ fileId: article.id, offset: linkOffset })).resolves.toEqual([
           { fileId: notes.id, path: notes.path, range: { start: 0, end: 0 } },
         ]);
+        const pdf = (await storage.list()).find((file) => file.path === 'fonte.pdf');
+        if (pdf === undefined) throw new Error('PDF ausente.');
+        const pdfLink = `${ARTICLE}\nVeja [[fonte.pdf#page=12]].`;
+        sessions.replaceContent(article.id, pdfLink);
+        const pdfOffset = pdfLink.indexOf('fonte.pdf') + 2;
+        await expect(language.definition({ fileId: article.id, offset: pdfOffset })).resolves.toEqual([
+          { fileId: pdf.id, path: pdf.path, range: { start: 0, end: 0 }, page: 12 },
+        ]);
+        const annotationLink = `${ARTICLE}\nVeja [[pdf-annotation:ann-1]].`;
+        sessions.replaceContent(article.id, annotationLink);
+        const annotationOffset = annotationLink.indexOf('ann-1');
+        await expect(language.definition({ fileId: article.id, offset: annotationOffset })).resolves.toEqual([
+          { fileId: pdf.id, path: pdf.path, range: { start: 0, end: 0 }, page: 7, annotationId: 'ann-1' },
+        ]);
+        const pdfDraft = `${ARTICLE}\nVeja [[fonte.pdf`;
+        sessions.replaceContent(article.id, pdfDraft);
+        await expect(language.completions({ fileId: article.id, offset: pdfDraft.length })).resolves.toMatchObject({
+          items: [expect.objectContaining({ kind: 'pdf', label: 'fonte.pdf', insertText: 'fonte.pdf' })],
+        });
+        sessions.replaceContent(article.id, pdfLink);
+        await writeFile(join(root, 'artigo.md'), pdfLink, 'utf8');
+        await expect(language.backlinks(pdf.id)).resolves.toContainEqual(
+          expect.objectContaining({ fileId: article.id, label: '[[fonte.pdf#page=12]]' }),
+        );
         await expect(language.references({ fileId: article.id, offset: citationOffset })).resolves.toContainEqual(
           expect.objectContaining({ fileId: article.id, path: article.path }),
         );

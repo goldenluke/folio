@@ -43,10 +43,12 @@ import {
   type WorkspaceLibraryFormatRequest,
   type WorkspaceLibraryResolveDoiRequest,
   type WorkspaceScholarlyIdentifierReviewRequest,
+  type WorkspaceScholarlyIdentifierBatchReviewRequest,
   type WorkspacePdfReconciliationRequest,
   type WorkspaceFullTextDiscoveryRequest,
   type WorkspaceDownloadFullTextRequest,
   type WorkspaceSetSystematicReviewRequest,
+  type WorkspaceSetEvidenceSynthesisRequest,
   type WorkspaceSetResearchDatasetsRequest,
   type WorkspaceImportResearchDatasetRequest,
   type WorkspaceResearchDatasetPreviewRequest,
@@ -58,6 +60,7 @@ import {
   type WorkspaceLibraryKeyPreviewRequest,
   type WorkspaceLibraryRenameKeyRequest,
   type WorkspaceReferenceHealthRequest,
+  type WorkspaceSetReferenceIntegrityRequest,
   type WorkspaceLibraryMaintenanceRequest,
   type WorkspaceReferenceRelationsRequest,
   type WorkspaceAddReferenceRelationRequest,
@@ -222,6 +225,8 @@ import {
   workspaceLibraryResolveDoiRequestSchema,
   workspaceScholarlyIdentifierReviewRequestSchema,
   workspaceScholarlyIdentifierReviewResponseSchema,
+  workspaceScholarlyIdentifierBatchReviewRequestSchema,
+  workspaceScholarlyIdentifierBatchReviewResponseSchema,
   workspacePdfReconciliationRequestSchema,
   workspacePdfReconciliationResponseSchema,
   workspaceFullTextDiscoveryRequestSchema,
@@ -229,6 +234,8 @@ import {
   workspaceDownloadFullTextRequestSchema,
   workspaceSystematicReviewResponseSchema,
   workspaceSetSystematicReviewRequestSchema,
+  workspaceEvidenceSynthesisResponseSchema,
+  workspaceSetEvidenceSynthesisRequestSchema,
   workspaceResearchDatasetsResponseSchema,
   workspaceSetResearchDatasetsRequestSchema,
   workspaceImportResearchDatasetRequestSchema,
@@ -250,6 +257,8 @@ import {
   workspaceLibraryRenameKeyResponseSchema,
   workspaceReferenceHealthRequestSchema,
   workspaceReferenceHealthResponseSchema,
+  workspaceSetReferenceIntegrityRequestSchema,
+  workspaceReferenceIntegrityResponseSchema,
   workspaceLibraryMaintenanceRequestSchema,
   workspaceLibraryMaintenanceResponseSchema,
   workspaceReferenceAttachmentsRequestSchema,
@@ -417,9 +426,9 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
       call(request, workspaceSearchRequestSchema, workspaceSearchResponseSchema, service.search.bind(service), signal),
     problems: (request, signal) =>
       call(request, workspaceProblemsRequestSchema, workspaceProblemsResponseSchema, service.problems.bind(service), signal),
-    plugins: (signal) => call({}, emptyResponseSchema, workspacePluginsResponseSchema, service.plugins.bind(service), signal),
+    plugins: (signal) => call(undefined, emptyResponseSchema, workspacePluginsResponseSchema, service.plugins.bind(service), signal),
     setPluginEnabled: (request, signal) => call(request, workspacePluginSetEnabledRequestSchema, workspacePluginsResponseSchema, service.setPluginEnabled.bind(service), signal),
-    reloadPlugins: (signal) => call({}, emptyResponseSchema, workspacePluginsResponseSchema, service.reloadPlugins.bind(service), signal),
+    reloadPlugins: (signal) => call(undefined, emptyResponseSchema, workspacePluginsResponseSchema, service.reloadPlugins.bind(service), signal),
     runPluginCommand: (request, signal) => call(request, workspacePluginCommandRequestSchema, workspacePluginCommandResponseSchema, service.runPluginCommand.bind(service), signal),
     exportWithPlugin: (request, signal) => call(request, workspacePluginExportRequestSchema, workspacePluginExportResponseSchema, service.exportWithPlugin.bind(service), signal),
     backlinks: (request, signal) =>
@@ -479,12 +488,16 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
       call(request, workspaceLibraryResolveDoiRequestSchema, workspaceLibraryEntryResponseSchema, service.libraryResolveDoi.bind(service), signal),
     reviewScholarlyIdentifier: (request, signal) =>
       call(request, workspaceScholarlyIdentifierReviewRequestSchema, workspaceScholarlyIdentifierReviewResponseSchema, service.reviewScholarlyIdentifier.bind(service), signal),
+    reviewScholarlyIdentifiersBatch: (request, signal) =>
+      call(request, workspaceScholarlyIdentifierBatchReviewRequestSchema, workspaceScholarlyIdentifierBatchReviewResponseSchema, service.reviewScholarlyIdentifiersBatch.bind(service), signal),
     reconcilePdf: (request, signal) =>
       call(request, workspacePdfReconciliationRequestSchema, workspacePdfReconciliationResponseSchema, service.reconcilePdf.bind(service), signal),
     discoverFullText: (request, signal) => call(request, workspaceFullTextDiscoveryRequestSchema, workspaceFullTextDiscoveryResponseSchema, service.discoverFullText.bind(service), signal),
     downloadFullText: (request, signal) => call(request, workspaceDownloadFullTextRequestSchema, workspaceAttachmentResponseSchema, service.downloadFullText.bind(service), signal),
     systematicReview: (signal) => call(undefined, emptyResponseSchema, workspaceSystematicReviewResponseSchema, (_request, currentSignal) => service.systematicReview(currentSignal), signal),
     setSystematicReview: (request, signal) => call(request, workspaceSetSystematicReviewRequestSchema, workspaceSystematicReviewResponseSchema, service.setSystematicReview.bind(service), signal),
+    evidenceSynthesis: (signal) => call(undefined, emptyResponseSchema, workspaceEvidenceSynthesisResponseSchema, (_request, currentSignal) => service.evidenceSynthesis(currentSignal), signal),
+    setEvidenceSynthesis: (request, signal) => call(request, workspaceSetEvidenceSynthesisRequestSchema, workspaceEvidenceSynthesisResponseSchema, service.setEvidenceSynthesis.bind(service), signal),
     researchDatasets: (signal) => call(undefined, emptyResponseSchema, workspaceResearchDatasetsResponseSchema, (_request, currentSignal) => service.researchDatasets(currentSignal), signal),
     setResearchDatasets: (request, signal) => call(request, workspaceSetResearchDatasetsRequestSchema, workspaceResearchDatasetsResponseSchema, service.setResearchDatasets.bind(service), signal),
     importResearchDataset: (request, signal) => call(request, workspaceImportResearchDatasetRequestSchema, workspaceResearchDatasetsResponseSchema, service.importResearchDataset.bind(service), signal),
@@ -501,6 +514,8 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
     libraryRenameKey: (request, signal) => call(request, workspaceLibraryRenameKeyRequestSchema, workspaceLibraryRenameKeyResponseSchema, service.libraryRenameKey.bind(service), signal),
     referenceHealth: (request, signal) =>
       call(request, workspaceReferenceHealthRequestSchema, workspaceReferenceHealthResponseSchema, service.referenceHealth.bind(service), signal),
+    referenceIntegrity: (signal) => call(undefined, emptyResponseSchema, workspaceReferenceIntegrityResponseSchema, (_request, currentSignal) => service.referenceIntegrity(currentSignal), signal),
+    setReferenceIntegrity: (request, signal) => call(request, workspaceSetReferenceIntegrityRequestSchema, workspaceReferenceIntegrityResponseSchema, service.setReferenceIntegrity.bind(service), signal),
     libraryMaintenanceOverview: (request, signal) =>
       call(request, workspaceLibraryMaintenanceRequestSchema, workspaceLibraryMaintenanceResponseSchema, service.libraryMaintenanceOverview.bind(service), signal),
     referenceAttachments: (request, signal) => call(request, workspaceReferenceAttachmentsRequestSchema, workspaceReferenceAttachmentsResponseSchema, service.referenceAttachments.bind(service), signal),
@@ -508,7 +523,7 @@ export function createInProcessWorkspaceClient(service: DesktopWorkspaceService)
     removeReferenceAttachment: (request, signal) => call(request, workspaceReferenceAttachmentRequestSchema, emptyResponseSchema, service.removeReferenceAttachment.bind(service), signal),
     referenceAttachmentLocalPath: (request, signal) => call(request, workspaceReferenceAttachmentRequestSchema, workspaceReferenceAttachmentLocalPathResponseSchema, service.referenceAttachmentLocalPath.bind(service), signal),
     referencePdf: (request, signal) => call(request, workspaceReferenceAttachmentRequestSchema, workspaceReferencePdfResponseSchema, service.referencePdf.bind(service), signal),
-    pdfAnnotations: (request, signal) => call(request, workspaceReferenceAttachmentRequestSchema, workspacePdfAnnotationsResponseSchema, service.pdfAnnotations.bind(service), signal),
+    pdfAnnotations: (request, signal) => call(request, workspaceAnnotationsRequestSchema, workspacePdfAnnotationsResponseSchema, service.pdfAnnotations.bind(service), signal),
     createPdfAnnotation: (request, signal) => call(request, workspaceCreatePdfAnnotationRequestSchema, workspacePdfAnnotationDtoSchema, service.createPdfAnnotation.bind(service), signal),
     removePdfAnnotation: (request, signal) => call(request, workspacePdfAnnotationRequestSchema, emptyResponseSchema, service.removePdfAnnotation.bind(service), signal),
     linkPdfAnnotation: (request, signal) => call(request, workspacePdfAnnotationRequestSchema, workspacePdfAnnotationLinkResponseSchema, service.linkPdfAnnotation.bind(service), signal),
@@ -720,6 +735,8 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.libraryResolveDoi(envelope.payload as WorkspaceLibraryResolveDoiRequest, controller.signal);
           case 'workspace/review-scholarly-identifier':
             return local.reviewScholarlyIdentifier(envelope.payload as WorkspaceScholarlyIdentifierReviewRequest, controller.signal);
+          case 'workspace/review-scholarly-identifiers-batch':
+            return local.reviewScholarlyIdentifiersBatch(envelope.payload as WorkspaceScholarlyIdentifierBatchReviewRequest, controller.signal);
           case 'workspace/reconcile-pdf':
             return local.reconcilePdf(envelope.payload as WorkspacePdfReconciliationRequest, controller.signal);
           case 'workspace/discover-full-text':
@@ -728,6 +745,8 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.downloadFullText(envelope.payload as WorkspaceDownloadFullTextRequest, controller.signal);
           case 'workspace/systematic-review': return local.systematicReview(controller.signal);
           case 'workspace/systematic-review-set': return local.setSystematicReview(envelope.payload as WorkspaceSetSystematicReviewRequest, controller.signal);
+          case 'workspace/evidence-synthesis': return local.evidenceSynthesis(controller.signal);
+          case 'workspace/evidence-synthesis-set': return local.setEvidenceSynthesis(envelope.payload as WorkspaceSetEvidenceSynthesisRequest, controller.signal);
           case 'workspace/research-datasets': return local.researchDatasets(controller.signal);
           case 'workspace/research-datasets-set': return local.setResearchDatasets(envelope.payload as WorkspaceSetResearchDatasetsRequest, controller.signal);
           case 'workspace/research-datasets-import': return local.importResearchDataset(envelope.payload as WorkspaceImportResearchDatasetRequest, controller.signal);
@@ -748,6 +767,8 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
             return local.libraryRenameKey(envelope.payload as WorkspaceLibraryRenameKeyRequest, controller.signal);
           case 'workspace/reference-health':
             return local.referenceHealth(envelope.payload as WorkspaceReferenceHealthRequest, controller.signal);
+          case 'workspace/reference-integrity': return local.referenceIntegrity(controller.signal);
+          case 'workspace/reference-integrity-set': return local.setReferenceIntegrity(envelope.payload as WorkspaceSetReferenceIntegrityRequest, controller.signal);
           case 'workspace/library-maintenance-overview':
             return local.libraryMaintenanceOverview(envelope.payload as WorkspaceLibraryMaintenanceRequest, controller.signal);
           case 'workspace/reference-attachments':
@@ -761,7 +782,7 @@ export function serveWorkspaceOverMessagePort(port: MessagePortLike, service: De
           case 'workspace/reference-pdf':
             return local.referencePdf(envelope.payload as WorkspaceReferenceAttachmentRequest, controller.signal);
           case 'workspace/pdf-annotations':
-            return local.pdfAnnotations(envelope.payload as WorkspaceReferenceAttachmentRequest, controller.signal);
+            return local.pdfAnnotations(envelope.payload as WorkspaceAnnotationsRequest, controller.signal);
           case 'workspace/create-pdf-annotation':
             return local.createPdfAnnotation(envelope.payload as WorkspaceCreatePdfAnnotationRequest, controller.signal);
           case 'workspace/remove-pdf-annotation':
@@ -956,9 +977,9 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
       request('workspace/search', value, workspaceSearchRequestSchema, workspaceSearchResponseSchema, signal),
     problems: (value, signal) =>
       request('workspace/problems', value, workspaceProblemsRequestSchema, workspaceProblemsResponseSchema, signal),
-    plugins: (signal) => request('workspace/plugins', {}, emptyResponseSchema, workspacePluginsResponseSchema, signal),
+    plugins: (signal) => request('workspace/plugins', undefined, emptyResponseSchema, workspacePluginsResponseSchema, signal),
     setPluginEnabled: (value, signal) => request('workspace/plugin-set-enabled', value, workspacePluginSetEnabledRequestSchema, workspacePluginsResponseSchema, signal),
-    reloadPlugins: (signal) => request('workspace/plugins-reload', {}, emptyResponseSchema, workspacePluginsResponseSchema, signal),
+    reloadPlugins: (signal) => request('workspace/plugins-reload', undefined, emptyResponseSchema, workspacePluginsResponseSchema, signal),
     runPluginCommand: (value, signal) => request('workspace/plugin-command', value, workspacePluginCommandRequestSchema, workspacePluginCommandResponseSchema, signal),
     exportWithPlugin: (value, signal) => request('workspace/plugin-export', value, workspacePluginExportRequestSchema, workspacePluginExportResponseSchema, signal),
     backlinks: (value, signal) =>
@@ -1018,12 +1039,16 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
       request('workspace/library-resolve-doi', value, workspaceLibraryResolveDoiRequestSchema, workspaceLibraryEntryResponseSchema, signal),
     reviewScholarlyIdentifier: (value, signal) =>
       request('workspace/review-scholarly-identifier', value, workspaceScholarlyIdentifierReviewRequestSchema, workspaceScholarlyIdentifierReviewResponseSchema, signal),
+    reviewScholarlyIdentifiersBatch: (value, signal) =>
+      request('workspace/review-scholarly-identifiers-batch', value, workspaceScholarlyIdentifierBatchReviewRequestSchema, workspaceScholarlyIdentifierBatchReviewResponseSchema, signal),
     reconcilePdf: (value, signal) =>
       request('workspace/reconcile-pdf', value, workspacePdfReconciliationRequestSchema, workspacePdfReconciliationResponseSchema, signal),
     discoverFullText: (value, signal) => request('workspace/discover-full-text', value, workspaceFullTextDiscoveryRequestSchema, workspaceFullTextDiscoveryResponseSchema, signal),
     downloadFullText: (value, signal) => request('workspace/download-full-text', value, workspaceDownloadFullTextRequestSchema, workspaceAttachmentResponseSchema, signal),
     systematicReview: (signal) => request('workspace/systematic-review', undefined, emptyResponseSchema, workspaceSystematicReviewResponseSchema, signal),
     setSystematicReview: (value, signal) => request('workspace/systematic-review-set', value, workspaceSetSystematicReviewRequestSchema, workspaceSystematicReviewResponseSchema, signal),
+    evidenceSynthesis: (signal) => request('workspace/evidence-synthesis', undefined, emptyResponseSchema, workspaceEvidenceSynthesisResponseSchema, signal),
+    setEvidenceSynthesis: (value, signal) => request('workspace/evidence-synthesis-set', value, workspaceSetEvidenceSynthesisRequestSchema, workspaceEvidenceSynthesisResponseSchema, signal),
     researchDatasets: (signal) => request('workspace/research-datasets', undefined, emptyResponseSchema, workspaceResearchDatasetsResponseSchema, signal),
     setResearchDatasets: (value, signal) => request('workspace/research-datasets-set', value, workspaceSetResearchDatasetsRequestSchema, workspaceResearchDatasetsResponseSchema, signal),
     importResearchDataset: (value, signal) => request('workspace/research-datasets-import', value, workspaceImportResearchDatasetRequestSchema, workspaceResearchDatasetsResponseSchema, signal),
@@ -1040,6 +1065,8 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
     libraryRenameKey: (value, signal) => request('workspace/library-rename-key', value, workspaceLibraryRenameKeyRequestSchema, workspaceLibraryRenameKeyResponseSchema, signal),
     referenceHealth: (value, signal) =>
       request('workspace/reference-health', value, workspaceReferenceHealthRequestSchema, workspaceReferenceHealthResponseSchema, signal),
+    referenceIntegrity: (signal) => request('workspace/reference-integrity', undefined, emptyResponseSchema, workspaceReferenceIntegrityResponseSchema, signal),
+    setReferenceIntegrity: (value, signal) => request('workspace/reference-integrity-set', value, workspaceSetReferenceIntegrityRequestSchema, workspaceReferenceIntegrityResponseSchema, signal),
     libraryMaintenanceOverview: (value, signal) =>
       request('workspace/library-maintenance-overview', value, workspaceLibraryMaintenanceRequestSchema, workspaceLibraryMaintenanceResponseSchema, signal),
     referenceAttachments: (value, signal) => request('workspace/reference-attachments', value, workspaceReferenceAttachmentsRequestSchema, workspaceReferenceAttachmentsResponseSchema, signal),
@@ -1047,7 +1074,7 @@ export function createWorkspaceMessagePortClient(port: MessagePortLike): Message
     removeReferenceAttachment: (value, signal) => request('workspace/remove-reference-attachment', value, workspaceReferenceAttachmentRequestSchema, emptyResponseSchema, signal),
     referenceAttachmentLocalPath: (value, signal) => request('workspace/reference-attachment-local-path', value, workspaceReferenceAttachmentRequestSchema, workspaceReferenceAttachmentLocalPathResponseSchema, signal),
     referencePdf: (value, signal) => request('workspace/reference-pdf', value, workspaceReferenceAttachmentRequestSchema, workspaceReferencePdfResponseSchema, signal),
-    pdfAnnotations: (value, signal) => request('workspace/pdf-annotations', value, workspaceReferenceAttachmentRequestSchema, workspacePdfAnnotationsResponseSchema, signal),
+    pdfAnnotations: (value, signal) => request('workspace/pdf-annotations', value, workspaceAnnotationsRequestSchema, workspacePdfAnnotationsResponseSchema, signal),
     createPdfAnnotation: (value, signal) => request('workspace/create-pdf-annotation', value, workspaceCreatePdfAnnotationRequestSchema, workspacePdfAnnotationDtoSchema, signal),
     removePdfAnnotation: (value, signal) => request('workspace/remove-pdf-annotation', value, workspacePdfAnnotationRequestSchema, emptyResponseSchema, signal),
     linkPdfAnnotation: (value, signal) => request('workspace/link-pdf-annotation', value, workspacePdfAnnotationRequestSchema, workspacePdfAnnotationLinkResponseSchema, signal),

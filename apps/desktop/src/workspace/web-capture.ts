@@ -38,3 +38,8 @@ export async function extractWebCaptureCandidates(url: string, fetcher?: FetchLi
   const html = await fetchPageHtml(url, fetcher);
   return buildWebCaptureRegistry().extract(html, url);
 }
+
+export function extractWebCaptureCandidatesFromHtml(html: string, url: string): readonly WebCaptureCandidate[] {
+  if (html.length > MAX_HTML_CHARS) throw new Error('Página muito grande para extrair metadados.');
+  return buildWebCaptureRegistry().extract(html, url);
+}

@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState, type ChangeEvent, type JSX } from 'react';
 import { buildAiContext, createLocalAiProvider, disclosureFor } from '@abnt/ai';
-import type { BibliographicEntityDto, WorkspaceResearchDatasetPreviewDto, WorkspaceResearchDatasetsDto, WorkspaceSystematicReviewDto } from '@abnt/protocol';
+import type { BibliographicEntityDto, WorkspaceEvidenceSynthesisDto, WorkspaceResearchDatasetPreviewDto, WorkspaceResearchDatasetsDto, WorkspaceSystematicReviewDto } from '@abnt/protocol';
 import { createProtocol, prismaFlow, screeningAgreement } from '@abnt/systematic-review';
+import { addCandidatesToInbox, compileSearchQuery, parseEvidenceCandidates } from '@abnt/evidence-synthesis';
 import { useDialogAccessibility } from './dialog-accessibility.js';
+import { requestConfirmation } from './text-prompt.js';
+import { EvidenceAssessment } from './evidence-assessment.js';
+import { EvidenceFullText, type EvidenceAnnotationDraft } from './evidence-full-text.js';
+import { EvidenceReporting } from './evidence-reporting.js';
 
-type Tab = 'review' | 'datasets' | 'ai';
+type Tab = 'review' | 'assessment' | 'full-text' | 'reporting' | 'datasets' | 'ai';
 type Decision = 'include' | 'exclude' | 'maybe';
 
 const asBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
@@ -19,14 +24,17 @@ const buttonClass = 'rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text
 const citationForDataset = (dataset: WorkspaceResearchDatasetsDto['datasets'][number]): Record<string, unknown> => ({ id: `dataset-${dataset.id}`, type: 'dataset', title: dataset.metadata.title, ...(dataset.metadata.creator === undefined ? {} : { author: [{ literal: dataset.metadata.creator }] }), ...(dataset.metadata.source === undefined ? {} : { URL: dataset.metadata.source }), ...(dataset.metadata.version === undefined ? {} : { version: dataset.metadata.version }), note: `SHA-256: ${dataset.sha256}` });
 const manifestForDatasets = (datasets: WorkspaceResearchDatasetsDto['datasets']): Record<string, unknown> => ({ sourceRevision: 'workspace-atual', datasets: datasets.map((dataset) => ({ id: dataset.id, sha256: dataset.sha256, ...(dataset.metadata.version === undefined ? {} : { version: dataset.metadata.version }) })), analyses: [], artifacts: [] });
 
-export function StructuredResearchDialog({ onClose, onMessage, onApplySuggestion }: {
+export function StructuredResearchDialog({ onClose, onMessage, onApplySuggestion, annotationDraft, onOpenPdf }: {
   readonly onClose: () => void;
   readonly onMessage: (message: string) => void;
   readonly onApplySuggestion: (text: string) => Promise<void>;
+  readonly annotationDraft?: EvidenceAnnotationDraft;
+  readonly onOpenPdf: (fileId: string, page: number) => void;
 }): JSX.Element {
   const dialog = useRef<HTMLElement>(null); useDialogAccessibility(dialog, onClose);
   const [tab, setTab] = useState<Tab>('review');
   const [review, setReview] = useState<WorkspaceSystematicReviewDto>({ version: 1, studies: [] });
+  const [synthesis, setSynthesis] = useState<WorkspaceEvidenceSynthesisDto>();
   const [datasets, setDatasets] = useState<WorkspaceResearchDatasetsDto>({ version: 1, datasets: [] });
   const [references, setReferences] = useState<readonly BibliographicEntityDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +47,10 @@ export function StructuredResearchDialog({ onClose, onMessage, onApplySuggestion
   const [database, setDatabase] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [resultCount, setResultCount] = useState('0');
+  const [sourceLabel, setSourceLabel] = useState('');
+  const [conceptualQuery, setConceptualQuery] = useState('');
+  const [importFormat, setImportFormat] = useState<'ris' | 'bibtex' | 'csl-json' | 'csv' | 'manual'>('ris');
+  const [importContent, setImportContent] = useState('');
   const [reviewerId, setReviewerId] = useState('local');
   const [exclusionReason, setExclusionReason] = useState('');
   const [selectedStudyId, setSelectedStudyId] = useState<string>();
@@ -58,13 +70,14 @@ export function StructuredResearchDialog({ onClose, onMessage, onApplySuggestion
     let active = true;
     void (async () => {
       try {
-        const [loadedReview, loadedDatasets, library] = await Promise.all([
+        const [loadedReview, loadedSynthesis, loadedDatasets, library] = await Promise.all([
           window.academic.research.systematicReview(),
+          window.academic.research.evidenceSynthesis(),
           window.academic.research.datasets(),
           window.academic.library.list({}),
         ]);
         if (!active) return;
-        const failed = [loadedReview, loadedDatasets, library].find((result) => !result.ok);
+        const failed = [loadedReview, loadedSynthesis, loadedDatasets, library].find((result) => !result.ok);
         if (failed !== undefined && !failed.ok) {
           setLoadError(failed.error.message);
           return;
@@ -76,6 +89,7 @@ export function StructuredResearchDialog({ onClose, onMessage, onApplySuggestion
           setStrategy(loadedReview.value.protocol?.searchStrategy ?? '');
           setCriteria(loadedReview.value.protocol === undefined ? '' : [...loadedReview.value.protocol.inclusionCriteria, ...loadedReview.value.protocol.exclusionCriteria].join('\n'));
         }
+        if (loadedSynthesis.ok) setSynthesis(loadedSynthesis.value);
         if (loadedDatasets.ok) setDatasets(loadedDatasets.value);
         if (library.ok) setReferences(library.value);
       } catch {
@@ -86,6 +100,7 @@ export function StructuredResearchDialog({ onClose, onMessage, onApplySuggestion
     })();
     return () => { active = false; };
   }, []);
+  useEffect(() => { if (annotationDraft !== undefined) setTab('full-text'); }, [annotationDraft]);
 
   const writeReview = async (next: WorkspaceSystematicReviewDto): Promise<void> => {
     const result = await window.academic.research.setSystematicReview({ review: next });
@@ -118,6 +133,29 @@ export function StructuredResearchDialog({ onClose, onMessage, onApplySuggestion
   const addSearch = (): void => {
     if (database.trim() === '' || searchQuery.trim() === '') { onMessage('Informe base e consulta da busca.'); return; }
     void writeReview({ ...review, searches: [...(review.searches ?? []), { id: crypto.randomUUID(), database: database.trim(), query: searchQuery.trim(), searchedAt: new Date().toISOString(), resultCount: Math.max(0, Number(resultCount) || 0) }] });
+  };
+  const saveSynthesis = async (next: WorkspaceEvidenceSynthesisDto): Promise<void> => {
+    const result = await window.academic.research.setEvidenceSynthesis({ synthesis: next });
+    if (result.ok) setSynthesis(result.value); else onMessage(result.error.message);
+  };
+  const registerReproducibleSearch = (): void => {
+    if (sourceLabel.trim() === '' || conceptualQuery.trim() === '') { onMessage('Informe fonte e consulta conceitual.'); return; }
+    const current = synthesis;
+    if (current === undefined) return;
+    const source = current.sources.find((item) => item.label.toLocaleLowerCase() === sourceLabel.trim().toLocaleLowerCase()) ?? { id: crypto.randomUUID(), label: sourceLabel.trim(), kind: 'academic-database' };
+    const compiled = compileSearchQuery({ operator: 'and', terms: conceptualQuery.split(/\s+AND\s+/iu) }, { id: source.id, supportsBoolean: true, supportsQuotedPhrases: true, supportedFields: ['title', 'abstract', 'author', 'year', 'doi'] });
+    const strategyItem = { id: crypto.randomUUID(), sourceId: source.id, label: `Busca em ${source.label}`, conceptualQuery: conceptualQuery.trim(), compiledQuery: compiled };
+    const run = { id: crypto.randomUUID(), strategyId: strategyItem.id, executedAt: new Date().toISOString(), resultCount: Math.max(0, Number(resultCount) || 0), importedCount: 0, query: compiled };
+    void saveSynthesis({ ...current, sources: current.sources.some((item) => item.id === source.id) ? current.sources : [...current.sources, source], strategies: [...current.strategies, strategyItem], runs: [...current.runs, run] });
+  };
+  const importEvidenceCandidates = (): void => {
+    if (synthesis === undefined) return;
+    const candidates = parseEvidenceCandidates(importContent, importFormat);
+    if (candidates.length === 0) { onMessage('Não encontrei candidatos válidos nesse conteúdo.'); return; }
+    const runId = synthesis.runs.at(-1)?.id;
+    const next = addCandidatesToInbox(synthesis as never, candidates, importFormat, new Date().toISOString(), runId) as unknown as WorkspaceEvidenceSynthesisDto;
+    const runs = runId === undefined ? next.runs : next.runs.map((run) => run.id === runId ? { ...run, importedCount: run.importedCount + candidates.length } : run);
+    void saveSynthesis({ ...next, runs }); setImportContent('');
   };
   const saveAssessment = (): void => {
     if (selectedStudyId === undefined) { onMessage('Selecione um estudo para registrar a extração.'); return; }
@@ -152,7 +190,12 @@ export function StructuredResearchDialog({ onClose, onMessage, onApplySuggestion
   const ask = async (): Promise<void> => {
     const context = buildAiContext([{ id: 'explicit', kind: 'selection', label: 'Texto escolhido', text }]);
     const disclosure = disclosureFor({ label: 'Endpoint local', external: false }, context);
-    if (disclosure.totalCharacters === 0 || !window.confirm(`Enviar ${disclosure.totalCharacters} caracteres ao endpoint local?`)) return;
+    if (disclosure.totalCharacters === 0 || !await requestConfirmation({
+      title: 'Enviar texto ao endpoint local?',
+      description: `${disclosure.totalCharacters} caracteres serão enviados somente para ${endpoint}. Revise o disclosure antes de continuar.`,
+      confirmLabel: 'Enviar ao endpoint local',
+      destructive: false,
+    })) return;
     const provider = createLocalAiProvider({ model: 'local-model', transport: { async post(path, body, signal) {
       const response = await fetch(`${endpoint.replace(/\/$/u, '')}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), ...(signal === undefined ? {} : { signal }) });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -169,12 +212,19 @@ export function StructuredResearchDialog({ onClose, onMessage, onApplySuggestion
     <section ref={dialog} role="dialog" aria-modal="true" aria-label="Pesquisa estruturada" className="grid h-[min(84vh,52rem)] w-full max-w-5xl grid-cols-[13rem_1fr] overflow-hidden rounded-2xl bg-white shadow-2xl">
       <aside className="border-r border-slate-200 bg-slate-50 p-4"><h2 className="font-bold text-slate-900">Pesquisa</h2><p className="mt-1 text-xs text-slate-500">Operações gravadas no vault.</p>
         {(['review', 'datasets', 'ai'] as const).map((value) => <button key={value} type="button" className={`mt-3 block w-full rounded-lg p-2 text-left text-sm ${tab === value ? 'bg-indigo-600 text-white' : 'text-slate-700 hover:bg-slate-200'}`} onClick={() => setTab(value)}>{value === 'review' ? 'Revisão sistemática' : value === 'datasets' ? 'Datasets' : 'Assistente local'}</button>)}
+        <button type="button" className={'mt-3 block w-full rounded-lg p-2 text-left text-sm ' + (tab === 'assessment' ? 'bg-indigo-600 text-white' : 'text-slate-700 hover:bg-slate-200')} onClick={() => setTab('assessment')}>Avaliação</button>
+        <button type="button" className={'mt-3 block w-full rounded-lg p-2 text-left text-sm ' + (tab === 'full-text' ? 'bg-indigo-600 text-white' : 'text-slate-700 hover:bg-slate-200')} onClick={() => setTab('full-text')}>Texto completo</button>
+        <button type="button" className={'mt-3 block w-full rounded-lg p-2 text-left text-sm ' + (tab === 'reporting' ? 'bg-indigo-600 text-white' : 'text-slate-700 hover:bg-slate-200')} onClick={() => setTab('reporting')}>Síntese</button>
       </aside>
       <main className="overflow-auto p-6"><button type="button" aria-label="Fechar" className="float-right text-xl text-slate-500" onClick={onClose}>×</button>
         {loading ? <p role="status" className="grid min-h-48 place-items-center text-sm text-slate-500">Carregando pesquisa estruturada…</p> : loadError !== undefined ? <div role="alert" className="grid min-h-48 content-center gap-3 rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-800"><p>{loadError}</p><button type="button" className="justify-self-start rounded-lg border border-rose-300 px-3 py-2 font-medium" onClick={onClose}>Fechar</button></div> : <>
+        {tab === 'assessment' && synthesis !== undefined && <EvidenceAssessment synthesis={synthesis} onSave={saveSynthesis} onMessage={onMessage} />}
+        {tab === 'full-text' && synthesis !== undefined && <EvidenceFullText synthesis={synthesis} {...(annotationDraft === undefined ? {} : { annotationDraft })} onSave={saveSynthesis} onMessage={onMessage} onOpenPdf={onOpenPdf} />}
+        {tab === 'reporting' && synthesis !== undefined && <EvidenceReporting synthesis={synthesis} onMessage={onMessage} />}
         {tab === 'review' && <div className="grid gap-5 pr-8"><div><h3 className="text-xl font-bold text-slate-900">Revisão sistemática</h3><p className="mt-1 text-sm text-slate-500">Protocolo, triagem e síntese ficam separados das referências canônicas.</p></div>
           <div className="grid gap-2 rounded-xl border border-slate-200 p-4"><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Título da revisão" className={inputClass} /><textarea value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Pergunta de pesquisa" className={`${inputClass} min-h-20`} /><textarea value={strategy} onChange={(event) => setStrategy(event.target.value)} placeholder="Estratégia de busca" className={`${inputClass} min-h-16`} /><textarea value={criteria} onChange={(event) => setCriteria(event.target.value)} placeholder="Critérios, um por linha" className={`${inputClass} min-h-16`} /><button type="button" className={`${buttonClass} justify-self-start`} onClick={saveProtocol}>Salvar protocolo</button></div>
           <div className="grid gap-2 rounded-xl border border-slate-200 p-4"><h4 className="font-semibold">Registro de busca</h4><div className="grid grid-cols-3 gap-2"><input value={database} onChange={(event) => setDatabase(event.target.value)} placeholder="Base" className={inputClass} /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Consulta" className={inputClass} /><input value={resultCount} onChange={(event) => setResultCount(event.target.value)} inputMode="numeric" placeholder="Resultados" className={inputClass} /></div><button type="button" className={`${buttonClass} justify-self-start`} onClick={addSearch}>Registrar busca</button>{(review.searches ?? []).map((search) => <p key={search.id} className="text-sm text-slate-600">{search.database}: {search.query} · {search.resultCount} resultados</p>)}</div>
+          <div className="grid gap-3 rounded-xl border border-indigo-200 bg-indigo-50/30 p-4"><div><h4 className="font-semibold">Busca reproduzível</h4><p className="text-xs text-slate-600">A estratégia conceitual e a consulta efetivamente executada ficam registradas; resultados entram na inbox, não na biblioteca.</p></div><div className="grid gap-2 sm:grid-cols-3"><input value={sourceLabel} onChange={(event) => setSourceLabel(event.target.value)} placeholder="Fonte, por exemplo: Scopus" className={inputClass} /><input value={conceptualQuery} onChange={(event) => setConceptualQuery(event.target.value)} placeholder="Consulta conceitual" className={inputClass} /><input value={resultCount} onChange={(event) => setResultCount(event.target.value)} inputMode="numeric" placeholder="Resultados retornados" className={inputClass} /></div><button type="button" className={`${buttonClass} justify-self-start`} onClick={registerReproducibleSearch}>Registrar execução</button>{synthesis?.runs.slice(-3).map((run) => <p key={run.id} className="text-xs text-slate-600">{run.executedAt.slice(0, 10)} · {run.query || 'consulta vazia'} · {run.resultCount} encontrados · {run.importedCount} na inbox</p>)}<div className="grid gap-2 border-t border-indigo-100 pt-3"><div className="flex gap-2"><select value={importFormat} onChange={(event) => setImportFormat(event.target.value as typeof importFormat)} className={inputClass}><option value="ris">RIS</option><option value="bibtex">BibTeX</option><option value="csl-json">CSL-JSON</option><option value="csv">CSV</option><option value="manual">Lista manual</option></select><button type="button" className="rounded-lg border border-indigo-300 px-3 text-sm font-medium text-indigo-700" onClick={importEvidenceCandidates}>Enviar à inbox</button></div><textarea value={importContent} onChange={(event) => setImportContent(event.target.value)} placeholder="Cole resultados exportados. Eles permanecem candidatos até revisão na Inbox de pesquisa." className={`${inputClass} min-h-20 font-mono text-xs`} /><p className="text-xs text-slate-600">Inbox da síntese: {synthesis?.inbox.length ?? 0} candidato(s). Use “Importar pesquisa” para revisar e confirmar referências.</p></div></div>
           <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">PRISMA: {flow.identified} identificados · {flow.included} incluídos · {flow.excluded} excluídos · {agreement.conflicts.length} conflito(s) entre revisores</div>
           <div className="grid gap-2"><h4 className="font-semibold">Adicionar estudos da biblioteca</h4>{references.filter((entry) => !review.studies.some((study) => study.referenceId === entry.id)).slice(0, 12).map((entry) => <button key={entry.id} type="button" className="rounded-lg border border-slate-200 p-2 text-left text-sm hover:border-indigo-300" onClick={() => addStudy(entry)}>{entry.title ?? entry.id}</button>)}</div>
           <div className="grid gap-2"><h4 className="font-semibold">Triagem</h4><div className="grid grid-cols-2 gap-2"><input value={reviewerId} onChange={(event) => setReviewerId(event.target.value)} placeholder="Identificador do revisor" className={inputClass} /><input value={exclusionReason} onChange={(event) => setExclusionReason(event.target.value)} placeholder="Motivo de exclusão" className={inputClass} /></div>{review.studies.map((study) => <div key={study.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 p-3 text-sm"><button type="button" className="flex-1 text-left font-medium" onClick={() => { setSelectedStudyId(study.id); setExtraction(review.extractions?.[study.id]?.summary ?? ''); setQuality(review.quality?.[study.id]?.[0]?.value ?? 'unclear'); setEvidenceTarget(review.evidence?.find((item) => item.studyId === study.id)?.target ?? ''); }}>{study.title} <span className="font-normal text-slate-500">· {study.stage}</span>{study.decisions.length > 1 && <span className="ml-2 text-xs text-amber-700">{new Set(study.decisions.map((item) => item.decision)).size > 1 ? 'conflito' : 'acordo'}</span>}</button><button type="button" onClick={() => decide(study.id, 'include')}>Incluir</button><button type="button" onClick={() => decide(study.id, 'exclude')}>Excluir</button><button type="button" onClick={() => decide(study.id, 'maybe')}>Rever</button></div>)}</div>

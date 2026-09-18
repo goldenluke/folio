@@ -15,6 +15,7 @@ export interface EditorPaneProps {
   readonly onReferences: (locations: readonly LanguageLocation[]) => void;
   readonly onContextMenu: (input: { readonly offset: number; readonly x: number; readonly y: number; readonly selection: { readonly anchor: number; readonly head: number } }) => void;
   readonly onAssetDropped: (uri: string, name: string) => void;
+  readonly onTextDropped?: (text: string) => void;
   readonly slashCommands: { readonly list: (query: string) => readonly { readonly id: string; readonly label: string }[]; readonly execute: (id: string) => void };
 }
 
@@ -42,7 +43,7 @@ const imageMediaType = (file: File): string | undefined => {
  * a sessão remota, seguindo o mesmo invariante de P7 (destruir a view não
  * destrói o documento).
  */
-export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function EditorPane({ controller, api, onError, onDefinition, onReferences, onContextMenu, onAssetDropped, slashCommands }, handleRef) {
+export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function EditorPane({ controller, api, onError, onDefinition, onReferences, onContextMenu, onAssetDropped, onTextDropped, slashCommands }, handleRef) {
   const parent = useRef<HTMLDivElement>(null);
   const adapter = useRef<CodeMirrorEditorAdapter>(undefined);
   const callbacks = useRef({ onDefinition, onReferences, onContextMenu });
@@ -73,6 +74,14 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function
 
   const onDrop = (event: DragEvent<HTMLDivElement>): void => {
     event.preventDefault(); event.stopPropagation();
+    const droppedText = event.dataTransfer.getData('text/folio-markdown');
+    if (droppedText !== '') {
+      const offset = controller.snapshot().selection.head;
+      const text = `\n\n${droppedText}\n\n`;
+      if (onTextDropped !== undefined) onTextDropped(text);
+      else controller.dispatch({ edits: [{ range: { start: offset, end: offset }, text }], selection: { anchor: offset + text.length, head: offset + text.length } });
+      return;
+    }
     const file = event.dataTransfer.files[0];
     const mediaType = file === undefined ? undefined : imageMediaType(file);
     if (file === undefined || mediaType === undefined) { onError('Arraste uma imagem para inserir como figura.'); return; }

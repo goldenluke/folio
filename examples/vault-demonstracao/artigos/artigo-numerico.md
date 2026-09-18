@@ -14,6 +14,11 @@ Este documento troca apenas a política de citação: a fonte continua Markdown
 normal e a bibliografia é a mesma do artigo principal [@silva2024; @oliveira2025;
 @souza2023].
 
+# Teste
+Teste
+- Teste
+*teste*
+
 # Conclusão
 
 Use o seletor de profile para comparar as saídas sem duplicar o conteúdo.

@@ -18,10 +18,25 @@ interface MutableDirectory {
   readonly files: WorkspaceFileDto[];
 }
 
+const hiddenExplorerDirectories = new Set(['.academic', '.git', 'node_modules', 'dist', 'build']);
+const hiddenExplorerExtensions = new Set(['json', 'js', 'mjs', 'cjs', 'jsx', 'ts', 'tsx', 'lua', 'tex', 'sty', 'cls', 'css', 'scss', 'sass', 'less', 'map', 'lock', 'yaml', 'yml', 'toml', 'ini', 'xml', 'txt']);
+
+/** Arquivos de configuração e código fazem parte do vault, mas não da autoria acadêmica. */
+export function isExplorerVisibleFile(file: WorkspaceFileDto): boolean {
+  const parts = file.path.split('/');
+  if (parts.some((part) => hiddenExplorerDirectories.has(part))) return false;
+  const name = parts.at(-1)?.toLocaleLowerCase('pt-BR') ?? '';
+  if (name === '.gitkeep' || name.startsWith('.')) return false;
+  const extension = name.includes('.') ? name.split('.').at(-1) : undefined;
+  return extension === undefined || !hiddenExplorerExtensions.has(extension);
+}
+
 export function buildWorkspaceFileTree(files: readonly WorkspaceFileDto[]): FileTreeDirectory {
   const root: MutableDirectory = { name: '', path: '', directories: new Map(), files: [] };
   for (const file of files) {
     const parts = file.path.split('/');
+    if (parts.some((part) => hiddenExplorerDirectories.has(part))) continue;
+    const visible = isExplorerVisibleFile(file);
     const name = parts.pop();
     if (name === undefined) continue;
     let directory = root;
@@ -34,14 +49,12 @@ export function buildWorkspaceFileTree(files: readonly WorkspaceFileDto[]): File
       }
       directory = child;
     }
-    // `.gitkeep` materializa uma pasta vazia no filesystem local, mas não é
-    // um documento que o pesquisador precise ver no explorador.
-    if (name !== '.gitkeep') directory.files.push(file);
+    if (visible) directory.files.push(file);
   }
   const freeze = (directory: MutableDirectory): FileTreeDirectory => ({
     name: directory.name,
     path: directory.path,
-    directories: [...directory.directories.values()].sort((left, right) => left.name.localeCompare(right.name)).map(freeze),
+    directories: [...directory.directories.values()].map(freeze).sort((left, right) => left.name.localeCompare(right.name)),
     files: [...directory.files].sort((left, right) => left.path.localeCompare(right.path)),
   });
   return freeze(root);
@@ -105,7 +118,8 @@ export function WorkspaceFileExplorer({
   readonly expanded?: boolean;
   readonly onToggleExpanded?: () => void;
 }): JSX.Element {
-  const tree = useMemo(() => buildWorkspaceFileTree(files), [files]);
+  const explorerFiles = useMemo(() => files.filter(isExplorerVisibleFile), [files]);
+  const tree = useMemo(() => buildWorkspaceFileTree(explorerFiles), [explorerFiles]);
   const [filterQuery, setFilterQuery] = useState('');
   const visibleTree = useMemo(() => filterFileTree(tree, filterQuery), [filterQuery, tree]);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
@@ -119,7 +133,7 @@ export function WorkspaceFileExplorer({
   const closeContextMenu = (): void => setContextMenu(undefined);
   const canDrag = onMoveFile !== undefined;
   const reveal = (fileId = activeFileId): void => {
-    const active = files.find((file) => file.fileId === fileId);
+    const active = explorerFiles.find((file) => file.fileId === fileId);
     if (active === undefined) return;
     const ancestors = new Set(directoryPathsFor(active.path));
     setCollapsed((current) => new Set([...current].filter((path) => !ancestors.has(path))));
@@ -154,7 +168,7 @@ export function WorkspaceFileExplorer({
     event.stopPropagation();
     setDragOverPath(undefined);
     const fileId = event.dataTransfer.getData(draggedFileMimeType);
-    const dragged = files.find((file) => file.fileId === fileId);
+    const dragged = explorerFiles.find((file) => file.fileId === fileId);
     if (dragged !== undefined) onMoveFile?.(dragged, targetDirectory);
   };
 
@@ -198,7 +212,7 @@ export function WorkspaceFileExplorer({
   return <nav aria-label="Explorador de arquivos" className={`grid min-h-0 flex-1 grid-rows-[auto_auto_minmax(0,1fr)] ${expanded ? 'folio-file-explorer-expanded' : ''}`}>
     <header className="flex min-w-[268px] items-center gap-1 border-b border-slate-200 pb-2.5">
       <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-indigo-50 text-indigo-700"><FolioIcon name="folder" className="h-3.5 w-3.5" /></span>
-      <div className="min-w-[62px] flex-1"><h2 className="text-[13px] font-bold leading-4 text-slate-800">Explorador</h2><p className="text-[10px] leading-3 text-slate-400">{files.length} {files.length === 1 ? 'arquivo' : 'arquivos'} no vault</p></div>
+      <div className="min-w-[62px] flex-1"><h2 className="text-[13px] font-bold leading-4 text-slate-800">Explorador</h2><p className="text-[10px] leading-3 text-slate-400">{explorerFiles.length} {explorerFiles.length === 1 ? 'arquivo visível' : 'arquivos visíveis'}</p></div>
       <div className="flex shrink-0 items-center gap-1" aria-label="Ações do explorador">
         <button type="button" title="Revelar documento ativo" aria-label="Revelar documento ativo" disabled={activeFileId === undefined} className="folio-control grid h-7 w-7 place-items-center rounded-md text-slate-500 disabled:opacity-40" onClick={() => reveal()}><FolioIcon name="file" className="h-3.5 w-3.5" /></button>
         <button type="button" title="Recolher pastas" aria-label="Recolher pastas" className="folio-control grid h-7 w-7 place-items-center rounded-md text-slate-500" onClick={() => setCollapsed(new Set(tree.directories.map((directory) => directory.path)))}><FolioIcon name="collapse" className="h-3.5 w-3.5" /></button>

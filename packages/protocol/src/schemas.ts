@@ -134,6 +134,7 @@ import {
   type WorkspaceLibraryResolveDoiRequest,
   type WorkspaceScholarlyIdentifierReviewRequest,
   type WorkspaceScholarlyIdentifierReviewDto,
+  type WorkspaceScholarlyIdentifierBatchReviewRequest,
   type WorkspacePdfReconciliationRequest,
   type WorkspacePdfReconciliationDto,
   type WorkspaceFullTextDiscoveryRequest,
@@ -141,6 +142,8 @@ import {
   type WorkspaceDownloadFullTextRequest,
   type WorkspaceSystematicReviewDto,
   type WorkspaceSetSystematicReviewRequest,
+  type WorkspaceEvidenceSynthesisDto,
+  type WorkspaceSetEvidenceSynthesisRequest,
   type WorkspaceResearchDatasetsDto,
   type WorkspaceSetResearchDatasetsRequest,
   type WorkspaceImportResearchDatasetRequest,
@@ -164,6 +167,10 @@ import {
   type WorkspaceLibraryRenameKeyRequest,
   type WorkspaceLibraryRenameKeyResponseDto,
   type WorkspaceReferenceHealthRequest,
+  type ReferenceIntegrityStatusDto,
+  type ReferenceIntegrityRecordDto,
+  type WorkspaceReferenceIntegrityDto,
+  type WorkspaceSetReferenceIntegrityRequest,
   type WorkspaceImportAssetRequest,
   type WorkspaceAssetDto,
   type EditorImportAssetRequest,
@@ -726,11 +733,14 @@ const requestEnvelopeSchema = z.object({
     'workspace/library-format',
     'workspace/library-resolve-doi',
     'workspace/review-scholarly-identifier',
+    'workspace/review-scholarly-identifiers-batch',
     'workspace/reconcile-pdf',
     'workspace/discover-full-text',
     'workspace/download-full-text',
     'workspace/systematic-review',
     'workspace/systematic-review-set',
+    'workspace/evidence-synthesis',
+    'workspace/evidence-synthesis-set',
     'workspace/research-datasets',
     'workspace/research-datasets-set',
     'workspace/research-datasets-import',
@@ -742,6 +752,8 @@ const requestEnvelopeSchema = z.object({
     'workspace/library-merge',
     'workspace/library-key-preview',
     'workspace/library-rename-key',
+    'workspace/reference-integrity',
+    'workspace/reference-integrity-set',
     'workspace/reference-health',
     'workspace/library-maintenance-overview',
     'workspace/reference-attachments',
@@ -976,7 +988,7 @@ export const workspaceReadResponseSchema = z.object({
   content: z.string(),
 }) as z.ZodType<WorkspaceReadResponse>;
 export const workspaceAssetPreviewRequestSchema = z.object({ fileId: nonEmptyString }) as z.ZodType<WorkspaceAssetPreviewRequest>;
-export const workspaceAssetPreviewResponseSchema = z.object({ dataUrl: z.string().regex(/^data:image\//u), mediaType: nonEmptyString }) as z.ZodType<WorkspaceAssetPreviewResponse>;
+export const workspaceAssetPreviewResponseSchema = z.object({ dataUrl: z.string().regex(/^data:(image\/|application\/pdf)/u), mediaType: nonEmptyString }) as z.ZodType<WorkspaceAssetPreviewResponse>;
 
 export const workspaceWriteRequestSchema = z.object({
   fileId: nonEmptyString,
@@ -1008,7 +1020,7 @@ const workspacePluginDtoSchema = z.object({ id: nonEmptyString, version: z.strin
 export const workspacePluginsResponseSchema = z.array(workspacePluginDtoSchema) as z.ZodType<readonly WorkspacePluginDto[]>;
 export const workspacePluginSetEnabledRequestSchema = z.object({ id: nonEmptyString, enabled: z.boolean() }) as z.ZodType<WorkspacePluginSetEnabledRequest>;
 export const workspacePluginCommandRequestSchema = z.object({ pluginId: nonEmptyString, commandId: nonEmptyString, activeFileId: nonEmptyString.optional(), activeRevision: nonNegativeInteger.optional() }) as z.ZodType<WorkspacePluginCommandRequest>;
-export const workspacePluginCommandResponseSchema = z.object({ kind: z.enum(['notice', 'open-view']), message: z.string().optional(), viewId: nonEmptyString.optional() }) as z.ZodType<WorkspacePluginCommandResultDto>;
+export const workspacePluginCommandResponseSchema = z.object({ kind: z.enum(['notice', 'open-view', 'open-intake', 'open-template', 'open-structured-research']), message: z.string().optional(), viewId: nonEmptyString.optional(), intakeFormat: z.enum(['bibtex', 'ris', 'csl-json']).optional(), templateKind: z.enum(['article', 'institutional-article', 'tcc', 'institutional-tcc', 'dissertation', 'thesis', 'abstract', 'reading-note', 'research-project']).optional() }) as z.ZodType<WorkspacePluginCommandResultDto>;
 export const desktopPluginExportRequestSchema = z.object({ fileId: nonEmptyString, expectedRevision: nonNegativeInteger, pluginId: nonEmptyString, exportId: nonEmptyString }) as z.ZodType<DesktopPluginExportRequest>;
 export const workspacePluginExportRequestSchema = desktopPluginExportRequestSchema as z.ZodType<WorkspacePluginExportRequest>;
 export const workspacePluginExportResponseSchema = z.object({ title: z.string(), extension: nonEmptyString, mimeType: nonEmptyString, content: z.string() }) as z.ZodType<WorkspacePluginExportDto>;
@@ -1175,6 +1187,7 @@ export const workspaceLibraryResolveDoiRequestSchema = z.object({
 export const scholarlyIdentifierDtoSchema = z.object({ type: z.enum(['doi', 'isbn', 'pmid', 'arxiv', 'ads']), value: nonEmptyString });
 export const scholarlyIdentifierProvenanceDtoSchema = z.object({ field: nonEmptyString, provider: nonEmptyString, retrievedAt: nonEmptyString, confidence: z.number().min(0).max(1).optional() });
 export const workspaceScholarlyIdentifierReviewRequestSchema = z.object({ input: nonEmptyString }) as z.ZodType<WorkspaceScholarlyIdentifierReviewRequest>;
+export const workspaceScholarlyIdentifierBatchReviewRequestSchema = z.object({ input: nonEmptyString }) as z.ZodType<WorkspaceScholarlyIdentifierBatchReviewRequest>;
 export const workspaceScholarlyIdentifierReviewResponseSchema = z.object({
   input: nonEmptyString,
   identifier: scholarlyIdentifierDtoSchema.optional(),
@@ -1183,7 +1196,8 @@ export const workspaceScholarlyIdentifierReviewResponseSchema = z.object({
   duplicates: z.array(z.object({ leftId: nonEmptyString, rightId: nonEmptyString, score: nonNegativeInteger, reasons: z.array(z.enum(['doi', 'isbn', 'title', 'author-year'])) })),
   error: z.string().optional(),
 }) as z.ZodType<WorkspaceScholarlyIdentifierReviewDto>;
-export const workspacePdfReconciliationRequestSchema = z.object({ text: z.string() }) as z.ZodType<WorkspacePdfReconciliationRequest>;
+export const workspaceScholarlyIdentifierBatchReviewResponseSchema = z.array(workspaceScholarlyIdentifierReviewResponseSchema) as z.ZodType<readonly WorkspaceScholarlyIdentifierReviewDto[]>;
+export const workspacePdfReconciliationRequestSchema = z.object({ text: z.string().optional(), base64: nonEmptyString.optional() }).refine((value) => value.text !== undefined || value.base64 !== undefined, 'Informe texto ou bytes do PDF.') as z.ZodType<WorkspacePdfReconciliationRequest>;
 export const workspacePdfReconciliationResponseSchema = z.object({ identifiers: z.array(scholarlyIdentifierDtoSchema), reviews: z.array(workspaceScholarlyIdentifierReviewResponseSchema) }) as z.ZodType<WorkspacePdfReconciliationDto>;
 export const fullTextCandidateDtoSchema = z.object({ provider: nonEmptyString, url: z.string().url().refine((value) => /^https?:\/\//iu.test(value)), license: z.enum(['open-access', 'restricted', 'unknown']), version: z.enum(['submitted', 'accepted', 'published']).optional(), confidence: z.number().min(0).max(1), retrievedAt: nonEmptyString });
 export const workspaceFullTextDiscoveryRequestSchema = z.object({ referenceId: nonEmptyString }) as z.ZodType<WorkspaceFullTextDiscoveryRequest>;
@@ -1192,6 +1206,24 @@ export const workspaceDownloadFullTextRequestSchema = z.object({ referenceId: no
 const systematicReviewDtoSchema = z.object({ version: z.literal(1), protocol: z.object({ id: nonEmptyString, title: z.string(), question: z.string(), framework: z.enum(['freeform', 'pico', 'picos', 'spider']), frameworkFields: z.record(z.string(), z.string()), databases: z.array(z.string()), searchStrategy: z.string(), inclusionCriteria: z.array(z.string()), exclusionCriteria: z.array(z.string()) }).optional(), searches: z.array(z.object({ id: nonEmptyString, database: z.string(), query: z.string(), searchedAt: nonEmptyString, resultCount: nonNegativeInteger })).optional(), exclusionReasons: z.array(z.object({ id: nonEmptyString, label: z.string() })).optional(), studies: z.array(z.object({ id: nonEmptyString, referenceId: z.string().optional(), title: z.string(), stage: z.string(), decisions: z.array(z.object({ reviewerId: nonEmptyString, decision: z.enum(['include', 'exclude', 'maybe']), at: nonEmptyString, reasonId: z.string().optional() })), exclusionReasonId: z.string().optional() })), extractions: z.record(z.string(), z.record(z.string(), z.string())).optional(), quality: z.record(z.string(), z.array(z.object({ itemId: nonEmptyString, value: z.enum(['yes', 'no', 'unclear', 'na']) }))).optional(), evidence: z.array(z.object({ studyId: nonEmptyString, fieldId: nonEmptyString, target: nonEmptyString })).optional() }) as z.ZodType<WorkspaceSystematicReviewDto>;
 export const workspaceSystematicReviewResponseSchema = systematicReviewDtoSchema;
 export const workspaceSetSystematicReviewRequestSchema = z.object({ review: systematicReviewDtoSchema }) as z.ZodType<WorkspaceSetSystematicReviewRequest>;
+const evidenceSynthesisDtoSchema = z.object({
+  version: z.literal(1), migratedFrom: z.literal('systematic-review-v1').optional(), protocol: z.object({ id: nonEmptyString, title: z.string(), question: z.string() }).optional(),
+  sources: z.array(z.object({ id: nonEmptyString, label: z.string(), kind: nonEmptyString })),
+  strategies: z.array(z.object({ id: nonEmptyString, sourceId: nonEmptyString, label: z.string(), conceptualQuery: z.string(), compiledQuery: z.string() })),
+  runs: z.array(z.object({ id: nonEmptyString, strategyId: nonEmptyString, executedAt: nonEmptyString, resultCount: nonNegativeInteger, importedCount: nonNegativeInteger, query: z.string(), page: nonNegativeInteger.optional(), filters: z.array(z.string()).optional(), artifactHash: z.string().optional() })),
+  inbox: z.array(z.object({ id: nonEmptyString, runId: z.string().optional(), title: nonEmptyString, authors: z.array(z.string()).optional(), year: z.string().optional(), identifiers: z.array(z.string()), importedAt: nonEmptyString, format: z.enum(['ris', 'bibtex', 'csl-json', 'csv', 'manual']), rawHash: nonEmptyString })),
+  records: z.array(z.object({ id: nonEmptyString, title: nonEmptyString, sourceId: z.string().optional(), searchRunId: z.string().optional(), referenceId: z.string().optional(), workId: nonEmptyString, identifiers: z.array(z.string()) })),
+  works: z.array(z.object({ id: nonEmptyString, title: nonEmptyString, referenceId: z.string().optional(), recordIds: z.array(z.string()), artifactIds: z.array(z.string()), fullText: z.enum(['not-requested', 'searching', 'candidate-found', 'available', 'unavailable', 'restricted', 'manual-needed']) })),
+  artifacts: z.array(z.object({ id: nonEmptyString, workId: nonEmptyString, attachmentId: z.string().optional(), kind: nonEmptyString })),
+  evidenceItems: z.array(z.object({ id: nonEmptyString, workId: nonEmptyString, label: nonEmptyString, kind: nonEmptyString })),
+  stages: z.array(z.object({ id: nonEmptyString, label: nonEmptyString, decisions: z.array(z.enum(['include', 'exclude', 'maybe'])), reviewersRequired: nonNegativeInteger, blind: z.boolean(), exclusionReasonRequired: z.boolean() })),
+  criteria: z.array(z.object({ id: nonEmptyString, label: nonEmptyString, description: z.string().optional(), stageId: nonEmptyString, polarity: z.enum(['include', 'exclude']), required: z.boolean() })),
+  decisions: z.array(z.object({ evidenceItemId: nonEmptyString, stageId: nonEmptyString, reviewerId: nonEmptyString, decision: z.enum(['include', 'exclude', 'maybe']), at: nonEmptyString, reasonId: z.string().optional() })),
+  extractions: z.array(z.object({ id: nonEmptyString, evidenceItemId: nonEmptyString, fieldId: nonEmptyString, value: z.union([z.string(), z.number(), z.boolean(), z.record(z.string(), z.unknown())]), artifactId: z.string().optional(), page: nonNegativeInteger.optional(), annotationId: z.string().optional(), reviewerId: nonEmptyString, verifiedAt: nonEmptyString })),
+  claimRelations: z.array(z.object({ id: nonEmptyString, claimId: nonEmptyString, evidenceItemId: nonEmptyString, relation: z.enum(['supports', 'contradicts']), note: z.string().optional(), reviewerId: nonEmptyString, createdAt: nonEmptyString })).optional(),
+}) as z.ZodType<WorkspaceEvidenceSynthesisDto>;
+export const workspaceEvidenceSynthesisResponseSchema = evidenceSynthesisDtoSchema;
+export const workspaceSetEvidenceSynthesisRequestSchema = z.object({ synthesis: evidenceSynthesisDtoSchema }) as z.ZodType<WorkspaceSetEvidenceSynthesisRequest>;
 const researchDatasetsDtoSchema = z.object({ version: z.literal(1), datasets: z.array(z.object({ id: nonEmptyString, path: nonEmptyString, format: nonEmptyString, metadata: z.object({ title: z.string(), description: z.string().optional(), creator: z.string().optional(), license: z.string().optional(), source: z.string().optional(), collectedAt: z.string().optional(), version: z.string().optional() }), sha256: nonEmptyString, previousVersionId: z.string().optional() })) }) as z.ZodType<WorkspaceResearchDatasetsDto>;
 export const workspaceResearchDatasetsResponseSchema = researchDatasetsDtoSchema;
 export const workspaceSetResearchDatasetsRequestSchema = z.object({ datasets: researchDatasetsDtoSchema }) as z.ZodType<WorkspaceSetResearchDatasetsRequest>;
@@ -1214,6 +1246,7 @@ export const webCaptureCandidateDtoSchema = z.object({
 }) as z.ZodType<WebCaptureCandidateDto>;
 export const workspaceWebCaptureExtractRequestSchema = z.object({
   url: z.string().url().refine((value) => /^https?:\/\//iu.test(value), 'URL deve ser HTTP(S).'),
+  html: z.string().max(4_000_000).optional(),
 }) as z.ZodType<WorkspaceWebCaptureExtractRequest>;
 export const workspaceWebCaptureExtractResponseSchema = z.object({
   candidates: z.array(webCaptureCandidateDtoSchema),
@@ -1259,31 +1292,46 @@ export const workspaceReferencePdfResponseSchema = z.object({
 export const workspacePdfAnnotationDtoSchema = z.object({
   id: nonEmptyString,
   referenceId: nonEmptyString,
+  pdfDocumentId: nonEmptyString.optional(),
+  fileId: nonEmptyString.optional(),
   page: z.number().int().positive(),
   quote: nonEmptyString,
+  kind: z.enum(['highlight', 'underline', 'strikeout', 'comment', 'area', 'ink']).optional(),
+  anchor: z.object({ quote: nonEmptyString, start: nonNegativeInteger.optional(), end: nonNegativeInteger.optional() }).optional(),
+  rects: z.array(z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() })).optional(),
+  externalId: nonEmptyString.optional(),
   comment: z.string().optional(),
   color: z.string().optional(),
+  semanticType: z.enum(['population', 'intervention', 'method', 'outcome', 'finding', 'limitation', 'risk', 'quote', 'context']).optional(),
   createdAt: nonEmptyString,
+  modifiedAt: nonEmptyString.optional(),
   literatureNoteFileId: nonEmptyString.optional(),
 }) as z.ZodType<WorkspacePdfAnnotationDto>;
 export const workspacePdfAnnotationsResponseSchema = z.array(workspacePdfAnnotationDtoSchema) as z.ZodType<readonly WorkspacePdfAnnotationDto[]>;
 export const workspaceCreatePdfAnnotationRequestSchema = z.object({
-  referenceId: nonEmptyString,
+  referenceId: nonEmptyString.optional(),
+  fileId: nonEmptyString.optional(),
   page: z.number().int().positive(),
   quote: nonEmptyString,
+  kind: z.enum(['highlight', 'underline', 'strikeout', 'comment', 'area', 'ink']).optional(),
+  anchor: z.object({ quote: nonEmptyString, start: nonNegativeInteger.optional(), end: nonNegativeInteger.optional() }).optional(),
+  rects: z.array(z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() })).optional(),
+  externalId: nonEmptyString.optional(),
   comment: z.string().optional(),
   color: z.string().optional(),
-}) as z.ZodType<WorkspaceCreatePdfAnnotationRequest>;
+  semanticType: z.enum(['population', 'intervention', 'method', 'outcome', 'finding', 'limitation', 'risk', 'quote', 'context']).optional(),
+}).refine((value) => value.referenceId !== undefined || value.fileId !== undefined, { message: 'Informe uma referência ou arquivo PDF.' }) as z.ZodType<WorkspaceCreatePdfAnnotationRequest>;
 export const workspacePdfAnnotationRequestSchema = z.object({
-  referenceId: nonEmptyString,
+  referenceId: nonEmptyString.optional(),
+  fileId: nonEmptyString.optional(),
   id: nonEmptyString,
-}) as z.ZodType<WorkspacePdfAnnotationRequest>;
+}).refine((value) => value.referenceId !== undefined || value.fileId !== undefined, { message: 'Informe uma referência ou arquivo PDF.' }) as z.ZodType<WorkspacePdfAnnotationRequest>;
 export const workspacePdfAnnotationLinkResponseSchema = z.object({
   annotation: workspacePdfAnnotationDtoSchema,
   literatureNote: workspaceFileDtoSchema,
 }) as z.ZodType<WorkspacePdfAnnotationLinkDto>;
 
-export const workspaceAnnotationsRequestSchema = z.object({ referenceId: nonEmptyString.optional() }) as z.ZodType<WorkspaceAnnotationsRequest>;
+export const workspaceAnnotationsRequestSchema = z.object({ referenceId: nonEmptyString.optional(), fileId: nonEmptyString.optional() }) as z.ZodType<WorkspaceAnnotationsRequest>;
 export const workspaceAnnotationColorSemanticsResponseSchema = z.record(z.string(), nonEmptyString) as z.ZodType<WorkspaceAnnotationColorSemanticsDto>;
 export const workspaceSetAnnotationColorSemanticsRequestSchema = z.object({ colors: workspaceAnnotationColorSemanticsResponseSchema }) as z.ZodType<WorkspaceSetAnnotationColorSemanticsRequest>;
 const annotationSynthesisTemplateSchema = z.enum(['quote-list', 'grouped-by-source', 'grouped-by-color']) as z.ZodType<AnnotationSynthesisTemplateDto>;
@@ -1333,6 +1381,7 @@ export const workspaceAddAttachmentRequestSchema = z.object({
   displayTitle: z.string().optional(),
   name: z.string().optional(),
   base64: z.string().optional(),
+  existingFileId: nonEmptyString.optional(),
   uri: z.string().optional(),
   snapshotHtml: z.string().optional(),
 }) as z.ZodType<WorkspaceAddAttachmentRequest>;
@@ -1371,7 +1420,11 @@ export const editorImportAssetRequestSchema = z.object({
   directory: nonEmptyString.optional(),
 }) as z.ZodType<EditorImportAssetRequest>;
 export const workspaceCreateDocumentRequestSchema = z.object({ path: nonEmptyString, content: z.string() }) as z.ZodType<WorkspaceCreateDocumentRequest>;
-const workspaceReferenceAuditCodeSchema = z.enum(['invalid-doi', 'invalid-isbn', 'missing-url', 'missing-access-date', 'incomplete-author', 'missing-year', 'possible-duplicate', 'inconsistent-key', 'missing-pdf', 'missing-literature-note']) as z.ZodType<WorkspaceReferenceAuditCode>;
+const workspaceReferenceAuditCodeSchema = z.enum(['invalid-doi', 'invalid-isbn', 'missing-url', 'missing-access-date', 'incomplete-author', 'missing-year', 'possible-duplicate', 'inconsistent-key', 'missing-pdf', 'missing-literature-note', 'reference-retracted', 'reference-corrected', 'reference-expression-of-concern', 'reference-integrity-unknown']) as z.ZodType<WorkspaceReferenceAuditCode>;
+const referenceIntegrityStatusSchema = z.enum(['normal', 'retracted', 'corrected', 'expression-of-concern', 'unknown']) as z.ZodType<ReferenceIntegrityStatusDto>;
+const referenceIntegrityRecordSchema = z.object({ referenceId: nonEmptyString, status: referenceIntegrityStatusSchema, provider: nonEmptyString, evidence: nonEmptyString, checkedAt: nonEmptyString }) as z.ZodType<ReferenceIntegrityRecordDto>;
+export const workspaceReferenceIntegrityResponseSchema = z.object({ version: z.literal(1), records: z.array(referenceIntegrityRecordSchema) }) as z.ZodType<WorkspaceReferenceIntegrityDto>;
+export const workspaceSetReferenceIntegrityRequestSchema = workspaceReferenceIntegrityResponseSchema as z.ZodType<WorkspaceSetReferenceIntegrityRequest>;
 export const workspaceReferenceHealthResponseSchema = z.object({
   total: nonNegativeInteger,
   cited: nonNegativeInteger,
@@ -1422,8 +1475,10 @@ export const languageDefinitionRequestSchema = languageQueryRequestSchema as z.Z
 export const languageReferencesRequestSchema = languageQueryRequestSchema as z.ZodType<LanguageReferencesRequest>;
 export const languageCompletionDtoSchema = z.object({
   range: languageRangeSchema,
+  page: z.number().int().positive().optional(),
+  annotationId: nonEmptyString.optional(),
   items: z.array(z.object({
-    kind: z.enum(['citation', 'document', 'block', 'math']),
+    kind: z.enum(['citation', 'document', 'block', 'math', 'pdf']),
     label: z.string(),
     detail: z.string().optional(),
     insertText: z.string(),
@@ -1728,6 +1783,8 @@ export const validarWorkspaceLibraryResolveDoiRequest = (value: unknown): Protoc
   validarDto(workspaceLibraryResolveDoiRequestSchema, value);
 export const validarWorkspaceScholarlyIdentifierReviewRequest = (value: unknown): ProtocolResult<WorkspaceScholarlyIdentifierReviewRequest> =>
   validarDto(workspaceScholarlyIdentifierReviewRequestSchema, value);
+export const validarWorkspaceScholarlyIdentifierBatchReviewRequest = (value: unknown): ProtocolResult<WorkspaceScholarlyIdentifierBatchReviewRequest> =>
+  validarDto(workspaceScholarlyIdentifierBatchReviewRequestSchema, value);
 export const validarWorkspacePdfReconciliationRequest = (value: unknown): ProtocolResult<WorkspacePdfReconciliationRequest> =>
   validarDto(workspacePdfReconciliationRequestSchema, value);
 export const validarWorkspaceWebCaptureExtractRequest = (value: unknown): ProtocolResult<WorkspaceWebCaptureExtractRequest> =>

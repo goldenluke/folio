@@ -243,10 +243,12 @@ export class RemoteEditorController implements EditorController {
   }
 }
 
-const location = (value: { readonly fileId: string; readonly path: string; readonly range: { readonly start: number; readonly end: number } }): LanguageLocation => ({
+const location = (value: { readonly fileId: string; readonly path: string; readonly range: { readonly start: number; readonly end: number }; readonly page?: number; readonly annotationId?: string }): LanguageLocation => ({
   fileId: asWorkspaceFileId(value.fileId),
   path: asWorkspacePath(value.path),
   range: value.range,
+  ...(value.page === undefined ? {} : { page: value.page }),
+  ...(value.annotationId === undefined ? {} : { annotationId: value.annotationId }),
 });
 
 /**

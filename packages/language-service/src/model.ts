@@ -18,6 +18,8 @@ export interface LanguageLocation {
   readonly fileId: WorkspaceFileId;
   readonly path: WorkspacePath;
   readonly range: LanguageRange;
+  readonly page?: number;
+  readonly annotationId?: string;
 }
 
 /** Um link indexado de outro documento que resolve para o arquivo consultado. */
@@ -104,7 +106,7 @@ export interface LanguageWorkspaceEdit {
   }[];
 }
 
-export type LanguageCompletionKind = 'citation' | 'document' | 'block' | 'math';
+export type LanguageCompletionKind = 'citation' | 'document' | 'block' | 'math' | 'pdf';
 
 export interface LanguageCompletionItem {
   readonly kind: LanguageCompletionKind;
@@ -164,6 +166,7 @@ export interface LanguageServiceOptions {
   readonly sessions: DocumentSessions;
   readonly references?: LanguageReferenceCatalog;
   readonly referencesFor?: LanguageReferenceCatalogResolver;
+  readonly pdfAnnotation?: (id: string) => Promise<{ readonly fileId: WorkspaceFileId; readonly path: WorkspacePath; readonly page: number; readonly annotationId: string } | undefined>;
 }
 
 export interface LanguageService {

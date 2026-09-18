@@ -27,7 +27,7 @@ describe('F36 — leitor PDF interno e anotações', () => {
       expect(pdf).toMatchObject({ ok: true, value: { attachment: { referenceId: 'silva2024' }, base64: bytes.toString('base64') } });
 
       const annotation = await client.createPdfAnnotation({ referenceId: 'silva2024', page: 2, quote: 'Trecho importante', comment: 'Relacionar ao método.' });
-      expect(annotation).toMatchObject({ ok: true, value: { referenceId: 'silva2024', page: 2, quote: 'Trecho importante' } });
+      expect(annotation).toMatchObject({ ok: true, value: { referenceId: 'silva2024', pdfDocumentId: 'reference:silva2024', kind: 'highlight', anchor: { quote: 'Trecho importante' }, page: 2, quote: 'Trecho importante', modifiedAt: expect.any(String) } });
       if (!annotation.ok) return;
       expect(await client.pdfAnnotations({ referenceId: 'silva2024' })).toMatchObject({ ok: true, value: [expect.objectContaining({ id: annotation.value.id })] });
 

@@ -34,6 +34,31 @@ describe('F508–F514 — intake de identificadores e reconciliação de PDF', (
       const pdf = await client.reconcilePdf({ text: 'capa\nDOI: 10.1000/exemplo.\n' });
       expect(pdf).toMatchObject({ ok: true, value: { identifiers: [{ type: 'doi', value: '10.1000/exemplo' }] } });
       if (pdf.ok) expect(pdf.value.reviews[0]).toMatchObject({ entry: { id: 'silva2026' }, duplicates: [{ rightId: 'silva2026' }] });
+      const pdfBytes = await client.reconcilePdf({ base64: Buffer.from('(DOI: 10.1000/exemplo)', 'latin1').toString('base64') });
+      expect(pdfBytes).toMatchObject({ ok: true, value: { identifiers: [{ type: 'doi', value: '10.1000/exemplo' }] } });
+    } finally {
+      client.dispose(); stop(); channel.port1.close(); channel.port2.close(); await host.dispose(); await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('mantém resultados válidos quando um provider falha no lote', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'abnt-f508-batch-'));
+    const host = DesktopWorkspaceServiceHost.create({ compiler: createInProcessCompilerClient(criarServicoDeCompiler()) });
+    const channel = new MessageChannel();
+    const stop = serveWorkspaceOverMessagePort(channel.port1, host);
+    const client = createWorkspaceMessagePortClient(channel.port2);
+    globalThis.fetch = (async (input) => String(input).includes('falha')
+      ? ({ ok: false, status: 503, json: async () => ({}) }) as Response
+      : ({ ok: true, status: 200, json: async () => DOI_PAYLOAD }) as Response) as typeof fetch;
+    try {
+      expect(await client.open({ rootPath: root })).toMatchObject({ ok: true });
+      const result = await client.reviewScholarlyIdentifiersBatch({ input: '10.1000/exemplo; 10.1000/falha' });
+      expect(result).toMatchObject({ ok: true });
+      if (!result.ok) return;
+      expect(result.value).toEqual(expect.arrayContaining([
+        expect.objectContaining({ input: '10.1000/exemplo', entry: expect.objectContaining({ id: 'silva2026' }) }),
+        expect.objectContaining({ input: '10.1000/falha', error: expect.stringContaining('HTTP 503') }),
+      ]));
     } finally {
       client.dispose(); stop(); channel.port1.close(); channel.port2.close(); await host.dispose(); await rm(root, { recursive: true, force: true });
     }

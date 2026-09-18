@@ -1,0 +1,10 @@
+{
+  "id": "folio.local-ai",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "entry": "index.mjs",
+  "capabilities": ["commands", "views", "read-document"],
+  "settings": [{ "id": "endpoint", "label": "Endpoint local", "type": "string", "default": "http://127.0.0.1:11434" }],
+  "commands": [{ "id": "open-local-assistant", "title": "Abrir assistência local" }],
+  "views": [{ "id": "guide", "title": "Assistência local", "body": "Este plugin é destinado a provedores que rodam na própria máquina. Antes de uma integração de modelo ser ativada, o Folio deve mostrar o texto que será enviado, pedir consentimento e registrar a origem da sugestão. Não use tokens de serviços remotos neste plugin." }]
+}

@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 
 import { folioPluginManifestSchema, type FolioPluginManifest, type PluginCommandContext, type PluginCommandResult, type PluginExportResult } from '@abnt/plugin-api';
@@ -34,11 +34,37 @@ const isInside = (base: string, candidate: string): boolean => {
 /** F90/F91: descoberta local, manifestos validados e estado operacional por vault. */
 export class WorkspacePluginCatalog {
   readonly #rootPath: string;
+  readonly #officialPluginsDirectory: string | undefined;
   #state: PluginState = DEFAULT_STATE;
   #plugins = new Map<string, LoadedPlugin>();
   #descriptors: readonly WorkspacePluginDescriptor[] = [];
 
-  constructor(rootPath: string) { this.#rootPath = rootPath; }
+  constructor(rootPath: string, officialPluginsDirectory?: string) {
+    this.#rootPath = rootPath;
+    this.#officialPluginsDirectory = officialPluginsDirectory;
+  }
+
+  /**
+   * Instala a coleção distribuída uma única vez, sem atualizar ou sobrescrever
+   * nada que já exista no vault. Depois disso, os plugins continuam locais e
+   * controlados pelo usuário em `.academic/plugins/`.
+   */
+  async installOfficialPlugins(): Promise<boolean> {
+    const officialPluginsDirectory = this.#officialPluginsDirectory;
+    if (officialPluginsDirectory === undefined) return false;
+    const sourceEntries = await readdir(officialPluginsDirectory, { withFileTypes: true }).catch(() => []);
+    if (sourceEntries.length === 0) return false;
+    const destination = join(this.#rootPath, PLUGINS_DIRECTORY);
+    await mkdir(destination, { recursive: true });
+    for (const entry of sourceEntries) {
+      if (!entry.isDirectory()) continue;
+      const source = join(officialPluginsDirectory, entry.name);
+      const target = join(destination, entry.name);
+      if (await stat(target).then(() => true).catch(() => false)) continue;
+      await cp(source, target, { recursive: true, errorOnExist: true });
+    }
+    return true;
+  }
 
   async discover(): Promise<readonly WorkspacePluginDescriptor[]> {
     this.#state = await this.#readState(); this.#plugins.clear();
@@ -67,7 +93,10 @@ export class WorkspacePluginCatalog {
     if (!this.#plugins.has(id)) throw new Error(`Plugin desconhecido: ${id}`);
     this.#state = { ...this.#state, enabled: { ...this.#state.enabled, [id]: enabled } }; await this.#writeState(); return this.discover();
   }
-  async reload(): Promise<readonly WorkspacePluginDescriptor[]> { return this.discover(); }
+  async reload(): Promise<readonly WorkspacePluginDescriptor[]> {
+    await this.installOfficialPlugins();
+    return this.discover();
+  }
 
   async command(pluginId: string, commandId: string, context: PluginCommandContext): Promise<PluginCommandResult> {
     const plugin = this.#enabled(pluginId, 'commands'); if (!plugin.descriptor.commands.some((command) => command.id === commandId)) throw new Error(`Comando de plugin desconhecido: ${commandId}`);

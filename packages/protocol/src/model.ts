@@ -350,7 +350,7 @@ export interface WorkspaceProfileValidationPreviewDto {
 export interface WorkspacePluginDto { readonly id: string; readonly version?: string; readonly apiVersion?: number; readonly capabilities: readonly string[]; readonly enabled: boolean; readonly commands: readonly { readonly id: string; readonly title: string }[]; readonly views: readonly { readonly id: string; readonly title: string; readonly body: string }[]; readonly exports: readonly { readonly id: string; readonly title: string; readonly extension: string; readonly mimeType: string }[]; readonly homeBlocks: readonly { readonly id: string; readonly title: string; readonly body: string }[]; readonly panels: readonly { readonly id: string; readonly title: string; readonly body: string }[]; readonly error?: string; }
 export interface WorkspacePluginSetEnabledRequest { readonly id: string; readonly enabled: boolean; }
 export interface WorkspacePluginCommandRequest { readonly pluginId: string; readonly commandId: string; readonly activeFileId?: string; readonly activeRevision?: number; }
-export interface WorkspacePluginCommandResultDto { readonly kind: 'notice' | 'open-view'; readonly message?: string; readonly viewId?: string; }
+export interface WorkspacePluginCommandResultDto { readonly kind: 'notice' | 'open-view' | 'open-intake' | 'open-template' | 'open-structured-research'; readonly message?: string; readonly viewId?: string; readonly intakeFormat?: 'bibtex' | 'ris' | 'csl-json'; readonly templateKind?: 'article' | 'institutional-article' | 'tcc' | 'institutional-tcc' | 'dissertation' | 'thesis' | 'abstract' | 'reading-note' | 'research-project'; }
 export interface WorkspaceProblemDto {
   readonly fileId: string;
   readonly path: string;
@@ -571,6 +571,8 @@ export type ScholarlyIdentifierTypeDto = 'doi' | 'isbn' | 'pmid' | 'arxiv' | 'ad
 export interface ScholarlyIdentifierDto { readonly type: ScholarlyIdentifierTypeDto; readonly value: string; }
 export interface ScholarlyIdentifierProvenanceDto { readonly field: string; readonly provider: string; readonly retrievedAt: string; readonly confidence?: number; }
 export interface WorkspaceScholarlyIdentifierReviewRequest { readonly input: string; }
+/** BF: cada entrada do lote recebe revisão independente; uma falha não cancela as demais. */
+export interface WorkspaceScholarlyIdentifierBatchReviewRequest { readonly input: string; }
 export interface WorkspaceScholarlyIdentifierReviewDto {
   readonly input: string;
   readonly identifier?: ScholarlyIdentifierDto;
@@ -579,8 +581,8 @@ export interface WorkspaceScholarlyIdentifierReviewDto {
   readonly duplicates: readonly WorkspaceLibraryDuplicateDto[];
   readonly error?: string;
 }
-/** Texto extraído localmente dos bytes do PDF; não há OCR nem upload implícito. */
-export interface WorkspacePdfReconciliationRequest { readonly text: string; }
+/** Texto ou bytes de PDF extraídos localmente pelo host; não há OCR nem upload implícito. */
+export interface WorkspacePdfReconciliationRequest { readonly text?: string; readonly base64?: string; }
 export interface WorkspacePdfReconciliationDto { readonly identifiers: readonly ScholarlyIdentifierDto[]; readonly reviews: readonly WorkspaceScholarlyIdentifierReviewDto[]; }
 
 export interface FullTextCandidateDto { readonly provider: string; readonly url: string; readonly license: 'open-access' | 'restricted' | 'unknown'; readonly version?: 'submitted' | 'accepted' | 'published'; readonly confidence: number; readonly retrievedAt: string; }
@@ -591,6 +593,26 @@ export interface WorkspaceDownloadFullTextRequest { readonly referenceId: string
 /** Onda BS: estado operacional de revisão; Markdown e CSL-JSON continuam canônicos fora deste recurso. */
 export interface WorkspaceSystematicReviewDto { readonly version: 1; readonly protocol?: { readonly id: string; readonly title: string; readonly question: string; readonly framework: 'freeform' | 'pico' | 'picos' | 'spider'; readonly frameworkFields: Readonly<Record<string, string>>; readonly databases: readonly string[]; readonly searchStrategy: string; readonly inclusionCriteria: readonly string[]; readonly exclusionCriteria: readonly string[]; }; readonly searches?: readonly { readonly id: string; readonly database: string; readonly query: string; readonly searchedAt: string; readonly resultCount: number }[]; readonly exclusionReasons?: readonly { readonly id: string; readonly label: string }[]; readonly studies: readonly { readonly id: string; readonly referenceId?: string; readonly title: string; readonly stage: string; readonly decisions: readonly { readonly reviewerId: string; readonly decision: 'include' | 'exclude' | 'maybe'; readonly at: string; readonly reasonId?: string }[]; readonly exclusionReasonId?: string }[]; readonly extractions?: Readonly<Record<string, Readonly<Record<string, string>>>>; readonly quality?: Readonly<Record<string, readonly { readonly itemId: string; readonly value: 'yes' | 'no' | 'unclear' | 'na' }[]>>; readonly evidence?: readonly { readonly studyId: string; readonly fieldId: string; readonly target: string }[]; }
 export interface WorkspaceSetSystematicReviewRequest { readonly review: WorkspaceSystematicReviewDto; }
+/** BX.2: inbox de busca é operacional e só vira CSL-JSON após confirmação na Biblioteca. */
+export interface WorkspaceEvidenceSynthesisDto {
+  readonly version: 1;
+  readonly migratedFrom?: 'systematic-review-v1';
+  readonly protocol?: { readonly id: string; readonly title: string; readonly question: string };
+  readonly sources: readonly { readonly id: string; readonly label: string; readonly kind: string }[];
+  readonly strategies: readonly { readonly id: string; readonly sourceId: string; readonly label: string; readonly conceptualQuery: string; readonly compiledQuery: string }[];
+  readonly runs: readonly { readonly id: string; readonly strategyId: string; readonly executedAt: string; readonly resultCount: number; readonly importedCount: number; readonly query: string; readonly page?: number; readonly filters?: readonly string[]; readonly artifactHash?: string }[];
+  readonly inbox: readonly { readonly id: string; readonly runId?: string; readonly title: string; readonly authors?: readonly string[]; readonly year?: string; readonly identifiers: readonly string[]; readonly importedAt: string; readonly format: 'ris' | 'bibtex' | 'csl-json' | 'csv' | 'manual'; readonly rawHash: string }[];
+  readonly records: readonly { readonly id: string; readonly title: string; readonly sourceId?: string; readonly searchRunId?: string; readonly referenceId?: string; readonly workId: string; readonly identifiers: readonly string[] }[];
+  readonly works: readonly { readonly id: string; readonly title: string; readonly referenceId?: string; readonly recordIds: readonly string[]; readonly artifactIds: readonly string[]; readonly fullText: 'not-requested' | 'searching' | 'candidate-found' | 'available' | 'unavailable' | 'restricted' | 'manual-needed' }[];
+  readonly artifacts: readonly { readonly id: string; readonly workId: string; readonly attachmentId?: string; readonly kind: string }[];
+  readonly evidenceItems: readonly { readonly id: string; readonly workId: string; readonly label: string; readonly kind: string }[];
+  readonly stages: readonly { readonly id: string; readonly label: string; readonly decisions: readonly ('include' | 'exclude' | 'maybe')[]; readonly reviewersRequired: number; readonly blind: boolean; readonly exclusionReasonRequired: boolean }[];
+  readonly criteria: readonly { readonly id: string; readonly label: string; readonly description?: string; readonly stageId: string; readonly polarity: 'include' | 'exclude'; readonly required: boolean }[];
+  readonly decisions: readonly { readonly evidenceItemId: string; readonly stageId: string; readonly reviewerId: string; readonly decision: 'include' | 'exclude' | 'maybe'; readonly at: string; readonly reasonId?: string }[];
+  readonly extractions: readonly { readonly id: string; readonly evidenceItemId: string; readonly fieldId: string; readonly value: string | number | boolean | Readonly<Record<string, unknown>>; readonly artifactId?: string; readonly page?: number; readonly annotationId?: string; readonly reviewerId: string; readonly verifiedAt: string }[];
+  readonly claimRelations?: readonly { readonly id: string; readonly claimId: string; readonly evidenceItemId: string; readonly relation: 'supports' | 'contradicts'; readonly note?: string; readonly reviewerId: string; readonly createdAt: string }[];
+}
+export interface WorkspaceSetEvidenceSynthesisRequest { readonly synthesis: WorkspaceEvidenceSynthesisDto; }
 export interface WorkspaceResearchDatasetsDto { readonly version: 1; readonly datasets: readonly { readonly id: string; readonly path: string; readonly format: string; readonly metadata: { readonly title: string; readonly description?: string; readonly creator?: string; readonly license?: string; readonly source?: string; readonly collectedAt?: string; readonly version?: string }; readonly sha256: string; readonly previousVersionId?: string }[]; }
 export interface WorkspaceSetResearchDatasetsRequest { readonly datasets: WorkspaceResearchDatasetsDto; }
 export interface WorkspaceImportResearchDatasetRequest { readonly name: string; readonly base64: string; readonly metadata: { readonly title: string; readonly description?: string; readonly creator?: string; readonly license?: string; readonly source?: string; readonly collectedAt?: string; readonly version?: string }; readonly previousVersionId?: string; }
@@ -617,6 +639,8 @@ export interface WebCaptureCandidateDto {
 /** F485–F495: extrai metadados de uma página já publicada; nunca persiste nada sozinho. */
 export interface WorkspaceWebCaptureExtractRequest {
   readonly url: string;
+  /** HTML já carregado no webview; ausente mantém o provider HTTP do host. */
+  readonly html?: string;
 }
 
 export interface WorkspaceWebCaptureExtractResponseDto {
@@ -672,10 +696,21 @@ export interface WorkspaceLibraryRenameKeyRequest { readonly id: string; readonl
 export interface WorkspaceLibraryRenameKeyResponseDto { readonly entry: BibliographicEntityDto; readonly changedFiles: readonly string[]; }
 
 export interface WorkspaceReferenceHealthRequest {}
+export type ReferenceIntegrityStatusDto = 'normal' | 'retracted' | 'corrected' | 'expression-of-concern' | 'unknown';
+export interface ReferenceIntegrityRecordDto {
+  readonly referenceId: string;
+  readonly status: ReferenceIntegrityStatusDto;
+  readonly provider: string;
+  readonly evidence: string;
+  readonly checkedAt: string;
+}
+export interface WorkspaceReferenceIntegrityDto { readonly version: 1; readonly records: readonly ReferenceIntegrityRecordDto[]; }
+export interface WorkspaceSetReferenceIntegrityRequest extends WorkspaceReferenceIntegrityDto {}
 export type WorkspaceReferenceAuditCode =
   | 'invalid-doi' | 'invalid-isbn' | 'missing-url' | 'missing-access-date'
   | 'incomplete-author' | 'missing-year' | 'possible-duplicate'
-  | 'inconsistent-key' | 'missing-pdf' | 'missing-literature-note';
+  | 'inconsistent-key' | 'missing-pdf' | 'missing-literature-note'
+  | 'reference-retracted' | 'reference-corrected' | 'reference-expression-of-concern' | 'reference-integrity-unknown';
 export interface WorkspaceReferenceAuditIssueDto {
   readonly referenceId: string;
   readonly code: WorkspaceReferenceAuditCode;
@@ -739,29 +774,45 @@ export interface WorkspaceReferencePdfDto {
 export interface WorkspacePdfAnnotationDto {
   readonly id: string;
   readonly referenceId: string;
+  readonly pdfDocumentId?: string;
+  readonly fileId?: string;
   readonly page: number;
   readonly quote: string;
+  readonly kind?: 'highlight' | 'underline' | 'strikeout' | 'comment' | 'area' | 'ink';
+  readonly anchor?: { readonly quote: string; readonly start?: number; readonly end?: number; };
+  readonly rects?: readonly { readonly x: number; readonly y: number; readonly width: number; readonly height: number; }[];
+  /** Identidade da annotation no PDF de origem; evita importar o mesmo item duas vezes. */
+  readonly externalId?: string;
   readonly comment?: string;
   /** Onda BL: significado da cor é configurável (`WorkspaceAnnotationColorSemanticsDto`), nunca fixo no produto. */
   readonly color?: string;
+  readonly semanticType?: 'population' | 'intervention' | 'method' | 'outcome' | 'finding' | 'limitation' | 'risk' | 'quote' | 'context';
   readonly createdAt: string;
+  readonly modifiedAt?: string;
   readonly literatureNoteFileId?: string;
 }
 export interface WorkspaceCreatePdfAnnotationRequest {
-  readonly referenceId: string;
+  /** Referência é opcional: PDFs soltos também recebem anotações no sidecar. */
+  readonly referenceId?: string;
+  readonly fileId?: string;
   readonly page: number;
   readonly quote: string;
+  readonly kind?: 'highlight' | 'underline' | 'strikeout' | 'comment' | 'area' | 'ink';
+  readonly anchor?: { readonly quote: string; readonly start?: number; readonly end?: number; };
+  readonly rects?: readonly { readonly x: number; readonly y: number; readonly width: number; readonly height: number; }[];
+  readonly externalId?: string;
   readonly comment?: string;
   readonly color?: string;
+  readonly semanticType?: 'population' | 'intervention' | 'method' | 'outcome' | 'finding' | 'limitation' | 'risk' | 'quote' | 'context';
 }
-export interface WorkspacePdfAnnotationRequest { readonly referenceId: string; readonly id: string; }
+export interface WorkspacePdfAnnotationRequest { readonly referenceId?: string; readonly fileId?: string; readonly id: string; }
 export interface WorkspacePdfAnnotationLinkDto {
   readonly annotation: WorkspacePdfAnnotationDto;
   readonly literatureNote: WorkspaceFileDto;
 }
 
 /** Onda BL (F468–F475): síntese de anotações de uma ou várias fontes, inserida por EditorTransaction. */
-export interface WorkspaceAnnotationsRequest { readonly referenceId?: string; }
+export interface WorkspaceAnnotationsRequest { readonly referenceId?: string; readonly fileId?: string; }
 export type WorkspaceAnnotationColorSemanticsDto = Readonly<Record<string, string>>;
 export interface WorkspaceSetAnnotationColorSemanticsRequest { readonly colors: WorkspaceAnnotationColorSemanticsDto; }
 export type AnnotationSynthesisTemplateDto = 'quote-list' | 'grouped-by-source' | 'grouped-by-color';
@@ -817,6 +868,8 @@ export interface WorkspaceAddAttachmentRequest {
   /** kind === 'file' */
   readonly name?: string;
   readonly base64?: string;
+  /** Reutiliza um arquivo já presente no vault, sem cópia nem escrita no PDF. */
+  readonly existingFileId?: string;
   /** kind === 'link' */
   readonly uri?: string;
   readonly snapshotHtml?: string;
@@ -1291,7 +1344,7 @@ export interface LanguageRangeDto {
 }
 
 export interface LanguageCompletionItemDto {
-  readonly kind: 'citation' | 'document' | 'block' | 'math';
+  readonly kind: 'citation' | 'document' | 'block' | 'math' | 'pdf';
   readonly label: string;
   readonly detail?: string;
   readonly insertText: string;
@@ -1311,6 +1364,8 @@ export interface LanguageLocationDto {
   readonly fileId: string;
   readonly path: string;
   readonly range: LanguageRangeDto;
+  readonly page?: number;
+  readonly annotationId?: string;
 }
 export interface LanguageCrossReferenceTargetDto { readonly identifier: string; readonly kind: 'section' | 'figure' | 'table' | 'equation'; readonly label: string; readonly range: LanguageRangeDto; }
 
@@ -1459,11 +1514,14 @@ export interface DesktopWorkspaceService {
   libraryFormat(request: WorkspaceLibraryFormatRequest, signal?: AbortSignal): Promise<ProtocolResult<string>>;
   libraryResolveDoi(request: WorkspaceLibraryResolveDoiRequest, signal?: AbortSignal): Promise<ProtocolResult<BibliographicEntityDto>>;
   reviewScholarlyIdentifier(request: WorkspaceScholarlyIdentifierReviewRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceScholarlyIdentifierReviewDto>>;
+  reviewScholarlyIdentifiersBatch(request: WorkspaceScholarlyIdentifierBatchReviewRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspaceScholarlyIdentifierReviewDto[]>>;
   reconcilePdf(request: WorkspacePdfReconciliationRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspacePdfReconciliationDto>>;
   discoverFullText(request: WorkspaceFullTextDiscoveryRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceFullTextDiscoveryDto>>;
   downloadFullText(request: WorkspaceDownloadFullTextRequest, signal?: AbortSignal): Promise<ProtocolResult<AttachmentDto>>;
   systematicReview(signal?: AbortSignal): Promise<ProtocolResult<WorkspaceSystematicReviewDto>>;
   setSystematicReview(request: WorkspaceSetSystematicReviewRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceSystematicReviewDto>>;
+  evidenceSynthesis(signal?: AbortSignal): Promise<ProtocolResult<WorkspaceEvidenceSynthesisDto>>;
+  setEvidenceSynthesis(request: WorkspaceSetEvidenceSynthesisRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceEvidenceSynthesisDto>>;
   researchDatasets(signal?: AbortSignal): Promise<ProtocolResult<WorkspaceResearchDatasetsDto>>;
   setResearchDatasets(request: WorkspaceSetResearchDatasetsRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceResearchDatasetsDto>>;
   importResearchDataset(request: WorkspaceImportResearchDatasetRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceResearchDatasetsDto>>;
@@ -1476,6 +1534,8 @@ export interface DesktopWorkspaceService {
   libraryMerge(request: WorkspaceLibraryMergeRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceLibraryMergeResponseDto>>;
   libraryKeyPreview(request: WorkspaceLibraryKeyPreviewRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceLibraryKeyPreviewDto>>;
   libraryRenameKey(request: WorkspaceLibraryRenameKeyRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceLibraryRenameKeyResponseDto>>;
+  referenceIntegrity(signal?: AbortSignal): Promise<ProtocolResult<WorkspaceReferenceIntegrityDto>>;
+  setReferenceIntegrity(request: WorkspaceSetReferenceIntegrityRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceReferenceIntegrityDto>>;
   referenceHealth(request: WorkspaceReferenceHealthRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceReferenceHealthDto>>;
   /** Onda BO: painel único para triagem em lote — composição de referenceHealth/libraryDuplicates/attachmentHealth/referenceRelations. */
   libraryMaintenanceOverview(request: WorkspaceLibraryMaintenanceRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceLibraryMaintenanceOverviewDto>>;
@@ -1483,7 +1543,7 @@ export interface DesktopWorkspaceService {
   attachReferencePdf(request: WorkspaceAttachReferencePdfRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceReferenceAttachmentDto>>;
   removeReferenceAttachment(request: WorkspaceReferenceAttachmentRequest, signal?: AbortSignal): Promise<ProtocolResult<undefined>>;
   referencePdf(request: WorkspaceReferenceAttachmentRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspaceReferencePdfDto>>;
-  pdfAnnotations(request: WorkspaceReferenceAttachmentRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspacePdfAnnotationDto[]>>;
+  pdfAnnotations(request: WorkspaceAnnotationsRequest, signal?: AbortSignal): Promise<ProtocolResult<readonly WorkspacePdfAnnotationDto[]>>;
   createPdfAnnotation(request: WorkspaceCreatePdfAnnotationRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspacePdfAnnotationDto>>;
   removePdfAnnotation(request: WorkspacePdfAnnotationRequest, signal?: AbortSignal): Promise<ProtocolResult<undefined>>;
   linkPdfAnnotation(request: WorkspacePdfAnnotationRequest, signal?: AbortSignal): Promise<ProtocolResult<WorkspacePdfAnnotationLinkDto>>;
@@ -1609,11 +1669,14 @@ export type WorkspaceMethod =
   | 'workspace/library-format'
   | 'workspace/library-resolve-doi'
   | 'workspace/review-scholarly-identifier'
+  | 'workspace/review-scholarly-identifiers-batch'
   | 'workspace/reconcile-pdf'
   | 'workspace/discover-full-text'
   | 'workspace/download-full-text'
   | 'workspace/systematic-review'
   | 'workspace/systematic-review-set'
+  | 'workspace/evidence-synthesis'
+  | 'workspace/evidence-synthesis-set'
   | 'workspace/research-datasets'
   | 'workspace/research-datasets-set'
   | 'workspace/research-datasets-import'
@@ -1625,6 +1688,8 @@ export type WorkspaceMethod =
   | 'workspace/library-merge'
   | 'workspace/library-key-preview'
   | 'workspace/library-rename-key'
+  | 'workspace/reference-integrity'
+  | 'workspace/reference-integrity-set'
   | 'workspace/reference-health'
   | 'workspace/library-maintenance-overview'
   | 'workspace/reference-attachments'

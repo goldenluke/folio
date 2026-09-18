@@ -29,6 +29,9 @@ importers:
       '@abnt/editor-core':
         specifier: workspace:^
         version: link:packages/editor-core
+      '@abnt/evidence-synthesis':
+        specifier: workspace:^
+        version: link:packages/evidence-synthesis
       '@abnt/language-service':
         specifier: workspace:^
         version: link:packages/language-service
@@ -47,6 +50,9 @@ importers:
       '@abnt/publication':
         specifier: workspace:^
         version: link:packages/publication
+      '@abnt/reference-integrity':
+        specifier: workspace:^
+        version: link:packages/reference-integrity
       '@abnt/semantics':
         specifier: workspace:^
         version: link:packages/semantics
@@ -173,6 +179,9 @@ importers:
       '@abnt/editor-core':
         specifier: workspace:*
         version: link:../../packages/editor-core
+      '@abnt/evidence-synthesis':
+        specifier: workspace:*
+        version: link:../../packages/evidence-synthesis
       '@abnt/full-text-discovery':
         specifier: workspace:*
         version: link:../../packages/full-text-discovery
@@ -197,6 +206,9 @@ importers:
       '@abnt/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@abnt/reference-integrity':
+        specifier: workspace:*
+        version: link:../../packages/reference-integrity
       '@abnt/reference-relations':
         specifier: workspace:*
         version: link:../../packages/reference-relations
@@ -212,6 +224,9 @@ importers:
       '@abnt/research-canvas':
         specifier: workspace:*
         version: link:../../packages/research-canvas
+      '@abnt/research-context':
+        specifier: workspace:*
+        version: link:../../packages/research-context
       '@abnt/research-data':
         specifier: workspace:*
         version: link:../../packages/research-data
@@ -260,6 +275,9 @@ importers:
       pagedjs:
         specifier: ^0.4.3
         version: 0.4.3
+      pdf-lib:
+        specifier: ^1.17.1
+        version: 1.17.1
       pdfjs-dist:
         specifier: ^5.4.296
         version: 5.7.284
@@ -456,6 +474,8 @@ importers:
         specifier: workspace:*
         version: link:../workspace-sessions
 
+  packages/evidence-synthesis: {}
+
   packages/full-text-discovery: {}
 
   packages/language-service:
@@ -566,6 +586,8 @@ importers:
         specifier: workspace:*
         version: link:../semantics
 
+  packages/reference-integrity: {}
+
   packages/reference-relations:
     dependencies:
       '@abnt/bibliography':
@@ -603,6 +625,8 @@ importers:
         version: 25.10.0(yauzl@2.10.0)
 
   packages/research-canvas: {}
+
+  packages/research-context: {}
 
   packages/research-data: {}
 
@@ -1532,6 +1556,12 @@ packages:
   '@noble/hashes@2.4.0':
     resolution: {integrity: sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==}
     engines: {node: '>= 20.19.0'}
+
+  '@pdf-lib/standard-fonts@1.0.0':
+    resolution: {integrity: sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA==}
+
+  '@pdf-lib/upng@1.0.1':
+    resolution: {integrity: sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ==}
 
   '@peculiar/asn1-schema@2.9.4':
     resolution: {integrity: sha512-GjzePcT9Iw8NzeOPf73iNS9xM+TBhd/FilAfP+RQGkTMQJTVWtytN3JHJACCjf/ABNau5S7mS3g+DcuxmRgYEg==}
@@ -3215,6 +3245,9 @@ packages:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
 
+  pdf-lib@1.17.1:
+    resolution: {integrity: sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw==}
+
   pdfjs-dist@5.7.284:
     resolution: {integrity: sha512-h4EdYQczmGhbOlqc3PPZwxevn7ApdWPbovAuWXOB/DjIyigSnwfy2oze7c6mRcSr9XgLp3eN3EeL4DyySTPMFw==}
     engines: {node: '>=22.13.0 || >=24'}
@@ -3645,6 +3678,9 @@ packages:
   tsconfig-paths@4.2.0:
     resolution: {integrity: sha512-NoZ4roiN7LnbKn9QqE1amc9DJfzvZXxF4xDavcOWt1BPkdx+m+0gJuPM+S0vCe7zTJMYUP0R8pO2XMr+Y8oLIg==}
     engines: {node: '>=6'}
+
+  tslib@1.14.1:
+    resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -4688,6 +4724,14 @@ snapshots:
   '@noble/hashes@1.4.0': {}
 
   '@noble/hashes@2.4.0': {}
+
+  '@pdf-lib/standard-fonts@1.0.0':
+    dependencies:
+      pako: 1.0.11
+
+  '@pdf-lib/upng@1.0.1':
+    dependencies:
+      pako: 1.0.11
 
   '@peculiar/asn1-schema@2.9.4':
     dependencies:
@@ -6667,6 +6711,13 @@ snapshots:
 
   pathval@2.0.1: {}
 
+  pdf-lib@1.17.1:
+    dependencies:
+      '@pdf-lib/standard-fonts': 1.0.0
+      '@pdf-lib/upng': 1.0.1
+      pako: 1.0.11
+      tslib: 1.14.1
+
   pdfjs-dist@5.7.284:
     optionalDependencies:
       '@napi-rs/canvas': 0.1.100
@@ -7132,6 +7183,8 @@ snapshots:
       json5: 2.2.3
       minimist: 1.2.8
       strip-bom: 3.0.0
+
+  tslib@1.14.1: {}
 
   tslib@2.8.1: {}
 

@@ -1,0 +1,66 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: Linux x64
+            artifact: linux-x64
+            skip_native_build: false
+          - os: windows-latest
+            label: Windows x64 (build only)
+            artifact: windows-x64-build-only
+            skip_native_build: true
+          - os: macos-latest
+            label: macOS (build only)
+            artifact: macos-build-only
+            skip_native_build: true
+    env:
+      # O addon SQLite só é empacotado e suportado para Linux x64. Os outros
+      # runners ainda compilam os bundles para detectar regressões portáveis.
+      ABNT_SKIP_NATIVE_BUILD: ${{ matrix.skip_native_build && '1' || '' }}
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check all sources
+        run: pnpm typecheck
+
+      - name: Compile the desktop application
+        run: pnpm --filter @abnt/desktop build
+
+      - name: Upload desktop build
+        uses: actions/upload-artifact@v4
+        with:
+          name: folio-desktop-${{ matrix.artifact }}
+          path: apps/desktop/dist
+          if-no-files-found: error
+          retention-days: 7

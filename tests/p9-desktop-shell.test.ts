@@ -125,6 +125,21 @@ describe('F110–F116 — automação declarativa', () => {
 });
 
 describe('P9 — Tab/View model', () => {
+  it('abre cada navegador de pesquisa em sua própria aba', () => {
+    const model = createViewsModel();
+
+    const first = model.openBrowser();
+    const second = model.openBrowser({ url: 'https://example.org/' });
+
+    expect(second).not.toBe(first);
+    expect(model.list()).toMatchObject([
+      { id: first, type: 'browser', url: 'https://scholar.google.com/', title: 'Navegador' },
+      { id: second, type: 'browser', url: 'https://example.org/', title: 'Navegador' },
+    ]);
+    model.updateBrowser(second, { url: 'https://example.org/article', title: 'Artigo de exemplo' });
+    expect(model.active()).toMatchObject({ id: second, type: 'browser', url: 'https://example.org/article', title: 'Artigo de exemplo' });
+  });
+
   it('abrir dois arquivos cria duas tabs; ativar uma não fecha a outra', () => {
     const model = createViewsModel();
     const a = new FakeEditorController('a');

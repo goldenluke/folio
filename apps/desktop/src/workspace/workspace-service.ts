@@ -31,6 +31,14 @@ import {
 } from '@abnt/literature-monitoring';
 import { identifiersFromPdfText, reconcilePdfText } from '@abnt/pdf-reconciliation';
 import {
+  createReferenceIntegritySet,
+  parseReferenceIntegritySet,
+  type ReferenceIntegritySet,
+} from '@abnt/reference-integrity';
+import { textFromPdfBase64 } from './pdf-text-extractor.js';
+import { migrateSystematicReview, type EvidenceSynthesis } from '@abnt/evidence-synthesis';
+import { readLocalSyncPreference, writeLocalSyncPreference } from './sync-preferences.js';
+import {
   addReferenceRelation as addReferenceRelationToSet,
   assertNotDuplicate,
   createReferenceRelation,
@@ -119,6 +127,7 @@ import {
   type WorkspaceLibraryResolveDoiRequest,
   type WorkspaceScholarlyIdentifierReviewRequest,
   type WorkspaceScholarlyIdentifierReviewDto,
+  type WorkspaceScholarlyIdentifierBatchReviewRequest,
   type WorkspacePdfReconciliationRequest,
   type WorkspacePdfReconciliationDto,
   type WorkspaceFullTextDiscoveryRequest,
@@ -126,6 +135,8 @@ import {
   type WorkspaceDownloadFullTextRequest,
   type WorkspaceSystematicReviewDto,
   type WorkspaceSetSystematicReviewRequest,
+  type WorkspaceEvidenceSynthesisDto,
+  type WorkspaceSetEvidenceSynthesisRequest,
   type WorkspaceResearchDatasetsDto,
   type WorkspaceSetResearchDatasetsRequest,
   type WorkspaceImportResearchDatasetRequest,
@@ -235,7 +246,7 @@ import { resolveDoi } from './doi-resolver.js';
 import { createScholarlyIdentifierRegistry } from './scholarly-identifier-resolver.js';
 import { discoverFullText, downloadFullText } from './full-text-discovery.js';
 import { fetchFeedItems } from './literature-monitoring.js';
-import { extractWebCaptureCandidates } from './web-capture.js';
+import { extractWebCaptureCandidates, extractWebCaptureCandidatesFromHtml } from './web-capture.js';
 import { scoreWebCaptureFields, type WebCaptureCandidate } from '@abnt/web-capture';
 import { importLibraryContent } from './library-import.js';
 import { findReferenceDuplicates } from './reference-duplicates.js';
@@ -499,6 +510,12 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
         index,
         sessions,
         referencesFor: async (fileId) => this.#referenceCatalog(fileId),
+        pdfAnnotation: async (id) => {
+          const annotation = (await readPdfAnnotations(storage)).find((entry) => entry.id === id);
+          if (annotation?.fileId === undefined) return undefined;
+          const file = (await storage.list()).find((entry) => String(entry.id) === annotation.fileId);
+          return file === undefined ? undefined : { fileId: file.id, path: file.path, page: annotation.page, annotationId: annotation.id };
+        },
       });
       const editors = EditorWorkspaceService.create({ sessions, language });
 
@@ -508,9 +525,23 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       this.#editors = editors;
       this.#language = language;
       this.#history = new WorkspaceHistory(request.rootPath);
-      this.#plugins = new WorkspacePluginCatalog(request.rootPath);
+      const bundledPlugins = join(__dirname, 'official-plugins');
+      const developmentPlugins = resolve(__dirname, '../../../../examples/plugins');
+      this.#plugins = new WorkspacePluginCatalog(request.rootPath, bundledPlugins);
+      // Sob `tsx`, o service ainda roda de `src/workspace`; o build copia a
+      // mesma coleção para `dist/workspace/official-plugins`.
+      if (!await this.#plugins.installOfficialPlugins()) {
+        this.#plugins = new WorkspacePluginCatalog(request.rootPath, developmentPlugins);
+        await this.#plugins.installOfficialPlugins();
+      }
       await this.#plugins.discover();
       this.#rootPath = request.rootPath;
+      // O destino é uma preferência desta máquina, nunca conteúdo que viaje
+      // para colaboradores. Falha ao restaurar mantém o vault utilizável.
+      try {
+        const preference = await readLocalSyncPreference(request.rootPath);
+        if (preference !== undefined) await this.#configureLocalMirror(preference.mirrorRootPath, false);
+      } catch { /* pasta removida ou inacessível: status permanece não configurado */ }
       this.#unsubscribeWorkspace = storage.subscribe((event) => {
         const dto = this.#workspaceEventDto(event);
         if (dto !== undefined) this.#emit({ type: 'desktop:workspace-event', event: dto });
@@ -551,27 +582,8 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
 
   async configureSync(request: WorkspaceConfigureSyncRequest): Promise<ProtocolResult<WorkspaceSyncStatusDto>> {
     return this.#run(async () => {
-      const local = this.#requireStorage();
-      const rootPath = this.#rootPath;
-      if (rootPath === undefined) throw new Error('Nenhum vault está aberto.');
-      const localRoot = resolve(rootPath);
-      const mirrorRoot = resolve(request.mirrorRootPath);
-      const relativeMirror = relative(localRoot, mirrorRoot);
-      const relativeVault = relative(mirrorRoot, localRoot);
-      if (relativeMirror === '' || (!relativeMirror.startsWith('..') && !isAbsolute(relativeMirror)) || (!relativeVault.startsWith('..') && !isAbsolute(relativeVault))) {
-        throw new Error('A pasta espelho não pode ser o vault nem uma pasta dentro dele.');
-      }
-      await this.#syncMirror?.close();
-      const mirror = LocalFilesystemStorage.create(request.mirrorRootPath);
-      await mirror.open();
-      this.#syncMirror = mirror;
-      this.#syncEngine = new SyncEngine({
-        id: 'local-mirror',
-        label: 'Pasta espelho local',
-        adapter: this.#syncAdapter(mirrorRoot, mirror),
-      });
+      await this.#configureLocalMirror(request.mirrorRootPath, true);
       // Configurar é seguro e previsível: a primeira cópia só começa por ação explícita.
-      void local;
       return this.#syncStatusDto();
     });
   }
@@ -740,7 +752,20 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
 
   async systematicReview(): Promise<ProtocolResult<WorkspaceSystematicReviewDto>> { return this.#run(async () => this.#readSystematicReview()); }
   async setSystematicReview(request: WorkspaceSetSystematicReviewRequest): Promise<ProtocolResult<WorkspaceSystematicReviewDto>> {
-    return this.#run(async () => { await this.#writeOperational('systematic-review', 'review', request.review, ['.academic', 'systematic-review']); return request.review; });
+    return this.#run(async () => {
+      await this.#writeOperational('systematic-review', 'review', request.review, ['.academic', 'systematic-review']);
+      // A cópia nasce de uma ação explícita de salvar o workflow legado e só
+      // quando ainda não existe uma síntese que alguém possa ter evoluído.
+      await this.#migrateSystematicReviewToEvidence();
+      return request.review;
+    });
+  }
+  async evidenceSynthesis(): Promise<ProtocolResult<WorkspaceEvidenceSynthesisDto>> { return this.#run(async () => this.#readEvidenceSynthesis()); }
+  async setEvidenceSynthesis(request: WorkspaceSetEvidenceSynthesisRequest): Promise<ProtocolResult<WorkspaceEvidenceSynthesisDto>> {
+    return this.#run(async () => {
+      await this.#writeOperational('evidence-synthesis', 'review', request.synthesis, ['.academic', 'evidence-synthesis']);
+      return request.synthesis;
+    });
   }
   async researchDatasets(): Promise<ProtocolResult<WorkspaceResearchDatasetsDto>> { return this.#run(async () => this.#readResearchDatasets()); }
   async setResearchDatasets(request: WorkspaceSetResearchDatasetsRequest): Promise<ProtocolResult<WorkspaceResearchDatasetsDto>> {
@@ -827,6 +852,21 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       const set = await this.#readReferenceRelations();
       await this.#writeReferenceRelations(removeReferenceRelationFromSet(set, request.id));
       return undefined;
+    });
+  }
+
+  /** Onda BR: o pesquisador registra a fonte e a evidência; não há consulta remota silenciosa. */
+  async referenceIntegrity(): Promise<ProtocolResult<import('@abnt/protocol').WorkspaceReferenceIntegrityDto>> {
+    return this.#run(async () => this.#readReferenceIntegrity());
+  }
+
+  async setReferenceIntegrity(request: import('@abnt/protocol').WorkspaceSetReferenceIntegrityRequest): Promise<ProtocolResult<import('@abnt/protocol').WorkspaceReferenceIntegrityDto>> {
+    return this.#run(async () => {
+      const library = await readLibrary(this.#requireStorage());
+      const integrity = createReferenceIntegritySet(request.records);
+      for (const record of integrity.records) if (library[record.referenceId] === undefined) throw new WorkspaceFileNotFoundError(asWorkspaceFileId(record.referenceId));
+      await this.#writeReferenceIntegrity(integrity);
+      return integrity;
     });
   }
 
@@ -1000,9 +1040,13 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       const storage = this.#requireStorage();
       if (storage.readBinary === undefined) throw new Error('O backend do vault não suporta preview de recursos binários.');
       const content = await storage.readBinary(asWorkspaceFileId(request.fileId));
-      const mediaType = content.file.mediaType;
-      if (mediaType === undefined || !mediaType.startsWith('image/')) throw new Error('O recurso selecionado não é uma imagem.');
-      if (content.bytes.byteLength > 8 * 1024 * 1024) throw new Error('A imagem excede o limite de preview de 8 MB.');
+      const isPdfPath = /\.pdf$/iu.test(String(content.file.path));
+      const mediaType = isPdfPath ? 'application/pdf' : content.file.mediaType;
+      const isImage = mediaType?.startsWith('image/') === true;
+      const isPdf = mediaType === 'application/pdf';
+      if (!isImage && !isPdf) throw new Error('O recurso selecionado não possui preview integrado.');
+      const limit = isPdf ? 48 * 1024 * 1024 : 8 * 1024 * 1024;
+      if (content.bytes.byteLength > limit) throw new Error(isPdf ? 'O PDF excede o limite de abertura integrada de 48 MB.' : 'A imagem excede o limite de preview de 8 MB.');
       return { mediaType, dataUrl: `data:${mediaType};base64,${Buffer.from(content.bytes).toString('base64')}` };
     });
   }
@@ -1607,11 +1651,31 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
     });
   }
 
+  /** BF: lote deliberadamente não escreve na biblioteca; cada provider pode falhar isoladamente. */
+  async reviewScholarlyIdentifiersBatch(request: WorkspaceScholarlyIdentifierBatchReviewRequest): Promise<ProtocolResult<readonly WorkspaceScholarlyIdentifierReviewDto[]>> {
+    return this.#run(async () => {
+      const library = await readLibrary(this.#requireStorage());
+      const reviews = await createScholarlyIdentifierRegistry().reviewBatch(
+        request.input,
+        (entry) => duplicateCandidates(library, entry).map((item) => item.rightId),
+      );
+      return reviews.map((review): WorkspaceScholarlyIdentifierReviewDto => ({
+        input: review.input,
+        provenance: review.resolution?.provenance ?? [],
+        duplicates: review.resolution === undefined ? [] : duplicateCandidates(library, review.resolution.entry),
+        ...(review.identifier === undefined ? {} : { identifier: review.identifier }),
+        ...(review.resolution === undefined ? {} : { entry: { ...review.resolution.entry, id: String(review.resolution.entry.id) } }),
+        ...(review.error === undefined ? {} : { error: review.error }),
+      }));
+    });
+  }
+
   /** Onda BQ: BG reaproveita exatamente o registry de BF; o PDF nunca recebe metadata por inferência. */
   async reconcilePdf(request: WorkspacePdfReconciliationRequest): Promise<ProtocolResult<WorkspacePdfReconciliationDto>> {
     return this.#run(async () => {
       const library = await readLibrary(this.#requireStorage());
-      const candidate = await reconcilePdfText(request.text, createScholarlyIdentifierRegistry(), (entry) => duplicateCandidates(library, entry).map((item) => item.rightId));
+      const text = request.base64 === undefined ? request.text ?? '' : textFromPdfBase64(request.base64);
+      const candidate = await reconcilePdfText(text, createScholarlyIdentifierRegistry(), (entry) => duplicateCandidates(library, entry).map((item) => item.rightId));
       return {
         identifiers: candidate.identifiers,
         reviews: candidate.reviews.map((review): WorkspaceScholarlyIdentifierReviewDto => ({
@@ -1654,7 +1718,9 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
   /** Onda BN: DOI achado no texto da página é enriquecido via `resolveDoi` (F8) — mesma fonte, nunca inventa metadata própria. */
   async webCaptureExtract(request: WorkspaceWebCaptureExtractRequest): Promise<ProtocolResult<WorkspaceWebCaptureExtractResponseDto>> {
     return this.#run(async () => {
-      const candidates = await extractWebCaptureCandidates(request.url);
+      const candidates = request.html === undefined
+        ? await extractWebCaptureCandidates(request.url)
+        : extractWebCaptureCandidatesFromHtml(request.html, request.url);
       const enriched: WebCaptureCandidate[] = await Promise.all(candidates.map(async (candidate) => {
         if (candidate.fields.DOI === undefined) return candidate;
         try {
@@ -1762,6 +1828,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
     attachmentIds: ReadonlySet<string>,
     noteIds: ReadonlySet<string>,
     duplicateIds: ReadonlySet<string>,
+    integrity: ReferenceIntegritySet,
   ): import('@abnt/protocol').WorkspaceReferenceAuditIssueDto[] {
     const audit: import('@abnt/protocol').WorkspaceReferenceAuditIssueDto[] = [];
     for (const [referenceId, item] of catalog) {
@@ -1777,6 +1844,11 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       if (expectedKey !== referenceId) audit.push({ referenceId, code: 'inconsistent-key', message: `Chave difere da política autor-ano sugerida (${expectedKey}).` });
       if (!attachmentIds.has(referenceId)) audit.push({ referenceId, code: 'missing-pdf', message: 'PDF de pesquisa ausente.' });
       if (!noteIds.has(referenceId)) audit.push({ referenceId, code: 'missing-literature-note', message: 'Literature note ausente.' });
+      const record = integrity.records.find((candidate) => candidate.referenceId === referenceId);
+      if (record === undefined || record.status === 'unknown') audit.push({ referenceId, code: 'reference-integrity-unknown', message: 'Integridade bibliográfica ainda não verificada.' });
+      else if (record.status === 'retracted') audit.push({ referenceId, code: 'reference-retracted', message: `Referência retratada segundo ${record.provider}.` });
+      else if (record.status === 'corrected') audit.push({ referenceId, code: 'reference-corrected', message: `Referência possui correção registrada por ${record.provider}.` });
+      else if (record.status === 'expression-of-concern') audit.push({ referenceId, code: 'reference-expression-of-concern', message: `Expression of concern registrada por ${record.provider}.` });
     }
     return audit;
   }
@@ -1793,7 +1865,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       const noteIds = new Set((await scanLiteratureReviewNotes(storage, files)).map((note) => note.referenceId));
       const duplicates = findReferenceDuplicates(Object.fromEntries([...catalog.entries()].map(([id, entry]) => [id, entry.entity])));
       const duplicateIds = new Set(duplicates.flatMap((pair) => [pair.leftId, pair.rightId]));
-      const audit = this.#auditCatalog(catalog, attachmentIds, noteIds, duplicateIds);
+      const audit = this.#auditCatalog(catalog, attachmentIds, noteIds, duplicateIds, await this.#readReferenceIntegrity());
       return {
         total: catalog.size,
         cited,
@@ -1825,7 +1897,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       }
       const duplicateIds = new Set(duplicates.flatMap((pair) => [pair.leftId, pair.rightId]));
       const auditByReference = new Map<string, import('@abnt/protocol').WorkspaceReferenceAuditCode[]>();
-      for (const issue of this.#auditCatalog(catalog, attachmentIds, noteIds, duplicateIds)) {
+      for (const issue of this.#auditCatalog(catalog, attachmentIds, noteIds, duplicateIds, await this.#readReferenceIntegrity())) {
         auditByReference.set(issue.referenceId, [...(auditByReference.get(issue.referenceId) ?? []), issue.code]);
       }
       const manifest = await readAttachmentManifest(storage);
@@ -1913,19 +1985,22 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
     });
   }
 
-  async pdfAnnotations(request: import('@abnt/protocol').WorkspaceReferenceAttachmentRequest): Promise<ProtocolResult<readonly import('@abnt/protocol').WorkspacePdfAnnotationDto[]>> {
+  async pdfAnnotations(request: import('@abnt/protocol').WorkspaceAnnotationsRequest): Promise<ProtocolResult<readonly import('@abnt/protocol').WorkspacePdfAnnotationDto[]>> {
     return this.#run(async () => (await readPdfAnnotations(this.#requireStorage()))
-      .filter((annotation) => annotation.referenceId === request.referenceId)
+      .filter((annotation) => (request.referenceId === undefined || annotation.referenceId === request.referenceId) && (request.fileId === undefined || annotation.fileId === request.fileId))
       .sort((left, right) => left.page - right.page || left.createdAt.localeCompare(right.createdAt)));
   }
 
   async createPdfAnnotation(request: import('@abnt/protocol').WorkspaceCreatePdfAnnotationRequest): Promise<ProtocolResult<import('@abnt/protocol').WorkspacePdfAnnotationDto>> {
     return this.#run(async () => {
+      const existing = request.externalId === undefined ? undefined : (await readPdfAnnotations(this.#requireStorage())).find((entry) => entry.fileId === request.fileId && entry.externalId === request.externalId);
+      if (existing !== undefined) return existing;
       const annotation: PdfAnnotation = {
-        id: randomUUID(), referenceId: request.referenceId, page: request.page,
-        quote: request.quote.trim(), createdAt: new Date().toISOString(),
+        id: randomUUID(), referenceId: request.referenceId ?? `file:${request.fileId!}`, page: request.page,
+        quote: request.quote.trim(), pdfDocumentId: request.fileId === undefined ? 'reference:' + request.referenceId : 'file:' + request.fileId, ...(request.fileId === undefined ? {} : { fileId: request.fileId }), kind: request.kind ?? 'highlight', anchor: request.anchor ?? { quote: request.quote.trim() }, ...(request.rects === undefined ? {} : { rects: request.rects }), ...(request.externalId === undefined ? {} : { externalId: request.externalId }), createdAt: new Date().toISOString(), modifiedAt: new Date().toISOString(),
         ...(request.comment?.trim() === '' || request.comment === undefined ? {} : { comment: request.comment.trim() }),
         ...(request.color === undefined ? {} : { color: request.color }),
+        ...(request.semanticType === undefined ? {} : { semanticType: request.semanticType }),
       };
       await addPdfAnnotation(this.#requireStorage(), annotation);
       return annotation;
@@ -1933,7 +2008,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
   }
 
   async removePdfAnnotation(request: import('@abnt/protocol').WorkspacePdfAnnotationRequest): Promise<ProtocolResult<undefined>> {
-    return this.#run(async () => { await removeStoredPdfAnnotation(this.#requireStorage(), request.referenceId, request.id); return undefined; });
+    return this.#run(async () => { await removeStoredPdfAnnotation(this.#requireStorage(), request.referenceId ?? `file:${request.fileId!}`, request.id); return undefined; });
   }
 
   /**
@@ -1944,9 +2019,11 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
   async linkPdfAnnotation(request: import('@abnt/protocol').WorkspacePdfAnnotationRequest): Promise<ProtocolResult<import('@abnt/protocol').WorkspacePdfAnnotationLinkDto>> {
     return this.#run(async () => {
       const storage = this.#requireStorage();
-      const annotation = (await readPdfAnnotations(storage)).find((entry) => entry.referenceId === request.referenceId && entry.id === request.id);
+      const referenceId = request.referenceId ?? (request.fileId === undefined ? undefined : (await readAttachmentManifest(storage)).attachments.find((attachment) => attachment.versions.some((version) => version.fileId === request.fileId))?.referenceId);
+      if (referenceId === undefined) throw new Error('Vincule o PDF a uma referência antes de enviar uma annotation para nota.');
+      const annotation = (await readPdfAnnotations(storage)).find((entry) => entry.id === request.id && (request.fileId === undefined || entry.fileId === request.fileId));
       if (annotation === undefined) throw new WorkspaceFileNotFoundError(asWorkspaceFileId(request.id));
-      const note = await this.#ensureLiteratureNote(request.referenceId);
+      const note = await this.#ensureLiteratureNote(referenceId);
       const current = await storage.read(asWorkspaceFileId(note.fileId));
       const marker = `<!-- folio-pdf-annotation:${annotation.id} -->`;
       if (!current.content.includes(marker)) {
@@ -1963,7 +2040,7 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
   async annotations(request: import('@abnt/protocol').WorkspaceAnnotationsRequest): Promise<ProtocolResult<readonly import('@abnt/protocol').WorkspacePdfAnnotationDto[]>> {
     return this.#run(async () => {
       const all = await readPdfAnnotations(this.#requireStorage());
-      return request.referenceId === undefined ? all : all.filter((entry) => entry.referenceId === request.referenceId);
+      return all.filter((entry) => (request.referenceId === undefined || entry.referenceId === request.referenceId) && (request.fileId === undefined || entry.fileId === request.fileId));
     });
   }
 
@@ -2071,12 +2148,18 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       if ((await readLibrary(storage))[request.referenceId] === undefined) throw new WorkspaceFileNotFoundError(asWorkspaceFileId(request.referenceId));
       let version: AttachmentVersion;
       if (request.kind === 'file') {
-        if (storage.createBinary === undefined) throw new Error('O backend do vault não suporta recursos binários.');
-        if (request.name === undefined || request.base64 === undefined) throw new Error('Anexo em arquivo exige nome e conteúdo.');
-        const fileName = sanitizeAttachmentFileName(request.name, 'anexo');
-        const path = uniqueAttachmentPath(await storage.list(), fileName);
-        const file = await storage.createBinary({ path: asWorkspacePath(path), bytes: Buffer.from(request.base64, 'base64') });
-        version = { versionId: randomUUID(), createdAt: new Date().toISOString(), fileId: String(file.id), path };
+        if (request.existingFileId !== undefined) {
+          const file = (await storage.list()).find((candidate) => String(candidate.id) === request.existingFileId);
+          if (file === undefined) throw new WorkspaceFileNotFoundError(asWorkspaceFileId(request.existingFileId));
+          version = { versionId: randomUUID(), createdAt: new Date().toISOString(), fileId: String(file.id), path: String(file.path) };
+        } else {
+          if (storage.createBinary === undefined) throw new Error('O backend do vault não suporta recursos binários.');
+          if (request.name === undefined || request.base64 === undefined) throw new Error('Anexo em arquivo exige nome e conteúdo.');
+          const fileName = sanitizeAttachmentFileName(request.name, 'anexo');
+          const path = uniqueAttachmentPath(await storage.list(), fileName);
+          const file = await storage.createBinary({ path: asWorkspacePath(path), bytes: Buffer.from(request.base64, 'base64') });
+          version = { versionId: randomUUID(), createdAt: new Date().toISOString(), fileId: String(file.id), path };
+        }
       } else {
         if (request.uri === undefined) throw new Error('Anexo de link exige URI HTTP(S).');
         version = {
@@ -2617,6 +2700,8 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       fileId: String(location.fileId),
       path: String(location.path),
       range: location.range,
+      ...(location.page === undefined ? {} : { page: location.page }),
+      ...(location.annotationId === undefined ? {} : { annotationId: location.annotationId }),
     }));
   }
 
@@ -2688,6 +2773,19 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
     };
   }
 
+  async #configureLocalMirror(mirrorRootPath: string, persist: boolean): Promise<void> {
+    const rootPath = this.#rootPath;
+    if (rootPath === undefined) throw new Error('Nenhum vault está aberto.');
+    const localRoot = resolve(rootPath); const mirrorRoot = resolve(mirrorRootPath);
+    const relativeMirror = relative(localRoot, mirrorRoot); const relativeVault = relative(mirrorRoot, localRoot);
+    if (relativeMirror === '' || (!relativeMirror.startsWith('..') && !isAbsolute(relativeMirror)) || (!relativeVault.startsWith('..') && !isAbsolute(relativeVault))) throw new Error('A pasta espelho não pode ser o vault nem uma pasta dentro dele.');
+    await this.#syncMirror?.close();
+    const mirror = LocalFilesystemStorage.create(mirrorRoot); await mirror.open();
+    this.#syncMirror = mirror;
+    this.#syncEngine = new SyncEngine({ id: 'local-mirror', label: 'Pasta espelho local', adapter: this.#syncAdapter(mirrorRoot, mirror) });
+    if (persist) await writeLocalSyncPreference(rootPath, { version: 1, mirrorRootPath: mirrorRoot });
+  }
+
   #syncAdapter(rootPath: string, storage: LocalFilesystemStorage): CompositeWorkspaceSyncAdapter {
     return new CompositeWorkspaceSyncAdapter([
       { accepts: (resource) => resource === 'vault-content', adapter: new WorkspaceStorageSyncAdapter(storage) },
@@ -2700,10 +2798,12 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       { accepts: (resource) => resource === 'research-canvases', adapter: new JsonOperationalSyncAdapter(rootPath, 'research-canvases', 'canvases', ['.academic', 'canvases']) },
       { accepts: (resource) => resource === 'academic-relations', adapter: new JsonOperationalSyncAdapter(rootPath, 'academic-relations', 'relations', ['.academic', 'relations']) },
       { accepts: (resource) => resource === 'reference-relations', adapter: new JsonOperationalSyncAdapter(rootPath, 'reference-relations', 'relations', ['.academic', 'relations']) },
+      { accepts: (resource) => resource === 'reference-integrity', adapter: new JsonOperationalSyncAdapter(rootPath, 'reference-integrity', 'records', ['.academic', 'integrity']) },
       { accepts: (resource) => resource === 'annotation-color-semantics', adapter: new JsonOperationalSyncAdapter(rootPath, 'annotation-color-semantics', 'colors', ['.academic', 'annotations']) },
       { accepts: (resource) => resource === 'literature-subscriptions', adapter: new JsonOperationalSyncAdapter(rootPath, 'literature-subscriptions', 'subscriptions', ['.academic', 'literature-monitoring']) },
       { accepts: (resource) => resource === 'literature-feed-inbox', adapter: new JsonOperationalSyncAdapter(rootPath, 'literature-feed-inbox', 'items', ['.academic', 'literature-monitoring']) },
       { accepts: (resource) => resource === 'systematic-review', adapter: new JsonOperationalSyncAdapter(rootPath, 'systematic-review', 'review', ['.academic', 'systematic-review']) },
+      { accepts: (resource) => resource === 'evidence-synthesis', adapter: new JsonOperationalSyncAdapter(rootPath, 'evidence-synthesis', 'review', ['.academic', 'evidence-synthesis']) },
       { accepts: (resource) => resource === 'research-datasets', adapter: new JsonOperationalSyncAdapter(rootPath, 'research-datasets', 'datasets', ['.academic', 'datasets']) },
     ]);
   }
@@ -2794,6 +2894,23 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
     const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'systematic-review', 'review', ['.academic', 'systematic-review']).read('review');
     return stored?.content === undefined ? { version: 1, studies: [] } : stored.content as unknown as WorkspaceSystematicReviewDto;
   }
+  /** BX.1 prepara o novo recurso sem apagar o review v1; a mudança de UI será BX.3. */
+  async #migrateSystematicReviewToEvidence(): Promise<EvidenceSynthesis> {
+    const adapter = new JsonOperationalSyncAdapter(this.#rootPath!, 'evidence-synthesis', 'review', ['.academic', 'evidence-synthesis']);
+    const existing = await adapter.read('review');
+    if (existing?.content !== undefined) return existing.content as unknown as EvidenceSynthesis;
+    const migrated = migrateSystematicReview(await this.#readSystematicReview());
+    await adapter.write({ key: 'review', resource: 'evidence-synthesis', content: migrated as unknown as import('@abnt/workspace-core').WorkspaceJsonValue, contentHash: `sha256:${createHash('sha256').update(JSON.stringify(migrated)).digest('hex')}` });
+    return migrated;
+  }
+  async #readEvidenceSynthesis(): Promise<WorkspaceEvidenceSynthesisDto> {
+    const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'evidence-synthesis', 'review', ['.academic', 'evidence-synthesis']).read('review');
+    if (stored?.content !== undefined) {
+      const content = stored.content as unknown as Partial<WorkspaceEvidenceSynthesisDto>;
+      return { ...content, version: 1, sources: content.sources ?? [], strategies: content.strategies ?? [], runs: content.runs ?? [], inbox: content.inbox ?? [], records: content.records ?? [], works: content.works ?? [], artifacts: content.artifacts ?? [], evidenceItems: content.evidenceItems ?? [], stages: content.stages ?? [], criteria: content.criteria ?? [], decisions: content.decisions ?? [], extractions: content.extractions ?? [], claimRelations: content.claimRelations ?? [] };
+    }
+    return migrateSystematicReview(await this.#readSystematicReview()) as unknown as WorkspaceEvidenceSynthesisDto;
+  }
   async #readResearchDatasets(): Promise<WorkspaceResearchDatasetsDto> {
     const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'research-datasets', 'datasets', ['.academic', 'datasets']).read('datasets');
     return stored?.content === undefined ? { version: 1, datasets: [] } : stored.content as unknown as WorkspaceResearchDatasetsDto;
@@ -2862,6 +2979,15 @@ export class DesktopWorkspaceServiceHost implements DesktopWorkspaceService {
       contentHash: `sha256:${createHash('sha256').update(JSON.stringify(set)).digest('hex')}`,
       ...(previous === undefined ? {} : { expectedRevision: previous.revision }),
     });
+  }
+
+  async #readReferenceIntegrity(): Promise<ReferenceIntegritySet> {
+    const stored = await new JsonOperationalSyncAdapter(this.#rootPath!, 'reference-integrity', 'records', ['.academic', 'integrity']).read('records');
+    return stored?.content === undefined ? createReferenceIntegritySet() : parseReferenceIntegritySet(stored.content);
+  }
+
+  async #writeReferenceIntegrity(set: ReferenceIntegritySet): Promise<void> {
+    await this.#writeOperational('reference-integrity', 'records', set, ['.academic', 'integrity']);
   }
 
   async #readLiteratureSubscriptions(): Promise<LiteratureSubscriptionSet> {

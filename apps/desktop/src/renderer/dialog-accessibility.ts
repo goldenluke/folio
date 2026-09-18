@@ -2,6 +2,32 @@ import { useEffect, type RefObject } from 'react';
 import { focusTrapDestination } from './dialog-navigation.js';
 
 const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+let semanticSequence = 0;
+
+/**
+ * Normaliza a semântica de diálogos legados sem exigir uma migração de markup
+ * em dezenas de superfícies de uma só vez. Componentes novos ainda devem
+ * declarar seus IDs explicitamente; este fallback impede modal sem nome ou
+ * descrição durante a transição.
+ */
+export function normalizeDialogSemantics(dialog: HTMLElement): void {
+  if (!dialog.hasAttribute('role')) dialog.setAttribute('role', 'dialog');
+  if (!dialog.hasAttribute('aria-modal')) dialog.setAttribute('aria-modal', 'true');
+  if (!dialog.hasAttribute('aria-label') && !dialog.hasAttribute('aria-labelledby')) {
+    const heading = dialog.querySelector<HTMLElement>('h1, h2, h3, h4, [data-dialog-title]');
+    if (heading !== null) {
+      if (heading.id === '') heading.id = `folio-dialog-title-${++semanticSequence}`;
+      dialog.setAttribute('aria-labelledby', heading.id);
+    } else dialog.setAttribute('aria-label', 'Janela do Folio');
+  }
+  if (!dialog.hasAttribute('aria-describedby')) {
+    const description = dialog.querySelector<HTMLElement>('p, [data-dialog-description]');
+    if (description !== null) {
+      if (description.id === '') description.id = `folio-dialog-description-${++semanticSequence}`;
+      dialog.setAttribute('aria-describedby', description.id);
+    }
+  }
+}
 
 /** Atualiza botões de fechar anteriores ao sistema de ícones sem duplicar markup em cada diálogo. */
 function upgradeLegacyCloseButtons(): void {
@@ -28,7 +54,10 @@ function upgradeLegacyCloseButtons(): void {
 /** Keeps keyboard focus inside an open modal and restores it when the modal closes. */
 export function useDialogAccessibility(dialog: RefObject<HTMLElement | null>, onClose: () => void): void {
   useEffect(() => {
-    dialog.current?.setAttribute('data-folio-dialog-managed', 'true');
+    if (dialog.current !== null) {
+      normalizeDialogSemantics(dialog.current);
+      dialog.current.setAttribute('data-folio-dialog-managed', 'true');
+    }
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     const focusFirst = (): void => {
       const target = dialog.current?.querySelector<HTMLElement>(focusableSelector);
@@ -62,6 +91,7 @@ export function useGlobalDialogAccessibility(): void {
     const focusFirst = (root: HTMLElement): void => root.querySelector<HTMLElement>(focusableSelector)?.focus();
     const observe = (): void => {
       upgradeLegacyCloseButtons();
+      for (const dialog of Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"], [role="alertdialog"]'))) normalizeDialogSemantics(dialog);
       const current = unmanaged();
       if (current === lastDialog) return;
       if (current !== undefined) { previous = document.activeElement instanceof HTMLElement ? document.activeElement : undefined; lastDialog = current; window.setTimeout(() => focusFirst(current), 0); }

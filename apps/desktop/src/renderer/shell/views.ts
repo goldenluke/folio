@@ -34,7 +34,27 @@ export interface PreviewViewState {
   readonly loading: boolean;
 }
 
-export type ViewState = EditorViewState | PreviewViewState;
+export interface PdfViewState {
+  readonly id: ViewId;
+  readonly type: 'pdf';
+  readonly fileId: string;
+  readonly path: string;
+  /** Destino transitório de navegação; o PDF continua sendo identificado só pelo arquivo. */
+  readonly page?: number;
+  /** Contexto transitório do handoff de pesquisa; não é persistido no vault. */
+  readonly researchContext?: PdfResearchContext;
+}
+
+export interface PdfResearchContext { readonly referenceId?: string; readonly reviewId?: string; readonly searchRunId?: string; readonly artifactId?: string; }
+
+export interface BrowserViewState {
+  readonly id: ViewId;
+  readonly type: 'browser';
+  readonly url: string;
+  readonly title: string;
+}
+
+export type ViewState = EditorViewState | PreviewViewState | PdfViewState | BrowserViewState;
 
 export type ViewsEvent = { readonly type: 'views:changed'; readonly views: readonly ViewState[]; readonly activeId: ViewId | undefined };
 export type ViewsListener = (event: ViewsEvent) => void;
@@ -42,6 +62,9 @@ export type ViewsListener = (event: ViewsEvent) => void;
 export interface ViewsModel {
   openEditor(options: { readonly fileId: string; readonly path: string; readonly controller: EditorController; readonly snapshot: EditorSnapshot; readonly duplicate?: boolean }): ViewId;
   openPreview(options: { readonly fileId: string; readonly path: string; readonly activate?: boolean }): ViewId;
+  openPdf(options: { readonly fileId: string; readonly path: string; readonly page?: number; readonly researchContext?: PdfResearchContext }): ViewId;
+  openBrowser(options?: { readonly url?: string }): ViewId;
+  updateBrowser(id: ViewId, details: { readonly url: string; readonly title: string }): void;
   activate(id: ViewId): void;
   updateSnapshot(fileId: string, snapshot: EditorSnapshot): void;
   /** `undefined` só é um estado de carregamento válido antes da primeira resposta chegar. */
@@ -98,6 +121,33 @@ export function createViewsModel(): ViewsModel {
       if (activate || activeId === undefined) activeId = id;
       emit();
       return id;
+    },
+    openPdf({ fileId, path, page, researchContext }) {
+      const existing = views.find((view) => view.type === 'pdf' && view.fileId === fileId);
+      if (existing !== undefined) {
+        activeId = existing.id;
+        views = views.map((view) => view.id === existing.id ? { ...view, ...(page === undefined ? {} : { page }), ...(researchContext === undefined ? {} : { researchContext }) } : view);
+        emit();
+        return existing.id;
+      }
+      const id = nextViewId();
+      views = [...views, { id, type: 'pdf', fileId, path, ...(page === undefined ? {} : { page }), ...(researchContext === undefined ? {} : { researchContext }) }];
+      activeId = id;
+      emit();
+      return id;
+    },
+    openBrowser({ url = 'https://scholar.google.com/' } = {}) {
+      const id = nextViewId();
+      views = [...views, { id, type: 'browser', url, title: 'Navegador' }];
+      activeId = id;
+      emit();
+      return id;
+    },
+    updateBrowser(id, details) {
+      const current = views.find((view) => view.id === id);
+      if (current === undefined || current.type !== 'browser' || (current.url === details.url && current.title === details.title)) return;
+      views = views.map((view) => view.id === id && view.type === 'browser' ? { ...view, ...details } : view);
+      emit();
     },
     activate(id) {
       if (!views.some((view) => view.id === id) || activeId === id) return;

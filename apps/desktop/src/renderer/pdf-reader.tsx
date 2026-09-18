@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 
-import { GlobalWorkerOptions, getDocument, TextLayer, type PDFDocumentProxy } from 'pdfjs-dist';
+import { GlobalWorkerOptions, getDocument, TextLayer, type PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { WorkspacePdfAnnotationDto } from '@abnt/protocol';
 
 import { ANNOTATION_HIGHLIGHT_COLORS } from './annotation-synthesis.js';
@@ -9,7 +9,7 @@ import { timePerformance, timePerformanceSync } from './shell/performance.js';
 
 // Vite transforma esta URL em um asset local do renderer; nenhum worker/CDN é
 // carregado fora do desktop.
-GlobalWorkerOptions.workerPort = new Worker(new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url), { type: 'module' });
+GlobalWorkerOptions.workerPort = new Worker(new URL('pdfjs-dist/legacy/build/pdf.worker.mjs', import.meta.url), { type: 'module' });
 
 const decodeBase64 = (value: string): Uint8Array => {
   const binary = atob(value);

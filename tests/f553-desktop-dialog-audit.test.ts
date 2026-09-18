@@ -20,11 +20,19 @@ describe('F553/F554 — contrato mínimo das janelas desktop', () => {
   });
 
   it('mantém estado explícito para as superfícies assíncronas priorizadas pela BV', async () => {
-    for (const entry of ['academic-forms.tsx', 'structured-research.tsx', 'profile-inspector.tsx', 'history-dialog.tsx', 'capture-inbox.tsx', 'literature-monitoring.tsx']) {
+    for (const entry of ['academic-forms.tsx', 'structured-research.tsx', 'profile-inspector.tsx', 'history-dialog.tsx', 'capture-inbox.tsx', 'literature-monitoring.tsx', 'plugin-manager.tsx']) {
       const content = await readFile(resolve(renderer, entry), 'utf8');
       expect(content, `${entry} precisa anunciar carregamento`).toContain('role="status"');
       expect(content, `${entry} precisa expor falha recuperável`).toContain('role="alert"');
     }
+  });
+
+  it('normaliza os diálogos legados com modal, nome e descrição', async () => {
+    const content = await readFile(resolve(renderer, 'dialog-accessibility.ts'), 'utf8');
+    expect(content).toContain('export function normalizeDialogSemantics');
+    expect(content).toContain("dialog.setAttribute('aria-modal', 'true')");
+    expect(content).toContain("dialog.setAttribute('aria-labelledby', heading.id)");
+    expect(content).toContain("dialog.setAttribute('aria-describedby', description.id)");
   });
 
   it('converte controles de fechar legados em botões nomeados com ícone', async () => {
@@ -33,5 +41,17 @@ describe('F553/F554 — contrato mínimo das janelas desktop', () => {
     expect(content).toContain("button.dataset.dialogClose = ''");
     expect(content).toContain("button.replaceChildren(icon)");
     expect(content).not.toContain("find((button) => button.textContent?.trim() === '×')");
+  });
+
+  it('mantém retry e saída de loading nas operações que podem rejeitar', async () => {
+    const [forms, captures] = await Promise.all([
+      readFile(resolve(renderer, 'academic-forms.tsx'), 'utf8'),
+      readFile(resolve(renderer, 'capture-inbox.tsx'), 'utf8'),
+    ]);
+    expect(forms).toContain(".finally(() => setLoading(false))");
+    expect(forms).toContain('Tentar novamente');
+    expect(captures).toContain(".catch(() => undefined)");
+    expect(captures).toContain("setWebCaptureBusy(false)");
+    expect(captures).toContain('aria-label="Fechar inbox de capturas"');
   });
 });

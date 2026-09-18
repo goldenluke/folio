@@ -10,7 +10,7 @@ import {
   type SectionNode,
   type SourceRange,
 } from '@abnt/document-model';
-import { WorkspaceFileNotFoundError, type WorkspaceFile, type WorkspaceFileId, type WorkspacePath, type WorkspaceStorage } from '@abnt/workspace-core';
+import { WorkspaceFileNotFoundError, asWorkspacePath, type WorkspaceFile, type WorkspaceFileId, type WorkspacePath, type WorkspaceStorage } from '@abnt/workspace-core';
 import type { IndexedCitation, IndexedLink, WorkspaceIndex } from '@abnt/workspace-index';
 import type { DocumentSessions } from '@abnt/workspace-sessions';
 
@@ -105,6 +105,22 @@ export const documentTarget = (sourcePath: WorkspacePath, target: string): strin
   const base = sourcePath.split('/').slice(0, -1);
   const combined = bare.startsWith('/') ? bare.slice(1) : [...base, bare].join('/');
   return normalizedSegments(combined)?.join('/');
+};
+
+const authoredPdfLinkAt = (content: string, offset: number): { readonly target: string; readonly page?: number; readonly annotationId?: string; readonly start: number; readonly end: number } | undefined => {
+  for (const match of content.matchAll(/\[\[([^\[]+\.pdf)(?:#page=([0-9]+))?\]\]/giu)) {
+    const start = match.index ?? -1; const end = start + match[0].length;
+    if (start <= offset && offset <= end) return { target: match[1]!, ...(match[2] === undefined ? {} : { page: Number(match[2]) }), start, end };
+  }
+  return undefined;
+};
+
+const annotationLinkAt = (content: string, offset: number): string | undefined => {
+  for (const match of content.matchAll(/\[\[pdf-annotation:([^\]]+)\]\]/giu)) {
+    const start = match.index ?? -1;
+    if (start <= offset && offset <= start + match[0].length) return match[1];
+  }
+  return undefined;
 };
 
 const relativePath = (from: WorkspacePath, to: WorkspacePath): string => {
@@ -259,6 +275,7 @@ export class WorkspaceLanguageService implements LanguageService {
   readonly #sessions: DocumentSessions;
   readonly #references: LanguageReferenceCatalog | undefined;
   readonly #referencesFor: LanguageReferenceCatalogResolver | undefined;
+  readonly #pdfAnnotation: LanguageServiceOptions['pdfAnnotation'];
 
   constructor(options: LanguageServiceOptions) {
     this.#storage = options.storage;
@@ -266,6 +283,7 @@ export class WorkspaceLanguageService implements LanguageService {
     this.#sessions = options.sessions;
     this.#references = options.references;
     this.#referencesFor = options.referencesFor;
+    this.#pdfAnnotation = options.pdfAnnotation;
   }
 
   static create(options: LanguageServiceOptions): WorkspaceLanguageService {
@@ -344,6 +362,13 @@ export class WorkspaceLanguageService implements LanguageService {
         return { range: { start, end: position.offset }, items };
       }
     }
+    const pdf = /\[\[([^\]#]*\.pdf)(?:#page=([0-9]*))?$/iu.exec(before);
+    if (pdf !== null) {
+      const start = position.offset - pdf[0].length + 2;
+      const query = pdf[1] ?? '';
+      const items = (await this.#storage.list()).filter((file) => String(file.path).toLowerCase().endsWith('.pdf') && String(file.path).includes(query)).slice(0, limit).map((file) => ({ kind: 'pdf' as const, label: String(file.path), detail: 'PDF · página opcional', insertText: String(file.path) }));
+      return { range: { start, end: position.offset }, items };
+    }
     const block = /\[\[([^\]#]*)#\^([A-Za-z0-9_-]*)$/u.exec(before);
     if (block !== null) {
       const path = block[1] ?? '';
@@ -403,6 +428,11 @@ export class WorkspaceLanguageService implements LanguageService {
 
   async definition(position: LanguagePosition): Promise<readonly LanguageLocation[]> {
     const document = await this.#document(position.fileId);
+    const annotationId = annotationLinkAt(document.content, position.offset);
+    if (annotationId !== undefined && this.#pdfAnnotation !== undefined) {
+      const target = await this.#pdfAnnotation(annotationId);
+      if (target !== undefined) return [{ ...target, range: { start: 0, end: 0 } }];
+    }
     const citation = citationAt(document.ast, position.offset);
     if (citation !== undefined) {
       const catalog = await this.#catalog(document.file.id);
@@ -410,6 +440,14 @@ export class WorkspaceLanguageService implements LanguageService {
         citation.items.map(async (item) => (await catalog?.find(String(item.referenceId)))?.definition),
       );
       return locations.filter((location): location is LanguageLocation => location !== undefined);
+    }
+
+    const authoredPdf = authoredPdfLinkAt(document.content, position.offset);
+    if (authoredPdf !== undefined) {
+      const target = documentTarget(document.file.path, authoredPdf.target);
+      if (target === undefined) return [];
+      const file = (await this.#storage.list()).find((entry) => String(entry.path) === target);
+      return file === undefined ? [] : [{ fileId: file.id, path: asWorkspacePath(file.path), range: { start: 0, end: 0 }, ...(authoredPdf.page === undefined ? {} : { page: authoredPdf.page }) }];
     }
 
     const link = linkAt(document.ast, position.offset);
@@ -486,7 +524,23 @@ export class WorkspaceLanguageService implements LanguageService {
   async backlinks(fileId: WorkspaceFileId): Promise<readonly LanguageBacklink[]> {
     const target = (await this.#storage.list()).find((file) => file.id === fileId);
     if (target === undefined) throw new WorkspaceFileNotFoundError(fileId);
-    return backlinksFromIndexedLinks(this.#index.links(), String(target.path));
+    const indexed = backlinksFromIndexedLinks(this.#index.links(), String(target.path));
+    const derived: LanguageBacklink[] = [];
+    for (const file of (await this.#storage.list()).filter((item) => String(item.path).toLowerCase().endsWith('.md'))) {
+      const content = (await this.#storage.read(file.id)).content;
+      for (const match of content.matchAll(/\[\[([^\]#]+\.pdf)(?:#page=([0-9]+))?\]\]/giu)) {
+        if (documentTarget(file.path, match[1] ?? '') !== String(target.path)) continue;
+        const start = match.index ?? 0;
+        derived.push({ fileId: file.id, path: file.path, label: match[0], range: { start, end: start + match[0].length } });
+      }
+    }
+    const seen = new Set<string>();
+    return [...indexed, ...derived].filter((backlink) => {
+      const key = `${backlink.fileId}:${backlink.range.start}:${backlink.range.end}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   async crossReferenceTargets(fileId: WorkspaceFileId): Promise<readonly LanguageCrossReferenceTarget[]> {

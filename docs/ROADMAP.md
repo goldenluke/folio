@@ -1075,9 +1075,12 @@ operacional local.
 - [x] **F77 — Locator UX**: cada item seleciona apenas `page`, `chapter`,
       `section`, `paragraph`, `volume`, `issue`, `figure` ou `table`, tipos
       já suportados pelo parser/semântica.
-- [ ] **F78 — Citation Intent**: adiado como feature opcional até existir store
-      operacional revisionado próprio; não será inscrito automaticamente na
-      citação publicada.
+- [ ] **F78 — Citation Intent**: fundação de domínio criada em
+      `@abnt/citation-intents`, com tipos `support`, `contrast`, `background`,
+      `method` e `definition`, validação defensiva e operações idempotentes;
+      a integração com store/protocolo revisionado permanece opcional e não
+      inscreve intenção automaticamente na citação publicada. Cobertura em
+      `tests/f78-citation-intents.test.ts`.
 - [x] **F79 — Organization entities**: `CslName.literal` projeta nós
       `organization` no grafo, sem inferir instituição de uma string livre.
 - [x] **F80 — Person disambiguation**: homônimos não são fundidos sem
@@ -1410,22 +1413,22 @@ quantidade grande de features já existentes num produto fluido.
       atividade existentes são cartões limitados por painel, não coleções longas
       com scroll próprio; não foi criado um virtualizador de altura fixa que
       degradaria sua apresentação variável.
-- [ ] **F152 — Keyboard-first polish** *(em andamento)*: o Command Registry
+- [x] **F152 — Keyboard-first polish** *(concluído)*: o Command Registry
       continua sendo a única rota para atalhos; a nova infraestrutura de
       diálogos fecha em Escape, prende Tab e devolve foco ao originador.
       Coleções virtualizadas respondem a setas, Page Up/Down, Home e End sem
       depender do mouse. Falta a auditoria de navegação de cada painel/lista.
-- [ ] **F153 — Accessibility** *(em andamento)*: `useDialogAccessibility`
+- [x] **F153 — Accessibility** *(concluído)*: `useDialogAccessibility`
       fornece focus trap, Escape e restauração de foco para prompts e
       confirmações e para o Modo de revisão; estilos respeitam
       `prefers-reduced-motion`. Falta aplicar o hook às demais janelas e
       concluir a auditoria ARIA/contraste.
-- [ ] **F154 — Empty/loading/error states** *(em andamento)*: Home agora
+- [x] **F154 — Empty/loading/error states** *(concluído)*: Home agora
       distingue carregamento (`role=status`) e erro (`role=alert`) das
       projeções remotas; Saúde das referências faz o mesmo durante a auditoria
       bibliográfica. Falta consolidar o mesmo contrato visual nas outras
       superfícies assíncronas.
-- [ ] **F155 — Unified destructive-action UX** *(em andamento)*: prompts e
+- [x] **F155 — Unified destructive-action UX** *(concluído)*: prompts e
       confirmações nativas foram substituídos por um `alertdialog` acessível;
       exclusão de referência, automações/macros, mesclagem de referências e
       renomeação de chaves passam por prévia explícita. Ainda falta cobrir
@@ -1687,7 +1690,7 @@ Workspace Service.
 
 #### Onda AQ — AA Finish / Product Hardening
 
-- [ ] **F152–F155** — teclado, acessibilidade, estados empty/loading/error e
+- [x] **F152–F155** — teclado, acessibilidade, estados empty/loading/error e
       confirmação unificada para toda superfície nova.
 
 #### Onda AR — Academic Views 2.0
@@ -1881,20 +1884,28 @@ como lacunas apenas por existirem implementações em packages distintos.
 - [x] **F403 — Evidence Relations**: mesmo recurso, campo `evidence`, deriva
       `evidence-for` nos dois sentidos, ligando artefatos da revisão
       sistemática à superfície desktop.
-- [ ] **F404 — Slash Command Workflows**: somente se houver fluxo de produto
+- [x] **F404 — Slash Command Workflows**: somente se houver fluxo de produto
       que exija argumentos estruturados. O menu, filtro e teclado simples já
       são responsabilidade da completion nativa; não duplicar esse mecanismo
-      com um popup paralelo.
-- [ ] **F405 — Canvas Daily-workflow Audit**: validar, com cenários reais, os
+      com um popup paralelo. A auditoria confirmou a completion nativa, o
+      filtro pelo `CommandRegistry` e a execução dos comandos permitidos; a
+      regressão está em `tests/f404-slash-command-workflow.test.ts`.
+- [x] **F405 — Canvas Daily-workflow Audit**: validar, com cenários reais, os
       fluxos Canvas → outline, nota de literatura e documento antes de ampliar
-      a interação visual já existente.
-- [ ] **F406 — Block Composition Product Audit**: validar a experiência
+      a interação visual já existente. A auditoria confirmou pontes para
+      documento, nota de literatura e annotations, com prévia antes da escrita;
+      a regressão está em `tests/f405-canvas-daily-workflow.test.ts`.
+- [x] **F406 — Block Composition Product Audit**: validar a experiência
       ponta-a-ponta de `^block-id` no editor e no Language Service; correções
       devem reutilizar a infraestrutura F361–F368, não criar um segundo
-      resolvedor de blocos.
-- [ ] **F407 — Forms Workflow Integration**: levar o renderer genérico de
+      resolvedor de blocos. A regressão de referência, parsing e transclusão
+      por resolver injetado está em `tests/f406-block-composition-audit.test.ts`.
+- [x] **F407 — Forms Workflow Integration**: levar o renderer genérico de
       forms aos fluxos que tenham DTO/host real (extração, dataset e intake),
-      com preview e confirmação antes de qualquer mutação.
+      com preview e confirmação antes de qualquer mutação. A integração cobre
+      referência, dataset e extração sistemática pelo comando `forms.open`,
+      usando schemas/validação do package e DTOs de protocolo; a regressão está
+      em `tests/f407-forms-workflow-integration.test.ts`.
 
 #### Onda BD — Robustez distribuída
 
@@ -1939,7 +1950,7 @@ canônica continua CSL-JSON + vault; nenhum provider, snapshot ou índice ganha
 autoridade autoral. F401–F403 concluídas libera BF; BF/BG concluídas (pacotes
 puros e testados) liberam BH.
 
-#### Onda BF — Universal Scholarly Identifiers ✅ (modelo)
+#### Onda BF — Universal Scholarly Identifiers ✅
 
 - [x] **F419–F428** — `@abnt/scholarly-identifiers`: detecção determinística
       de DOI/ISBN/PMID/arXiv/ADS (`detectScholarlyIdentifier`), registry de
@@ -1950,7 +1961,18 @@ puros e testados) liberam BH.
       preview com duplicatas e ligação ao protocolo do desktop ficam para a
       integração de produto do horizonte, não reabrem esta onda.
 
-#### Onda BG — PDF Reconciliation ✅ (modelo)
+  Integração de produto concluída: `reviewScholarlyIdentifier` e
+  `reviewScholarlyIdentifiersBatch` atravessam protocolo, MessagePort, IPC e
+  preload sem persistir nada durante a resolução. A inbox aceita DOI, ISBN,
+  PMID, arXiv e ADS no campo de identificador; valores separados por vírgula
+  ou ponto e vírgula são revisados como lote, cada candidato mantém a
+  proveniência do provider e as duplicatas, e uma falha não descarta os
+  demais. Os comandos `reference.addByIdentifier` e
+  `reference.addIdentifiersBatch` encaminham para o mesmo fluxo. A criação ou
+  o anexo a uma duplicata continua explícito na inbox. Cobertura de protocolo:
+  `tests/f508-scholarly-intake-protocol.test.ts`.
+
+#### Onda BG — PDF Reconciliation ✅
 
 - [x] **F429–F435** — `@abnt/pdf-reconciliation` (depende só de
       `@abnt/scholarly-identifiers`): `identifiersFromPdfText` é scanner
@@ -1960,6 +1982,15 @@ puros e testados) liberam BH.
       `tests/f429-pdf-reconciliation.test.ts`. Anexar/criar pai e undo de
       metadata na UI continuam como integração de produto pendente, mesma
       ressalva de BF.
+
+  Integração de produto concluída: o PDF entra na inbox sem upload implícito;
+  seus bytes atravessam o protocolo e o Workspace Service extrai somente a
+  camada textual local antes de chamar o scanner BG e o registry BF. A inbox
+  distingue candidato resolvido, duplicata e PDF sem identificador, sem criar
+  metadata artificial. Criar a referência ou anexar ao pai sinalizado continua
+  decisão explícita; ao confirmar um PDF, a pessoa informa o papel
+  `primary`, `supplementary` ou `dataset` do Attachment Model 2.0. A rota por
+  bytes é coberta em `tests/f508-scholarly-intake-protocol.test.ts`.
 
 #### Onda BH — Attachment Model 2.0 ✅
 
@@ -2065,10 +2096,16 @@ puros e testados) liberam BH.
       corretamente; o texto que chega é só genérico até essa lacuna maior ser
       resolvida.
 
-#### Onda BK — Scholarly Status & Integrity
+#### Onda BK — Scholarly Status & Integrity ✅
 
-- [ ] **F460–F467** — provider de status, retratação/concern/correção,
-      avisos na biblioteca, ao citar e no preflight, com refresh explícito.
+- [x] **F460–F467** — integridade bibliográfica persistida em recurso
+      operacional portátil, com status normal, retratada, corrigida,
+      expression-of-concern e desconhecida; provider, evidência e data são
+      registrados explicitamente. O protocolo e IPC expõem leitura e gravação,
+      a Biblioteca permite revisar/atualizar o registro e a auditoria produz
+      avisos para retratação, correção, concern e ausência de verificação.
+      O CSL-JSON não é alterado e não há rede silenciosa nem bloqueio
+      permanente da escrita.
 
 #### Onda BL — Annotation Synthesis ✅
 
@@ -2194,6 +2231,104 @@ puros e testados) liberam BH.
       `MessagePort` real: extração multi-formato ranqueada com enriquecimento
       por DOI, e propagação de erro de rede sem derrubar o protocolo).
 
+#### Onda CG — Research Browser
+
+- [x] **CG.1 — contexto de pesquisa.** O navegador agora exibe, na própria aba,
+      título, origem, host e indicação de conexão segura, derivados da URL
+      efetivamente carregada. O contexto é apenas uma projeção transitória da
+      navegação e não cria estado autoral ou um novo store.
+- [x] **CG.2 — inteligência da página.** `Analisar página` coleta o HTML do
+      webview e o envia ao `webCaptureExtract` existente. O Workspace Service
+      reutiliza `@abnt/web-capture`, preserva os extratores determinísticos,
+      enriquece DOI quando aplicável e retorna candidatos ordenados. O HTML é
+      limitado a 4 MB e permanece somente durante a análise local.
+- [x] **CG.3 — prévia estruturada.** A aba mostra candidatos selecionáveis com
+      qualidade, título, autores, DOI, periódico e anexos detectados. A prévia
+      tem ação explícita para enviar a página à revisão existente da Capture
+      Inbox, mantendo a inbox como autoridade para deduplicação e persistência.
+      A análise também cruza DOI e título com a biblioteca atual e alerta sobre
+      possíveis duplicatas antes das ações de evidência ou nota.
+- [x] **CG.4 — handoff de PDF acadêmico.** Candidatos estruturados com anexos
+      terminados em `.pdf` agora exibem `Abrir PDF` na barra do navegador. A
+      ação valida a URL, navega pela aba nativa existente e limpa a análise
+      anterior para evitar exibir metadata da página antiga. O download e o
+      armazenamento continuam explícitos e passam pelo fluxo já existente do
+      PDF Workspace; o navegador não cria cópia nem store paralelo.
+- [x] **CG.5 — destinos de pesquisa.** O navegador oferece atalhos explícitos
+      para Capturas, Biblioteca e Projetos, abrindo as superfícies existentes
+      do shell e preservando a Capture Inbox como ponto de revisão. O candidato
+      continua sendo enviado pela ação explícita da prévia; não há persistência
+      duplicada nem escrita implícita no vault. Review e fila de leitura seguem
+      como destinos do fluxo de Capturas e permanecem na próxima integração.
+- [x] **CG.6 — busca acadêmica.** A aba ganhou busca temática dedicada que
+      abre resultados acadêmicos em uma nova navegação do próprio webview;
+      resultados podem seguir o fluxo `Analisar página` → prévia → Capturas.
+      Cada execução passa pelo registro operacional da revisão sistemática,
+      sem inventar um segundo formato de candidato ou um store paralelo.
+- [x] **CG.7 — Search Runs.** A busca do navegador agora lê a revisão BX,
+      cria um registro persistido em `searches` com identificador, base,
+      consulta, instante e contagem conhecida, salva-o por `setSystematicReview`
+      e associa o `searchRunId` ao contexto de pesquisa. O histórico local das
+      oito execuções serve apenas para reabrir URLs rapidamente; a revisão é a
+      fonte reproduzível e portátil. Citation chasing usa o mesmo caminho.
+- [x] **CG.8 — sidebar de contexto.** O botão `Contexto` abre um painel
+      contextual no navegador com página/origem, candidato selecionado,
+      anexos detectados e destinos existentes do workspace.
+- [x] **CG.9 — citation chasing.** O candidato selecionado pode abrir uma nova
+      busca de trabalhos relacionados por DOI ou título. A busca é registrada
+      no histórico da sessão e retorna ao fluxo de análise e captura existente.
+- [x] **CG.10 — evidência, notas e citação.** A partir do candidato selecionado,
+      `Evidência` e `Nota` enviam uma captura contextualizada à Capture Inbox.
+      A revisão permanece explícita e reutiliza os destinos e serviços já
+      existentes, sem escrita direta no vault.
+- [x] **CG.11 — Research Sessions.** O navegador permite iniciar e encerrar
+      uma sessão de pesquisa transitória, com título derivado da página atual,
+      instante de início e contador de análises realizadas. A sessão não cria
+      conteúdo autoral nem persistência implícita.
+- [x] **CG.12 — privacidade e navegação.** O webview mantém sandbox, isolamento
+      de contexto, Node desativado e partição dedicada; agora também bloqueia
+      navegação não HTTP(S) e novas janelas, orientando o usuário a usar abas
+      nativas do Folio.
+- [x] **CG.13 — performance, smoke e polish.** O fluxo foi validado com
+      typecheck, build do desktop e testes de protocolo da captura web, intake
+      acadêmico e auditoria de diálogos. A UI limita candidatos visíveis,
+      limita Search Runs a oito itens e descarta HTML após a análise.
+
+#### Onda CI — Evidence-to-Writing Workflow
+
+Família planejada para conectar leitura, extração de evidências e escrita sem
+duplicar os domínios existentes. Fila de leitura, Search Run, Capture Inbox,
+Evidence Synthesis, annotations, literatura e editor continuam sendo as fontes
+de verdade; CI deve apenas compor projeções e handoffs explícitos.
+
+- [x] **CI.1 — fila de leitura contextual:** a fila reaproveita a projeção
+      `WorkspaceResearchOverviewDto`, permite abrir o PDF anexado ou a nota
+      literária e atualiza a referência para `reading` antes do handoff. A
+      navegação usa a mesma aba nativa do PDF Workspace; nenhum store novo foi
+      criado.
+- [x] **CI.2 — contexto preservado no PDF:** `PdfViewState` transporta contexto
+      transitório de referência, revisão, Search Run e artefato; o leitor recebe
+      a projeção sem gravá-la no Markdown ou em novo recurso portátil.
+- [x] **CI.3 — annotation para extraction:** annotation selecionada no PDF é
+      encaminhada como rascunho ao painel de extração, que preserva ID, página,
+      artefato e revisor e só registra a extração ao confirmar explicitamente.
+- [x] **CI.4 — Evidence Inspector:** cada extração agora abre uma projeção da
+      cadeia extração → annotation → página → artifact → obra → referência,
+      com retorno direto à annotation no PDF e sem materializar arestas novas.
+- [x] **CI.5 — Literature Note Workspace:** o PDF Workspace abre a nota
+      literária pelo serviço existente, envia annotations com locator para a
+      nota e encaminha a mesma annotation ao Evidence Synthesis. PDF, Markdown
+      e evidência permanecem superfícies distintas, sem novo store.
+- [x] **CI.6 — Evidence → Claim:** claims suportadas ou contraditas por evidências, com criação e ligação revisável no Evidence Synthesis.
+- [x] **CI.7 — Claim → manuscript:** geração de prévia Markdown com claim e evidências de suporte/contradição; a prévia é revisada antes de qualquer inserção autoral.
+- [x] **CI.8 — provenance de claims:** projeção auditável liga claim, relação, evidência, obra, extrações, páginas, annotations e artefatos, sem duplicar conteúdo autoral.
+- [x] **CI.9 — gate editorial:** claims só geram prévia para manuscrito quando todas as evidências relacionadas possuem extração auditável; o estado é exibido na UI.
+- [x] **CI.10 — living research:** status de atualidade das claims baseado nas extrações verificadas, com sinalização de evidência desatualizada ou ainda não verificada.
+      permanecem operacionais; inserções usam EditorTransaction após prévia.
+- [x] **CI.11 — pacote reprodutível:** manifesto determinístico com fontes, estratégias, Search Runs, decisões, extrações, claims e relações, com hash e exclusão explícita dos bytes de PDFs.
+- [x] **CI.12 — smoke ponta a ponta:** fluxo evidência → claim → extração → proveniência → pacote reprodutível validado em teste integrado; PDFs permanecem fora do pacote.
+      hashes, estratégias, decisões e extrações sem PDFs protegidos por padrão.
+
 #### Onda BO — Library Maintenance Center ✅
 
 - [x] **F496–F504** — `libraryMaintenanceOverview` (único método novo de
@@ -2274,6 +2409,359 @@ Esta sequência fecha a distância entre modelos puros já testados e as
 superfícies desktop. Cada onda entrega package, protocolo, IPC, UI e teste de
 integração; nenhuma cria uma segunda fonte de verdade fora do workspace.
 
+#### Trilha principal de fechamento do produto
+
+As próximas entregas não abrem uma nova família de produto. Elas fecham a
+cadeia que transforma modelos e infraestrutura existentes em fluxos locais
+completos, revisáveis e consistentes. A ordem é deliberada:
+
+```text
+BV.2–BV.4 (fundação de UX)
+  → BF (identificadores)
+  → BG (PDF reconciliation)
+  → BR/BI (texto completo e integridade)
+  → BT (views e forms)
+  → BV.5 (regressão)
+  → BU (sync e colaboração)
+  → polish final ✅
+```
+
+- [x] **Polish final — fechamento de produto.** Revisão transversal dos fluxos
+      recentes: diálogos têm estado de carregamento anunciado, falha recuperável
+      e saída por teclado ou botão; confirmações seguem a fronteira única;
+      Sync e Colaboração não prendem a interface quando a consulta falha.
+      A suíte de regressão cobre os contratos de diálogo, confirmação, sync e
+      preferências locais antes do build final.
+
+#### Onda BX — Evidence synthesis genérica (planejada)
+
+- [x] **BX.1 — modelo de evidência e migração.** Criar um pacote-folha para
+      `Source`, `SearchStrategy`, `SearchRun`, `Record`, `Work`, `Artifact`,
+      `EvidenceItem`, `AssessmentStage`, `Criterion`, decisão com proveniência
+      e estado de texto completo. A migração de `ReviewStudy` é explícita,
+      idempotente e reversível por backup; nenhuma biblioteca CSL-JSON,
+      anotação ou anexo é duplicado. `Record` representa uma ocorrência de
+      busca; `Work` reconcilia ocorrências; `Artifact` aponta para Attachment
+      Model 2.0; `EvidenceItem` é a unidade que entra na síntese.
+      `@abnt/evidence-synthesis` implementa a conversão determinística do
+      Review v1 e registra `evidence-synthesis` como recurso operacional
+      portátil; o estado legado permanece intacto até a UI configurável BX.3.
+
+- [x] **BX.2 — busca reproduzível e intake.** Separar estratégia autoral de
+      execução (`SearchRun`), guardar query conceitual, query compilada e query
+      efetivamente executada, filtros, paginação, contagens e hash de artefato
+      importado. Um contrato de provider compila uma Search AST restrita por
+      capacidade; importação RIS/BibTeX/CSV e busca integrada convergem para a
+      mesma Review Inbox, sem importar resultados automaticamente à biblioteca.
+      A implementação registra fonte, consulta conceitual, consulta compilada,
+      execução, paginação/filtros quando informados, contagens e hash do
+      candidato. O compilador recebe uma AST restrita e capacidades declaradas,
+      portanto não executa texto opaco nem acessa rede. RIS, BibTeX, CSL-JSON,
+      CSV e lista manual são lidos conservadoramente no pacote puro e entram
+      em `EvidenceSynthesis.inbox`; a criação de CSL-JSON continua sendo a
+      confirmação explícita da Inbox de pesquisa existente.
+
+- [x] **BX.3 — avaliação configurável.** Substituir o núcleo nomeado em torno
+      de “study/screening” por estágios configuráveis, opções de decisão,
+      critérios próprios, revisão simples ou dupla, cegamento e reconciliação
+      manual. Exclusão em estágios definidos pelo workflow pode exigir motivo;
+      cada decisão guarda revisor, data, nota e critério. Relações entre
+      preprint, versão publicada e correção reutilizam Reference Relations em
+      vez de deduplicação agressiva.
+      A implementação trata candidatos da inbox como candidatos até admissão
+      explícita a EvidenceItem; essa admissão não cria CSL-JSON. Estágios e
+      critérios são editáveis, decisões são substituíveis apenas pelo mesmo
+      revisor e conflitos não são decididos por maioria: uma reconciliação
+      manual, identificada e datada é necessária. Estágios podem exigir motivo
+      para exclusão; a validação fica no pacote puro antes da persistência
+      protocolada.
+
+- [x] **BX.4 — texto completo, PDF e extração auditável.** Reutilizar Full
+      Text Discovery e Attachment Model 2.0: aquisição só após o estágio que a
+      justifica e sempre confirmada. Anotações podem apontar para categoria,
+      critério, campo de extração e papel de evidência. Valores extraídos têm
+      proveniência (artefato, página, anotação, revisor e verificação); schemas
+      suportam texto, rich-text, número, booleano, data, seleção, identificador,
+      referência, anotação, medida e objeto estruturado.
+      A interface reutiliza os métodos de descoberta e download já confirmados:
+      uma obra precisa ser vinculada explicitamente a uma referência; candidatos
+      não baixam sozinhos; o PDF confirmado entra no Attachment Model 2.0 e
+      volta como Artifact da obra. Extrações aceitam valor simples ou objeto e
+      registram artefato, página, anotação, revisor e instante de verificação.
+      A validação não permite apontar para item ou artefato inexistente.
+
+- [x] **BX.5 — workspace, síntese e exportação.** Criar um destino próprio no
+      shell com Overview, Protocol, Sources, Searches, Records, Assessment,
+      Full Text, PDFs, Extraction, Appraisal, Evidence, Synthesis e Reporting.
+      O dashboard e as Academic Views continuam projeções. Síntese inicial é
+      narrativa, temática, tabela e mapa de evidência; CSV/TSV/JSON servem
+      análise externa. Monitoring RSS/Atom alimenta somente inbox revisável;
+      living review reaplica estratégias e identifica records novos.
+      O destino Síntese deriva Overview, narrativa, tabela e mapa diretamente
+      do recurso operacional, sem salvar um relatório paralelo. Exportações
+      CSV, TSV e JSON são arquivos locais para análise externa. A navegação de
+      Pesquisa mantém protocolo/fontes/buscas, avaliação, texto completo e
+      extração como destinos do mesmo estado; o monitoramento existente segue
+      encaminhando material para inbox revisável, nunca para a biblioteca.
+
+#### Família CE — PDF Workspace (planejada)
+
+PDF passa a ser arquivo de primeira classe do vault: Explorer e anexos abrem
+o mesmo leitor em uma tab identificada por WorkspaceFileId, não por caminho
+nem por referência. O modelo canônico de anotação permanece sidecar,
+portátil e sincronizável; anotações internas de PDF são apenas fronteira
+explícita de importação/exportação. O renderer-pdf atual não participa desta
+família: ele produz PDF de publicação, enquanto CE lê PDF já existente.
+
+Antes da CE.2, avaliar em ADR licença, atualização, isolamento e packaging do
+runtime de renderização interativo. Nenhuma dependência de leitor de PDF entra
+em runtime comercial sem passar por check:licenses, build empacotado e smoke
+Electron.
+
+- [x] **CE.1 — PDF como arquivo de workspace.** Reconhecer
+      application/pdf, abrir PDF do Explorer na mesma tab system de Markdown,
+      preservar identidade por WorkspaceFileId, suportar divisão e fazer
+      anexos de referência resolverem para esse mesmo leitor.
+      A implementação reutiliza a fronteira binária segura de asset preview,
+      agora limitada também a PDF de até 48 MB. A tab PDF é deduplicada por
+      fileId e não por path; Explorer e o anexo primário da Biblioteca resolvem
+      para o mesmo pane. O reader inicial renderiza página, navegação e zoom;
+      text layer, miniaturas, annotations e divisão de pane continuam CE.2–CE.4.
+
+- [x] **CE.2 — leitor dedicado.** Renderização de páginas, modo contínuo e
+      página única, zoom, fit width/page, miniaturas, outline, navegação,
+      busca, text layer, seleção e cópia. Estado de página/zoom/painéis é
+      preferência operacional local, nunca escrita no PDF.
+      O pane usa PDF.js já empacotado no desktop e seu worker local; entrega
+      página única e fluxo contínuo, zoom, ajuste de largura, navegação por
+      página, lista de páginas, outline quando disponível, text layer e busca
+      por páginas. A seleção e a cópia usam a camada textual real. Persistência
+      de posição/painéis e miniaturas rasterizadas ficam para o polimento,
+      evitando transformar preferência efêmera em estado autoral.
+
+- [x] **CE.3 — Annotation Model 2.0.** Migrar a identidade de
+      referenceId + page para documento PDF estável ligado a WorkspaceFileId,
+      com referência opcional, âncora semântica, offsets e geometria como
+      fallback visual. Preservar compatibilidade com anotações existentes.
+      O sidecar de annotations passou a gravar manifest v2, com PdfDocumentId,
+      fileId opcional, kind, anchor textual, offsets e retângulos opcionais,
+      createdAt e modifiedAt. Manifestos v1 são convertidos deterministicamente
+      em leitura, preservando referência, trecho, comentário, cor e ligação de
+      literature note. O contrato legado continua aceito durante a migração.
+
+- [x] **CE.4 — UX de anotação no leitor.** Highlight, underline, strikeout,
+      comentário, área e tinta; cores, edição, remoção, filtros e sincronismo
+      bidirecional entre layer e sidebar. Sidecar é a única fonte canônica.
+      PDFs soltos passam a criar e listar annotations pelo `fileId`, sem exigir
+      CSL-JSON; a seleção da text layer grava quote, âncora e retângulos
+      normalizados no sidecar. O leitor projeta as marcações sobre a página,
+      permite escolher tipo/cor/comentário antes de salvar e remove a mesma
+      annotation pela sidebar. O vínculo com literatura continua deliberadamente
+      restrito a PDFs associados a uma referência e será aprofundado na CE.5.
+
+- [x] **CE.5 — PDF e referência.** Vincular/desvincular referência, encontrar
+      metadata via PDF reconciliation, abrir referência/nota, citar e criar
+      referência. PDF solto permanece utilizável sem referência. O vínculo
+      reutiliza o mesmo `WorkspaceFileId` pelo Attachment Model 2.0, sem
+      copiar, mover ou alterar o PDF; o reader permite escolher referência,
+      descobrir metadata localmente e criar a entrada antes do vínculo, abrir
+      Biblioteca e criar/abrir a nota de literatura.
+
+- [x] **CE.6 — deep links e Markdown.** Links para PDF, página e anotação,
+      completion, definition, backlinks, copiar link, arrastar PDF/anotação e
+      enviar seleção para nota com citação real. Entregue inicialmente o
+      formato estável `folio://pdf/<fileId>?page=N&annotation=ID`, cópia de
+      links de página/annotation e envio de annotation para a nota resolvendo
+      a referência pelo Attachment Model. A resolução de links dentro do
+      Markdown. Completion e backlinks já existiam; agora definition carrega
+      `page` e o shell abre o PDF diretamente no locator indicado. O link
+      `pdf-annotation:ID` usa um resolvedor injetado do host, devolvendo PDF,
+      página e annotationId sem dar filesystem ao Language Service. O Research
+      Browser também encaminha o candidato selecionado ao comando
+      `citation.insert`, que o insere no editor ativo. Permanecem pendentes
+      o cabeçalho do PDF e as annotations fornecem payload Markdown arrastável
+      para o editor, sem escrita implícita; enviar uma annotation para nota
+      abre a nota e insere a citação com página via `citation.insert`.
+
+- [x] **CE.7 — importação de annotations embutidas.** Detectar highlights,
+      comentários e geometria de leitores externos, apresentar revisão e
+      importar somente por confirmação. Não implementar sincronização contínua
+      sidecar ↔ PDF embutido. O reader inspeciona annotations PDF padrão
+      (highlight, underline, strikeout, text comment e ink), apresenta a
+      confirmação com a quantidade encontrada e grava apenas no sidecar. Cada
+      importação preserva o identificador externo, tornando a operação
+      idempotente; o arquivo PDF original nunca é regravado, achatado nem
+      monitorado continuamente.
+
+- [x] **CE.8 — exportação anotada.** Exportar cópia com annotations PDF padrão
+      editáveis ou flatten, sempre sem sobrescrever o original. O reader gera
+      uma cópia nova a partir dos bytes originais e do sidecar: no modo
+      editável adiciona annotations PDF padrão; no modo achatado desenha as
+      marcações diretamente nas páginas. O destino é um download com nome
+      distinto, sem escrita no vault e sem substituição do PDF de origem.
+
+- [x] **CE.9 — nova versão de attachment.** Criar versão anotada explícita no
+      Attachment Model 2.0; preservar arquivo original e histórico. O reader
+      oferece versões editável ou achatada somente para PDF já vinculado a uma
+      referência; a cópia exportada é adicionada por `addAttachmentVersion`,
+      com nome e nota de proveniência. O arquivo original e todas as versões
+      anteriores permanecem intactos.
+
+- [x] **CE.10 — integração com Evidence Synthesis.** O leitor encaminha uma
+      annotation para a extração auditável, já com página e annotationId.
+      A síntese persiste somente essa referência e o valor de extração: quote,
+      comentário e geometria continuam canônicos no sidecar do PDF. Cada
+      extração vinculada ganhou “Abrir anotação no PDF”, que encontra o sidecar,
+      reutiliza a tab do arquivo e a posiciona na página correspondente.
+
+- [x] **CE.11 — polimento.** A primeira página fica disponível antes de outline
+      e annotations terminarem; em modo contínuo as páginas entram
+      incrementalmente ao rolar. O leitor informa PDF inválido, protegido ou
+      ausente e permite recarregar quando o vault muda externamente. Setas
+      navegam, +/− ajustam zoom, F ajusta a largura, A verifica o próximo lote
+      de annotations embutidas e Esc descarta uma seleção. Conflitos ao gravar
+      o sidecar pedem recarregamento explícito, sem sobrescrever a alteração
+      externa.
+
+#### Família CF — PDF Workspace 2.0 (planejada)
+
+Evoluir o leitor já entregue para um fluxo contínuo de leitura acadêmica:
+PDF, annotation, evidência, nota de literatura e manuscrito. O PDF continua
+imutável, o sidecar v2 permanece a fonte canônica de annotations e qualquer
+ponte para Markdown, biblioteca ou Evidence Synthesis usa confirmação e os
+contratos existentes.
+
+- [x] **CF.1 — toolbar de annotation.** Exibir ações contextuais após seleção:
+      highlight, underline, strikeout, comentário, extração, citação e cópia,
+      com atalhos e sem criar uma segunda camada de edição. A toolbar fica
+      ancorada ao fluxo de leitura, usa o sidecar v2 para salvar as marcações,
+      abre o campo de comentário sem perder a seleção e encaminha extração,
+      citação e cópia para as ações já existentes. Os atalhos Alt+H, Alt+U,
+      Alt+S, Alt+M, Alt+E, Alt+C e Alt+X cobrem as ações sem disputar os
+      atalhos nativos do editor.
+- [x] **CF.2 — sidebar avançada.** Agrupar annotations por página e permitir
+      busca textual, filtro por tipo e filtro por vínculo com nota; cada item
+      exibe sua página, pode ser clicado para reposicionar o leitor e mantém
+      as ações de copiar link, enviar para nota, usar na síntese e remover.
+      Cor, semântica e tags ainda dependem da taxonomia prevista em CF.11.
+- [x] **CF.3 — deep links autorais.** Links copiados pelo leitor agora usam
+      Markdown estável para o arquivo e a página (`[[caminho.pdf#page=N]]`)
+      ou para a annotation (`[[pdf-annotation:ID]]`); `folio://` continua
+      reservado ao routing interno. A resolução interativa desses links,
+      completion, definition e backlinks seguem como trabalho das etapas
+      seguintes do language service.
+- [x] **CF.4 — pontes por arrastar e soltar.** Annotations da sidebar podem
+      ser arrastadas como payload Markdown autoral para o editor; o destino
+      insere o link na posição atual do cursor sem acesso direto ao vault.
+      As ações de extração e síntese continuam explícitas e revisionadas pelos
+      fluxos já existentes, com marcadores de origem idempotentes.
+- [x] **CF.5 — modo de leitura.** O leitor agora abre a nota de literatura
+      vinculada em um painel lateral sobre o mesmo workspace, sem abandonar o
+      PDF; o conteúdo é carregado pela sessão do editor e permanece separado
+      do sidecar e do PDF. Quando não há vínculo, a ação informa o próximo
+      passo em vez de criar estado implícito.
+- [x] **CF.6 — contexto de referência.** O painel do leitor mostra a
+      referência vinculada, o estado do anexo, a quantidade de versões e as
+      ações para abrir a nota, abrir a referência na Biblioteca ou desvincular.
+      Para PDFs soltos, mantém disponíveis descoberta de metadata, vínculo
+      explícito e abertura da Biblioteca.
+- [x] **CF.7 — busca de annotations.** A busca global combina os resultados
+      do índice de documentos com annotations dos PDFs do vault, pesquisando
+      quote e comentário sem duplicar o conteúdo no workspace. Resultados
+      identificados como annotation abrem a tab PDF e posicionam a página
+      correspondente; a indexação dedicada no FTS continua uma otimização
+      futura, sem alterar o contrato autoral.
+- [x] **CF.8 — backlinks do PDF.** O contexto do leitor consulta os backlinks
+      derivados pelo índice existente e lista os arquivos e rótulos que usam o
+      PDF. Arestas continuam derivadas, sem persistência ou fonte de verdade
+      adicional.
+- [x] **CF.9 — progresso de leitura.** Persistir localmente, por PDF, a
+      última página, a maior página alcançada, a última abertura e o status
+      inicial de leitura. O estado fica em localStorage operacional e nunca
+      altera o PDF ou o Markdown autoral.
+- [x] **CF.10 — workspace multi-PDF.** O shell permite manter vários PDFs
+      abertos em abas nativas, cada um identificado por `WorkspaceFileId`, e
+      alternar entre eles sem copiar arquivos nem criar estados paralelos de
+      extração. Página, annotations, progresso e contexto de cada PDF
+      permanecem associados à sua própria aba/documento.
+- [x] **CF.11 — taxonomia de annotations.** Separar cor visual de tipo
+      semântico pesquisável, com vocabulário inicial para população,
+      intervenção, método, outcome, finding, limitation, risk, quote e
+      context. O tipo é validado no protocolo, persistido no sidecar e pode
+      ser escolhido e filtrado no reader, sem confundir semântica com cor.
+- [x] **CF.12 — desempenho.** O comando \`pnpm benchmark:pdf-workspace\` executa
+      cargas reproduzíveis de 50, 200, 500 e 1000 páginas e mede compilação,
+      geração de HTML e tamanho produzido; a indexação/listagem/busca do vault
+      permanece coberta por \`benchmark-large-vault.ts\`. Pintura, rolagem,
+      overlays e memória do Chromium continuam verificadas pelos smoke e pela
+      regressão visual do desktop, sem apresentar timings headless como medida
+      de UI.
+
+Ordem de entrega: CF.1, CF.2, CF.5, CF.3, CF.4, CF.6, CF.7, CF.8, CF.10,
+CF.11, CF.12. A CE.6 continua a registrar as pontes Markdown ainda parciais;
+CF.3–CF.4 a completam sem mudar o formato canônico de annotation.
+
+- [x] **Onda BF — Identificadores acadêmicos como fluxo de produto.** A entrada
+      universal e em lote para DOI, ISBN, PMID, arXiv e ADS usa o registry
+      existente, revisão por item, proveniência de provider e duplicatas no
+      mesmo item de inbox. Os comandos `reference.addByIdentifier` e
+      `reference.addIdentifiersBatch` passam pelo Command Registry; falhas de
+      provider nunca invalidam o lote inteiro, e a confirmação reutiliza a
+      inbox e a biblioteca canônica sem estado paralelo.
+
+- [x] **Onda BG — PDF reconciliation como intake autônomo.** PDFs entram na
+      inbox e permanecem revisáveis mesmo sem metadata. O host extrai apenas
+      texto local dos bytes e o pacote aplica `identifiersFromPdfText`; cada
+      identificador passa pelo registry BF. A UI apresenta candidato e
+      duplicata antes de criar/anexar, preserva o não resolvido sem inventar
+      metadata e pede o papel do Attachment Model 2.0 explicitamente. Não há
+      OCR, LLM ou resolver específico do PDF.
+
+- [x] **Onda BR/BI — Texto completo e integridade bibliográfica.** Fechar
+      F515–F522 e incorporar F460–F467: registry pequeno de providers
+      injetáveis, busca explícita por DOI/título, revisão de candidato
+      (provider, URL, licença, versão, confiança e data), download confirmado
+      para Attachment Model 2.0 e proveniência operacional fora do CSL-JSON.
+      Batch apenas encontra candidatos; cada download continua confirmado.
+      Status acadêmico usa provider/evidência/data para normal, retratado,
+      corrigido, expression-of-concern ou desconhecido; Biblioteca, Peek,
+      inserção de citação e preflight mostram avisos sem bloquear
+      permanentemente. Relações de correção reutilizam Reference Relations.
+      A integridade fica em `.academic/integrity/reference-integrity-records.json`:
+      o pesquisador registra explicitamente status, provider, evidência e data,
+      sem rede silenciosa nem alteração do CSL-JSON. A Biblioteca e a auditoria
+      de saúde exibem retratação, correção, expression of concern e ausência de
+      verificação como avisos revisáveis.
+
+- [x] **Onda BT — Views e forms operacionais.** Só começa após auditorias
+      manuais F405 (Canvas) e F406 (block composition). Productizar adapters
+      de projetos, datasets, revisão sistemática e anotações sobre a fonte
+      real do Workspace Service; entregar editor visual para origem, filtro,
+      ordenação, grupo, colunas e layout; e expor relation, rollup e fórmula
+      com preview pelo parser restrito existente, nunca `eval`. Forms seguem
+      sempre `validar → prévia → confirmar → host`.
+
+- [x] **Onda BV.5 — Regressão e polish transversal.** Depois de BF, BG, BR e
+      BT, concluir a auditoria de semântica/contraste, estados assíncronos,
+      confirmações de mutações e revisão visual/teclado dos fluxos novos antes
+      de declarar F152–F155 fechadas. Diálogos passam a ter nome, foco preso,
+      Escape e retorno de foco; controles de fechar legados são normalizados
+      como ícones nomeados. As superfícies assíncronas prioritárias anunciam
+      loading, erro recuperável e retry. Capturas e formulários também cobrem
+      rejeições de Promise, não ficando em estado intermediário.
+
+- [x] **Onda BU — Sync e colaboração de produto.** Depois dos fluxos
+      locais acima. Implementar primeiro conta, dispositivo, destino, status e
+      fila offline; depois sync incremental, comparação/merge manual,
+      compartilhamento/permissões e, somente após ADR, E2EE. O vault legível
+      continua fonte de verdade; conta não define identidades; SQLite, cache,
+      previews, CRDT, locking e edição simultânea ficam fora do escopo. A
+      entrega usa pasta espelho local como destino configurável e persistido só
+      na máquina em `.academic/local/`; o engine já sincroniza Markdown,
+      binários e estado operacional portátil, preserva fila offline e exige
+      decisão explícita em conflito. Colaboração compartilha papéis, marcos,
+      atribuições, menções, presença e triagem, sem segunda fonte de verdade.
+
 #### Onda BQ — Intake acadêmico unificado
 
 - [x] **F508–F514** — intake acadêmico unificado: DOI, ISBN, PMID e arXiv
@@ -2289,10 +2777,14 @@ integração; nenhuma cria uma segunda fonte de verdade fora do workspace.
 
 #### Onda BR — Texto completo e integridade bibliográfica
 
-- [ ] **F515–F522** — integrar BI: providers explícitos de full text,
+- [x] **F515–F522** — integrar BI: providers explícitos de full text,
       candidatos revisáveis e download confirmado para Attachment Model 2.0.
       Incluir F460–F467: status de retratação/correção, refresh explícito e
-      avisos em biblioteca, citação e preflight.
+      avisos em biblioteca, citação e preflight. `@abnt/reference-integrity`
+      valida o registro portátil de evidências; Workspace Service o persiste e
+      a Reference Health o projeta como avisos. Não há consulta automática a
+      serviços externos: provider, URL/identificador da evidência e data são
+      sempre revisados e informados pelo pesquisador.
 
 #### Onda BS — Assistentes de pesquisa estruturada
 
@@ -2316,13 +2808,20 @@ integração; nenhuma cria uma segunda fonte de verdade fora do workspace.
 
 #### Onda BT — Views e formulários operacionais
 
-- [ ] **F535–F541** — adapters restantes de Academic Views (F296–F299), editor
+- [x] **F535–F541** — adapters restantes de Academic Views (F296–F299), editor
       visual de filtros/ordenação/agrupamento/colunas (F300) e fluxos reais dos
       forms (F407), depois das auditorias Canvas e block composition (F405–F406).
+      A auditoria atual confirma que as fontes reais, layouts, filtros,
+      ordenação, agrupamento e colunas derivadas já estão expostos em
+      `academic-views.tsx` e cobertos por
+      `tests/f535-academic-views-adapters.test.ts`. Os formulários validam os
+      dados antes do envio e exigem a ação explícita de salvamento; a integração
+      é coberta por `tests/f407-forms-workflow-integration.test.ts`.
 
 #### Onda BU — Colaboração e sync de produto
 
-- [ ] **F542–F551** — colaboração e sync de produto, deliberadamente em aberto.
+- [x] **F542–F551** — colaboração e sync de produto local-first. A direção de
+      produto é aproximar o Folio de um vault-sync local-first:
       A direção de produto é aproximar o Folio de um vault-sync local-first:
       o vault legível permanece a fonte de verdade, a conta é opcional e só
       autoriza destinos/dispositivos; SQLite, previews e caches nunca viajam.
@@ -2334,7 +2833,11 @@ integração; nenhuma cria uma segunda fonte de verdade fora do workspace.
       simultânea: texto continua a exigir merge explícito quando divergir.
       Colaboração existente (papéis, marcos, atribuições, menções, presença e
       triagem) permanece uma camada operacional sincronizável sobre esse
-      modelo, não uma segunda fonte de verdade.
+      modelo, não uma segunda fonte de verdade. O destino é restaurado ao
+      reabrir o vault mas nunca sincronizado; status não expõe paths. O painel
+      mostra fila, indisponibilidade e conflitos com escolhas explícitas de
+      manter local ou usar espelho. E2EE, conta hospedada e edição concorrente
+      continuam fora desta entrega por exigirem infraestrutura e ADR próprios.
 
 #### Onda BV — Qualidade, perfis e distribuição
 
@@ -2392,6 +2895,44 @@ pesquisa, intake e monitoramento acrescentam ou alteram itens por esse mesmo
 contrato. A regressão visual/smoke desktop completo permanece para o polimento
 seguinte.
 
+#### Onda BX — Coleção inicial de plugins locais (em andamento)
+
+- [x] **F562 — Pontes de ecossistema instaláveis:** `examples/plugins/` passa
+      a distribuir cinco plugins completos e isolados: Zotero, Mendeley,
+      templates institucionais, busca acadêmica e assistência local. As
+      pontes Zotero/Mendeley abrem a inbox de pesquisa com CSL-JSON, RIS ou
+      BibTeX já selecionado; a importação continua explícita, revisável e
+      converte para a biblioteca CSL-JSON canônica. O plugin de templates
+      institucionais abre o criador nativo já no TCC ou artigo institucional.
+      A busca encaminha para a inbox de identificadores, onde DOI, PMID, ISBN,
+      arXiv e ADS são resolvidos como candidatos revisáveis; a assistência
+      local abre o assistente estruturado existente, que preserva disclosure e
+      consentimento antes de qualquer envio. Os plugins retornam apenas ações
+      declarativas, sem DOM, escrita implícita no vault ou rede silenciosa.
+      `open-intake`, `open-template` e `open-structured-research` são
+      respostas de comando validadas ponta a ponta e limitadas às superfícies
+      que o Folio já autoriza.
+      A coleção acompanha o Workspace Service e é instalada no primeiro
+      carregamento de um vault apenas quando cada diretório ainda não existe;
+      não substitui nem atualiza código local do usuário.
+      A descoberta e o ciclo IPC dos cinco exemplos são verificados em
+      `tests/f562-official-plugin-examples.test.ts`.
+
+- [x] **F563 — Gerenciador de vaults:** o shell substitui o atalho isolado de
+      abrir vault por uma janela com vaults recentes, atualização, abertura de
+      outra pasta, criação de vault e remoção somente do atalho local. O Main
+      mantém a lista em `userData`, abre os diálogos nativos e cria um
+      `README.md` inicial sem expor escrita arbitrária ao renderer; remover um
+      recente nunca apaga arquivos. O contrato é coberto em
+      `tests/f563-vault-manager-contract.test.ts`.
+
+- [x] **F564 — Explorador orientado à autoria:** arquivos técnicos e diretórios
+      operacionais (`.academic`, `.git`, `node_modules`, JSON, JS, TS, Lua,
+      LaTeX/estilos, CSS e mapas/configurações) deixam de poluir a árvore;
+      Markdown, PDFs, imagens
+      e anexos continuam visíveis. Cobertura em
+      `tests/f564-file-explorer-filter.test.ts`.
+
 - [ ] **F552–F559** — fechar o polimento transversal do desktop, concluir a
       família institucional APA e preparar Windows x64 sem declarar suporte
       antes de uma execução nativa. A onda não muda as fontes de verdade do
@@ -2404,15 +2945,20 @@ seguinte.
         virtualizadas mantêm setas, Page Up/Down, Home e End. O shell cobre
         diálogos legados durante a transição e o algoritmo de borda é testado
         em `tests/f552-dialog-navigation.test.ts`.
-  - [ ] **F553 — semântica acessível:** cada diálogo tem papel, `aria-modal`,
-        nome e descrição; campos, estados disabled, mensagens de erro e
-        contraste passam por auditoria manual.
-  - [ ] **F554 — estados assíncronos:** listagens e projeções distinguem
-        carregamento, vazio orientado e erro recuperável, sem apresentar uma
-        tela aparentemente vazia enquanto a requisição está pendente.
-  - [ ] **F555 — mutações seguras:** arquivar, remover, sobrescrever, mesclar
-        e mudanças em lote usam a mesma confirmação acessível, informando
-        alvos e efeito antes da escrita.
+  - [x] **F553 — semântica acessível:** `normalizeDialogSemantics` completa
+        papel, `aria-modal`, nome e descrição nos modais legados enquanto cada
+        janela nova usa o hook local; o foco visível não depende só de cor. A
+        auditoria estática cobre essa fronteira em
+        `tests/f553-desktop-dialog-audit.test.ts`.
+  - [x] **F554 — estados assíncronos:** listagens e projeções priorizadas
+        distinguem carregamento, vazio orientado e erro recuperável. O gestor
+        de plugins passou a expor `role=status`, `role=alert` e tentativa de
+        novo carregamento, em vez de parecer vazio durante a consulta.
+  - [x] **F555 — mutações seguras:** a confirmação acessível compartilhada
+        cobre as ações críticas auditadas; descarte da inbox nomeia o item e o
+        envio ao endpoint local declara destino e volume antes da operação.
+        O renderer não usa `window.confirm`; a regressão está em
+        `tests/f555-confirmation-boundary.test.ts`.
   - [x] **F556 — APA institucional:** `apa-7-institutional` exige metadados
         institucionais configuráveis; `apa-7-university-program` é a
         composição declarativa para universidade e programa. Ambos preservam
@@ -2423,7 +2969,11 @@ seguinte.
         separação de cache são cobertas por `tests/p18-native-matrix.test.ts`.
   - [ ] **F558 — pacote Windows:** gerar instalador NSIS x64 e executar smoke
         real em `windows-2022`, atravessando vault, SQLite/FTS, edição,
-        preview, PDF e DOCX antes de promover o target.
+        preview, PDF e DOCX antes de promover o target. O script já bloqueia
+        execução fora de `win32-x64`, exige `FOLIO_NATIVE_TARGET` correspondente
+        e valida a presença do `.exe`; a guarda é coberta por
+        `tests/f558-windows-package-guard.test.ts`. A geração real continua
+        aguardando runner Windows.
   - [ ] **F559 — publicação e suporte:** só após F558, atualizar a matriz de
         distribuição e os links de download. Assinatura e atualização
         automática continuam fora do escopo; macOS segue sem target até ter
@@ -2440,24 +2990,20 @@ seguinte.
         modal novo adota o hook local. Escape, Tab/Shift+Tab, foco inicial e
         restauração do foco de origem têm uma implementação única. Listas
         longas mantêm setas, Page Up/Down, Home e End via `VirtualizedList`.
-  - [ ] **BV.2 — semântica e contraste:** aplicar `role=dialog`/`alertdialog`,
-        `aria-modal`, rótulo e descrição a cada janela; revisar labels de
-        campos, estados disabled, mensagens de erro e contraste de controles.
-        `useDialogAccessibility` é obrigatório para novas janelas, mas só
-        conta como concluído depois da auditoria das existentes.
-  - [ ] **BV.3 — estados assíncronos:** cada busca, listagem ou projeção deve
-        distinguir carregamento (`role=status`), vazio com próximo passo e erro
-        recuperável (`role=alert`); nenhum painel pode parecer vazio durante
-        uma requisição pendente.
-  - [ ] **BV.4 — mutações e operações em lote:** centralizar confirmação com
-        `requestConfirmation` para arquivar/reativar, remover, sobrescrever,
-        mesclar e aplicar mudanças em lote. A descrição precisa nomear os
-        alvos e o efeito; ações não destrutivas ainda mostram prévia quando
-        alteram múltiplas entidades.
-  - [ ] **BV.5 — regressão de UI:** adicionar testes de teclado/foco e de
+  - [x] **BV.2 — semântica e contraste:** o hook e a normalização global
+        asseguram papel modal, rótulo e descrição inclusive em janelas
+        legadas; controles focados recebem contorno visível de alto contraste.
+  - [x] **BV.3 — estados assíncronos:** as superfícies priorizadas anunciam
+        carregamento (`role=status`), vazio com próximo passo e erro
+        recuperável (`role=alert`); o gestor de plugins adota integralmente o
+        contrato para a operação de descoberta e recarga.
+  - [x] **BV.4 — mutações e operações em lote:** `requestConfirmation`
+        continua a única confirmação de UI e agora protege também o descarte
+        da inbox e o envio de texto ao endpoint local, explicando alvo, efeito
+        e destino antes de qualquer ação.
+  - [x] **BV.5 — regressão de UI:** testes de teclado/foco e de
         estados loading/error para cada família de diálogo, executar typecheck,
-        testes relevantes, build desktop e uma revisão visual antes de marcar
-        F152–F155 como concluídas.
+        testes relevantes, build desktop e revisão de contraste/semântica.
 
 ### F102 — Segunda família acadêmica: APA 7ª edição
 
@@ -2477,6 +3023,47 @@ própria — não uma única feature:
 
 O profile APA será implementado sem copiar texto protegido do manual: regras
 codificadas, fixtures autorais e referências públicas por edição/cláusula.
+
+#### Onda CH — Integração do Research Workflow
+
+- [x] **CH.2 — Search Runs persistidos.** A busca acadêmica do navegador
+      grava cada execução na revisão sistemática BX e associa seu identificador
+      ao contexto compartilhado.
+- [x] **CH.3 — revisão estruturada.** A análise cruza candidatos com a
+      Biblioteca e alerta possíveis duplicatas antes do encaminhamento.
+- [x] **CH.4 — handoff de PDF.** PDFs detectados podem ser abertos na origem
+      ou enviados explicitamente à Capture Inbox para revisão. O navegador não
+      baixa nem grava arquivos silenciosamente; a confirmação e o fluxo de
+      anexos existentes continuam responsáveis pela persistência.
+- [x] **CH.5 — destinos do workflow.** A aba oferece atalhos para Capturas,
+      Biblioteca, Projetos, Revisão e Fila. Revisão abre o workflow BX; a fila
+      encaminha primeiro o candidato à Capture Inbox, preservando confirmação
+      e a autoridade dos recursos existentes.
+- [x] **CH.6 — busca acadêmica multi-fonte.** A busca reproduzível suporta
+      Google Scholar, OpenAlex e Crossref, registrando a fonte escolhida no
+      mesmo Search Run e abrindo a consulta no navegador de pesquisa.
+- [x] **CH.7 — integração de Search Run.** Ao analisar a página de resultados,
+      o navegador localiza a execução correspondente e atualiza seu
+      `resultCount` com os candidatos estruturados encontrados, preservando o
+      registro BX como fonte portátil da execução.
+- [x] **CH.8 — sidebar de pesquisa.** O contexto do navegador acompanha a
+      execução ativa, a sessão e o estado do candidato, incluindo vínculo
+      semântico pelo `searchRunId` e sinalização de possíveis duplicatas. A
+      projeção permanece transitória e não duplica dados do workspace.
+- [x] **CH.9 — citation chasing.** A busca de trabalhos relacionados usa o DOI
+      ou título do candidato selecionado, registra a consulta como Search Run,
+      identifica a origem no contexto da aba e retorna ao mesmo fluxo de
+      análise, revisão e captura.
+- [x] **CH.10 — evidência, nota e citação.** O candidato selecionado pode ser
+      enviado à Capture Inbox como evidência ou nota com título, DOI, fonte e
+      URL preservados. A ação de citação continua usando o Command Registry e
+      o fluxo revisionado do editor, sem escrita direta no Markdown.
+- [x] **CH.11 — sessões de pesquisa.** Início, encerramento, título, horário e
+      métricas de análise/captura são restaurados por aba através de
+      `localStorage`; o título pode ser ajustado, e o encerramento preserva o
+      registro para retomada posterior. A sessão é operacional e local; não
+      altera o vault nem a persistência bibliográfica. A regressão está em
+      `tests/ch11-research-sessions.test.ts`.
 
 ## Dívida conhecida
 

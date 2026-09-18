@@ -20,8 +20,10 @@ import type {
   WorkspaceSyncStatusDto,
   WorkspaceCollaborationDto,
   WorkspaceCaptureInboxItemDto,
+  WorkspacePdfAnnotationDto,
 } from '@abnt/protocol';
 import { captureInboxItem } from '@abnt/workspace-navigation';
+import { createResearchContext, type ResearchContext } from '@abnt/research-context';
 import type { LanguageLocation } from '@abnt/language-service';
 import type { EditorController } from '@abnt/editor-core';
 import { PAGE_TYPES } from '@abnt/page-workspace';
@@ -33,13 +35,14 @@ import { VirtualizedList } from './virtualized-list.js';
 import { recordPerformanceSample, timePerformance } from './shell/performance.js';
 import { FolioIcon, type FolioIconName } from './icons.js';
 import { FolioLogo } from './folio-logo.js';
-import { PdfReaderDialog } from './pdf-reader.js';
+import { PdfWorkspacePane } from './pdf-workspace-pane.js';
 import { AnnotationSynthesisDialog } from './annotation-synthesis.js';
 import { LiteratureMonitoringDialog } from './literature-monitoring.js';
 import { ResearchWorkflowDialog } from './research-workflow.js';
 import { readResearchProjects, ResearchProjectsDialog } from './research-projects.js';
 import { ResearchIntakeDialog } from './research-intake.js';
 import { CaptureInboxDialog } from './capture-inbox.js';
+import { ResearchBrowserPane } from './research-browser.js';
 import { ResearchCanvasDialog } from './research-canvas.js';
 import { AcademicFormsDialog } from './academic-forms.js';
 import { AcademicViewsDialog } from './academic-views.js';
@@ -55,6 +58,7 @@ import { LibraryMaintenanceCenterDialog } from './library-maintenance-center.js'
 import { HistoryDialog } from './history-dialog.js';
 import { DocumentComparisonDialog } from './document-comparison.js';
 import { PluginManagerDialog } from './plugin-manager.js';
+import { VaultManagerDialog } from './vault-manager.js';
 import { ProfileInspectorDialog } from './profile-inspector.js';
 import { AutomationDialog } from './automation-dialog.js';
 import { ReviewWorkspaceDialog, readReviewComments } from './review-workflow.js';
@@ -142,20 +146,6 @@ const documentOpenArguments = {
     }
     return { success: false as const, message: 'document.open exige { fileId, path }.' };
   },
-};
-
-const withTimeout = async <T,>(operation: Promise<T>, timeoutMs: number): Promise<T> => {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      operation,
-      new Promise<T>((_resolve, reject) => {
-        timer = setTimeout(() => reject(new Error('A solicitação excedeu o tempo de resposta.')), timeoutMs);
-      }),
-    ]);
-  } finally {
-    if (timer !== undefined) clearTimeout(timer);
-  }
 };
 
 /**
@@ -547,9 +537,13 @@ function SettingsDialog({ onClose, onOpen }: { readonly onClose: () => void; rea
 function SyncDialog({ onClose, onMessage }: { readonly onClose: () => void; readonly onMessage: (message: string) => void }): JSX.Element {
   const [status, setStatus] = useState<WorkspaceSyncStatusDto | undefined>(undefined);
   const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState<string | undefined>(undefined);
   const refresh = async () => {
-    const result = await window.academic.workspace.syncStatus();
-    if (result.ok) setStatus(result.value); else onMessage(result.error.message);
+    setLoadError(undefined);
+    try {
+      const result = await window.academic.workspace.syncStatus();
+      if (result.ok) setStatus(result.value); else { setLoadError(result.error.message); onMessage(result.error.message); }
+    } catch { const message = 'Não foi possível consultar a sincronização.'; setLoadError(message); onMessage(message); }
   };
   useEffect(() => { void refresh(); }, []);
   const run = async (action: 'choose' | 'sync' | 'recover') => {
@@ -569,12 +563,13 @@ function SyncDialog({ onClose, onMessage }: { readonly onClose: () => void; read
     } finally { setBusy(false); }
   };
   const label = status?.status === 'conflict' ? 'Conflitos exigem revisão' : status?.status === 'offline' ? 'Pasta espelho indisponível' : status?.configured ? 'Pasta espelho local configurada' : 'Nenhuma pasta espelho configurada';
-  return <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/45 p-5" role="presentation" onClick={onClose}><section role="dialog" aria-modal="true" aria-labelledby="sync-title" className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}><header className="flex items-start gap-4"><span className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-100 text-indigo-700"><FolioIcon name="folder" /></span><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">Local-first</p><h2 id="sync-title" className="mt-1 text-xl font-bold text-slate-900">Pasta espelho</h2><p className="mt-1 text-sm text-slate-500">O Folio mantém seus arquivos em uma segunda pasta escolhida por você.</p></div><button type="button" aria-label="Fechar sincronização" className="folio-control ml-auto grid h-9 w-9 place-items-center rounded-lg text-xl" onClick={onClose}>×</button></header><div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="font-semibold text-slate-800">{status === undefined ? 'Verificando sincronização…' : label}</p><p className="mt-1 text-sm text-slate-500">{status?.configured ? `${status.pending} alteração(ões) pendente(s) · ${status.conflicts.length} conflito(s)` : 'Nenhum dado sai do computador. O caminho da pasta permanece privado.'}</p>{(status?.conflicts.length ?? 0) > 0 && <ul className="mt-3 max-h-40 space-y-2 overflow-auto rounded-lg bg-white p-2 text-xs text-amber-800">{status!.conflicts.map((conflict) => <li key={conflict.id} className="rounded border border-amber-100 p-2"><p className="truncate font-medium">{conflict.key}</p><div className="mt-2 flex gap-2"><button type="button" disabled={busy} className="rounded bg-indigo-600 px-2 py-1 text-white disabled:opacity-50" onClick={() => void resolveConflict(conflict.id, 'keep-local')}>Manter local</button><button type="button" disabled={busy} className="rounded border border-slate-200 px-2 py-1 text-slate-700 disabled:opacity-50" onClick={() => void resolveConflict(conflict.id, 'use-mirror')}>Usar espelho</button></div></li>)}</ul>}</div><div className="mt-6 flex flex-wrap justify-end gap-2"><button type="button" disabled={busy} className="folio-control rounded-lg px-3 py-2 text-sm font-semibold" onClick={() => void run('recover')}>Recuperar do espelho</button><button type="button" disabled={busy} className="folio-control rounded-lg px-3 py-2 text-sm font-semibold" onClick={() => void run('choose')}>{status?.configured ? 'Trocar pasta' : 'Escolher pasta'}</button><button type="button" disabled={busy || status?.configured !== true} className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => void run('sync')}>Sincronizar agora</button></div></section></div>;
+  return <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/45 p-5" role="presentation" onClick={onClose}><section role="dialog" aria-modal="true" aria-labelledby="sync-title" className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}><header className="flex items-start gap-4"><span className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-100 text-indigo-700"><FolioIcon name="folder" /></span><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">Local-first</p><h2 id="sync-title" className="mt-1 text-xl font-bold text-slate-900">Pasta espelho</h2><p className="mt-1 text-sm text-slate-500">O Folio mantém seus arquivos em uma segunda pasta escolhida por você.</p></div><button type="button" aria-label="Fechar sincronização" className="folio-control ml-auto grid h-9 w-9 place-items-center rounded-lg text-xl" onClick={onClose}>×</button></header>{status === undefined && loadError === undefined ? <p role="status" className="mt-6 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Verificando sincronização…</p> : loadError !== undefined ? <div role="alert" className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"><p>{loadError}</p><button type="button" className="mt-3 rounded border border-rose-300 px-3 py-1.5 font-semibold" onClick={() => void refresh()}>Tentar novamente</button></div> : <><div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="font-semibold text-slate-800">{label}</p><p className="mt-1 text-sm text-slate-500">{status?.configured ? `${status.pending} alteração(ões) pendente(s) · ${status.conflicts.length} conflito(s)` : 'Nenhum dado sai do computador. O caminho da pasta permanece privado.'}</p>{status?.configured && <p className="mt-2 text-xs leading-5 text-slate-500">O destino é lembrado somente nesta máquina. Se a pasta ficar indisponível, suas alterações entram na fila e são reenviadas ao sincronizar novamente.</p>}{(status?.conflicts.length ?? 0) > 0 && <ul className="mt-3 max-h-40 space-y-2 overflow-auto rounded-lg bg-white p-2 text-xs text-amber-800">{status!.conflicts.map((conflict) => <li key={conflict.id} className="rounded border border-amber-100 p-2"><p className="truncate font-medium">{conflict.key}</p><div className="mt-2 flex gap-2"><button type="button" disabled={busy} className="rounded bg-indigo-600 px-2 py-1 text-white disabled:opacity-50" onClick={() => void resolveConflict(conflict.id, 'keep-local')}>Manter local</button><button type="button" disabled={busy} className="rounded border border-slate-200 px-2 py-1 text-slate-700 disabled:opacity-50" onClick={() => void resolveConflict(conflict.id, 'use-mirror')}>Usar espelho</button></div></li>)}</ul>}</div><p className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs leading-5 text-indigo-900">Conflitos de texto são sempre resolvidos manualmente. O Folio não usa CRDT, locking nem edição simultânea.</p></>}<div className="mt-6 flex flex-wrap justify-end gap-2"><button type="button" disabled={busy} className="folio-control rounded-lg px-3 py-2 text-sm font-semibold" onClick={() => void run('recover')}>Recuperar do espelho</button><button type="button" disabled={busy} className="folio-control rounded-lg px-3 py-2 text-sm font-semibold" onClick={() => void run('choose')}>{status?.configured ? 'Trocar pasta' : 'Escolher pasta'}</button><button type="button" disabled={busy || status?.configured !== true} className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => void run('sync')}>Sincronizar agora</button></div></section></div>;
 }
 
 function CollaborationDialog({ onClose, onMessage }: { readonly onClose: () => void; readonly onMessage: (message: string) => void }): JSX.Element {
-  const [state, setState] = useState<WorkspaceCollaborationDto | undefined>(); const [busy, setBusy] = useState(false); const [section, setSection] = useState<'people' | 'review'>('people');
-  useEffect(() => { void window.academic.workspace.collaboration().then((result) => result.ok ? setState(result.value) : onMessage(result.error.message)); }, []);
+  const [state, setState] = useState<WorkspaceCollaborationDto | undefined>(); const [busy, setBusy] = useState(false); const [section, setSection] = useState<'people' | 'review'>('people'); const [loadError, setLoadError] = useState<string | undefined>(undefined);
+  const load = (): void => { setLoadError(undefined); void window.academic.workspace.collaboration().then((result) => { if (result.ok) setState(result.value); else { setLoadError(result.error.message); onMessage(result.error.message); } }, () => { const message = 'Não foi possível carregar a colaboração.'; setLoadError(message); onMessage(message); }); };
+  useEffect(load, []);
   const update = (index: number, field: 'name' | 'role', value: string): void => setState((current) => current === undefined ? current : { ...current, collaborators: current.collaborators.map((person, candidate) => candidate === index ? { ...person, [field]: value } : person) });
   const add = (): void => setState((current) => current === undefined ? current : { ...current, collaborators: [...current.collaborators, { id: crypto.randomUUID(), name: '', role: 'reviewer' }] });
   const remove = (index: number): void => setState((current) => current === undefined ? current : { ...current, collaborators: current.collaborators.filter((_, candidate) => candidate !== index) });
@@ -582,7 +577,7 @@ function CollaborationDialog({ onClose, onMessage }: { readonly onClose: () => v
   const addAssignment = (): void => setState((current) => { if (current === undefined) return current; const reviewerId = current.collaborators.find((item) => item.role === 'reviewer' || item.role === 'owner')?.id; return reviewerId === undefined ? current : { ...current, assignments: [...(current.assignments ?? []), { id: crypto.randomUUID(), target: { kind: 'document', id: 'Documento a revisar' }, reviewerIds: [reviewerId] }] }; });
   const addMention = (): void => setState((current) => { if (current === undefined || current.collaborators.length < 2) return current; const authorId = current.collaborators.find((item) => item.role === 'owner')?.id ?? current.collaborators[0]!.id; const collaboratorId = current.collaborators.find((item) => item.id !== authorId)?.id; return collaboratorId === undefined ? current : { ...current, mentions: [...(current.mentions ?? []), { id: crypto.randomUUID(), authorId, collaboratorId, context: 'Revisar este item na próxima rodada.', createdAt: new Date().toISOString() }] }; });
   const save = async (): Promise<void> => { if (state === undefined) return; setBusy(true); try { const result = await window.academic.workspace.setCollaboration(state); if (result.ok) { setState(result.value); onMessage('Colaboradores atualizados. Sincronize a pasta espelho para compartilhar o estado.'); } else onMessage(result.error.message); } finally { setBusy(false); } };
-  if (state === undefined) return <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/45 p-5"><div className="rounded-xl bg-white p-6 text-sm text-slate-600 shadow-xl">Carregando colaboração…</div></div>;
+  if (state === undefined) return <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/45 p-5"><section role="dialog" aria-modal="true" aria-label="Colaboração" className="w-full max-w-md rounded-xl bg-white p-6 text-sm text-slate-600 shadow-xl"><div className="flex items-center gap-3"><p role={loadError === undefined ? 'status' : undefined}>{loadError ?? 'Carregando colaboração…'}</p><button type="button" aria-label="Fechar colaboração" className="folio-control ml-auto grid h-8 w-8 place-items-center rounded-lg text-xl" onClick={onClose}>×</button></div>{loadError !== undefined && <button type="button" className="mt-4 rounded border border-rose-300 px-3 py-1.5 font-semibold text-rose-800" onClick={load}>Tentar novamente</button>}</section></div>;
   const people = new Map(state.collaborators.map((item) => [item.id, item.name || 'Sem nome']));
   const decisions = state.screening?.decisions ?? []; const compared = new Map<string, Set<string>>(); for (const decision of decisions) compared.set(decision.itemId, new Set([...(compared.get(decision.itemId) ?? []), decision.decision])); const conflicts = [...compared.values()].filter((item) => item.size > 1).length;
   return <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/45 p-5" role="presentation" onClick={onClose}><section role="dialog" aria-modal="true" aria-labelledby="collaboration-title" className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}><header className="flex gap-4"><span className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-100 text-indigo-700"><FolioIcon name="profile" /></span><div><p className="text-xs font-bold uppercase tracking-[.16em] text-indigo-600">Colaboração distribuída</p><h2 id="collaboration-title" className="mt-1 text-xl font-bold text-slate-900">Projeto compartilhado</h2><p className="mt-1 text-sm text-slate-500">Estado portátil para a pasta espelho, sem conta nem servidor.</p></div><button type="button" className="folio-control ml-auto grid h-9 w-9 place-items-center rounded-lg text-xl" aria-label="Fechar colaboração" onClick={onClose}>×</button></header><div className="mt-5 flex gap-1 rounded-xl bg-slate-100 p-1 text-sm font-semibold"><button type="button" className={`flex-1 rounded-lg px-3 py-2 ${section === 'people' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500'}`} onClick={() => setSection('people')}>Pessoas</button><button type="button" className={`flex-1 rounded-lg px-3 py-2 ${section === 'review' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500'}`} onClick={() => setSection('review')}>Revisão e triagem</button></div>{section === 'people' ? <><label className="mt-5 block text-sm font-medium text-slate-700">Nome do projeto<input value={state.title} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" onChange={(event) => setState({ ...state, title: event.target.value })} /></label><div className="mt-5 space-y-2"><div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-slate-800">Colaboradores</h3><button type="button" className="text-sm font-semibold text-indigo-600" onClick={add}>Adicionar pessoa</button></div>{state.collaborators.map((person, index) => <div key={person.id} className="flex gap-2 rounded-lg border border-slate-200 p-2"><input value={person.name} placeholder="Nome" className="min-w-0 flex-1 rounded border border-slate-200 px-2 py-1.5 text-sm" onChange={(event) => update(index, 'name', event.target.value)} /><select value={person.role} className="rounded border border-slate-200 px-2 py-1.5 text-sm" onChange={(event) => update(index, 'role', event.target.value)}><option value="owner">Proprietário</option><option value="editor">Editor</option><option value="reviewer">Revisor</option><option value="viewer">Leitor</option></select><button type="button" aria-label="Remover colaborador" className="px-2 text-slate-400 hover:text-rose-600" onClick={() => remove(index)}>×</button></div>)}</div></> : <div className="mt-5 grid gap-4 md:grid-cols-2"><div className="rounded-xl border border-slate-200 p-4"><div className="flex justify-between gap-2"><h3 className="font-semibold text-slate-800">Marcos</h3><button type="button" className="text-sm font-semibold text-indigo-600" onClick={addMilestone}>Adicionar</button></div><div className="mt-3 space-y-2">{(state.milestones ?? []).map((item) => <label key={item.id} className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" checked={item.completedAt !== undefined} onChange={(event) => setState({ ...state, milestones: (state.milestones ?? []).map((candidate) => candidate.id === item.id ? { ...candidate, ...(event.target.checked ? { completedAt: new Date().toISOString() } : { completedAt: undefined }) } : candidate) })} /><input className="min-w-0 flex-1 rounded border border-slate-200 px-2 py-1" value={item.title} onChange={(event) => setState({ ...state, milestones: (state.milestones ?? []).map((candidate) => candidate.id === item.id ? { ...candidate, title: event.target.value } : candidate) })} /></label>)}{(state.milestones ?? []).length === 0 && <p className="text-sm text-slate-500">Ainda não há marcos compartilhados.</p>}</div></div><div className="rounded-xl border border-slate-200 p-4"><div className="flex justify-between gap-2"><h3 className="font-semibold text-slate-800">Atribuições</h3><button type="button" className="text-sm font-semibold text-indigo-600" onClick={addAssignment}>Adicionar</button></div><div className="mt-3 space-y-2 text-sm text-slate-600">{(state.assignments ?? []).map((item) => <p key={item.id} className="rounded bg-slate-50 p-2">{item.target.id} · {item.reviewerIds.map((id) => people.get(id)).join(', ')}</p>)}{(state.assignments ?? []).length === 0 && <p className="text-slate-500">Distribua documentos, referências ou itens de triagem.</p>}</div></div><div className="rounded-xl border border-slate-200 p-4"><h3 className="font-semibold text-slate-800">Triagem cega</h3><p className="mt-2 text-sm text-slate-600">Fase: <select className="rounded border border-slate-200 px-2 py-1" value={state.screening?.phase ?? 'independent'} onChange={(event) => setState({ ...state, screening: { phase: event.target.value as 'independent' | 'reconciliation', decisions } })}><option value="independent">Independente</option><option value="reconciliation">Reconciliação</option></select></p><p className="mt-2 text-sm text-slate-500">{compared.size} item(ns) comparado(s), {conflicts} divergência(s). Decisões individuais só ficam visíveis na reconciliação.</p></div><div className="rounded-xl border border-slate-200 p-4"><div className="flex justify-between gap-2"><h3 className="font-semibold text-slate-800">Menções e presença</h3><button type="button" className="text-sm font-semibold text-indigo-600" onClick={addMention}>@ Mencionar</button></div><p className="mt-2 text-sm text-slate-500">{(state.mentions ?? []).length} menção(ões) · {(state.presence ?? []).length} presença(s) registrada(s).</p><p className="mt-2 text-xs text-slate-500">Edição concorrente: deliberadamente não habilitada; a pasta espelho continua a resolver conflitos explícitos.</p></div></div>}<footer className="mt-6 flex justify-end gap-2"><button type="button" className="folio-control rounded-lg px-3 py-2 text-sm font-semibold" onClick={onClose}>Cancelar</button><button type="button" disabled={busy} className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={() => void save()}>Salvar colaboração</button></footer></section></div>;
@@ -862,7 +857,11 @@ function SplitEditorDialog({ files, onClose, onOpen }: {
 }
 
 function commandContextForPalette(active: ViewState | undefined): { activeViewId?: ViewId; activeFileId?: string } {
-  return active === undefined ? {} : { activeViewId: active.id, activeFileId: active.fileId };
+  return active === undefined
+    ? {}
+    : active.type === 'browser'
+      ? { activeViewId: active.id }
+      : { activeViewId: active.id, activeFileId: active.fileId };
 }
 
 function CitationDialog({ fileId, workspaceId, initial, replaceRange, onClose, onApply }: {
@@ -1031,7 +1030,7 @@ const entryFromDraft = (draft: ReferenceDraft, base: BibliographicEntityDto | un
   };
 };
 
-function ReferenceLibraryDialog({ onClose, onOpenLiteratureNote }: { readonly onClose: () => void; readonly onOpenLiteratureNote: (fileId: string, path: string) => void }): JSX.Element {
+function ReferenceLibraryDialog({ onClose, onOpenPdf }: { readonly onClose: () => void; readonly onOpenPdf: (fileId: string, path: string) => void }): JSX.Element {
   const [entries, setEntries] = useState<readonly BibliographicEntityDto[]>([]);
   const [attachmentItems, setAttachmentItems] = useState<readonly AttachmentDto[]>([]);
   const [attachmentRole, setAttachmentRole] = useState<AttachmentRoleDto>('primary');
@@ -1039,20 +1038,22 @@ function ReferenceLibraryDialog({ onClose, onOpenLiteratureNote }: { readonly on
   const [query, setQuery] = useState('');
   const [draft, setDraft] = useState<ReferenceDraft>(emptyReferenceDraft);
   const [preview, setPreview] = useState('Preencha a chave e o tipo para ver a referência ABNT.');
-  const [pdfReaderReferenceId, setPdfReaderReferenceId] = useState<string | undefined>(undefined);
   const [relations, setRelations] = useState<readonly ReferenceRelationDto[]>([]);
   const [relationKind, setRelationKind] = useState<ReferenceRelationKindDto>('version-of');
   const [relationTargetId, setRelationTargetId] = useState<string | undefined>(undefined);
   const [fullTextCandidates, setFullTextCandidates] = useState<readonly import('@abnt/protocol').FullTextCandidateDto[]>([]);
+  const [integrityRecords, setIntegrityRecords] = useState<readonly import('@abnt/protocol').ReferenceIntegrityRecordDto[]>([]);
   const selected = entries.find((entry) => entry.id === selectedId);
   const visibleEntries = entries.filter((entry) => `${entry.id} ${entry.title ?? ''} ${entry.author?.map((author) => author.literal ?? [author.family, author.given].filter(Boolean).join(' ')).join(' ') ?? ''}`.toLocaleLowerCase('pt-BR').includes(query.trim().toLocaleLowerCase('pt-BR')));
   const attachmentsForSelected = selectedId === undefined ? [] : attachmentItems.filter((item) => item.referenceId === selectedId);
   const relationsForSelected = selectedId === undefined ? [] : relations.filter((relation) => relation.fromId === selectedId || relation.toId === selectedId);
+  const integrityForSelected = selectedId === undefined ? undefined : integrityRecords.find((record) => record.referenceId === selectedId);
 
   const load = (): void => {
     void window.academic.library.list({}).then((result) => { if (result.ok) setEntries(result.value); });
     void window.academic.workspace.attachments({}).then((result) => { if (result.ok) setAttachmentItems(result.value); });
     void window.academic.workspace.referenceRelations({}).then((result) => { if (result.ok) setRelations(result.value.relations); });
+    void window.academic.workspace.referenceIntegrity().then((result) => { if (result.ok) setIntegrityRecords(result.value.records); });
   };
   useEffect(load, []);
   useEffect(() => {
@@ -1147,11 +1148,24 @@ function ReferenceLibraryDialog({ onClose, onOpenLiteratureNote }: { readonly on
   };
   const downloadCandidate = async (url: string): Promise<void> => {
     if (selectedId === undefined) return;
+    if (!await requestConfirmation({ title: 'Baixar e anexar texto completo?', description: 'O PDF será baixado do provider selecionado e adicionado como anexo principal desta referência. Revise a URL, licença e versão antes de confirmar.', confirmLabel: 'Baixar e anexar', destructive: false })) return;
     const result = await window.academic.library.downloadFullText({ referenceId: selectedId, url, ...(selected?.title === undefined ? {} : { displayTitle: selected.title }) });
     if (!result.ok) { setPreview(result.error.message); return; }
     setFullTextCandidates([]); load();
   };
   const fullTextControls = selectedId === undefined ? null : <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/50 p-4"><div className="flex items-center gap-3"><div><h3 className="text-xs font-bold uppercase tracking-[0.14em] text-sky-800">Texto completo</h3><p className="mt-1 text-xs text-slate-600">Descoberta revisável; o download só começa após sua confirmação.</p></div><button type="button" className="ml-auto rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-semibold text-sky-800" onClick={() => void findFullText()}>Buscar</button></div>{fullTextCandidates.length > 0 && <ul className="mt-3 grid gap-2">{fullTextCandidates.map((candidate) => <li key={candidate.url} className="flex flex-wrap items-center gap-2 rounded-xl border border-sky-100 bg-white p-2.5 text-xs"><span className="font-semibold text-slate-800">{candidate.provider}</span><span className="rounded bg-sky-100 px-1.5 py-0.5 text-sky-800">{candidate.license}</span><span className="text-slate-500">{Math.round(candidate.confidence * 100)}%</span><span className="min-w-0 flex-1 truncate text-slate-600">{candidate.url}</span><button type="button" className="rounded bg-sky-700 px-2.5 py-1.5 font-semibold text-white" onClick={() => void downloadCandidate(candidate.url)}>Baixar e anexar</button></li>)}</ul>}</div>;
+  const setIntegrity = async (): Promise<void> => {
+    if (selectedId === undefined) return;
+    const status = await requestText('Status de integridade', integrityForSelected?.status ?? 'unknown');
+    if (status === null || !['normal', 'retracted', 'corrected', 'expression-of-concern', 'unknown'].includes(status)) { setPreview('Escolha: normal, retracted, corrected, expression-of-concern ou unknown.'); return; }
+    const provider = await requestText('Fonte da evidência', integrityForSelected?.provider ?? 'Crossmark'); if (provider === null || provider.trim() === '') return;
+    const evidence = await requestText('URL ou identificador da evidência', integrityForSelected?.evidence ?? ''); if (evidence === null || evidence.trim() === '') return;
+    const records = [...integrityRecords.filter((record) => record.referenceId !== selectedId), { referenceId: selectedId, status: status as import('@abnt/protocol').ReferenceIntegrityStatusDto, provider: provider.trim(), evidence: evidence.trim(), checkedAt: new Date().toISOString() }];
+    const result = await window.academic.workspace.setReferenceIntegrity({ version: 1, records });
+    if (result.ok) { setIntegrityRecords(result.value.records); setPreview('Status de integridade atualizado.'); } else setPreview(result.error.message);
+  };
+  const integrityLabel: Record<import('@abnt/protocol').ReferenceIntegrityStatusDto, string> = { normal: 'Normal', retracted: 'Retratada', corrected: 'Corrigida', 'expression-of-concern': 'Expression of concern', unknown: 'Não verificada' };
+  const integrityControls = selectedId === undefined ? null : <div className={`mt-4 rounded-2xl border p-4 ${integrityForSelected?.status === 'retracted' || integrityForSelected?.status === 'expression-of-concern' ? 'border-rose-200 bg-rose-50' : 'border-amber-100 bg-amber-50/50'}`}><div className="flex items-center gap-3"><div><h3 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-700">Integridade bibliográfica</h3><p className="mt-1 text-xs text-slate-600">{integrityForSelected === undefined ? 'Ainda não verificada. Registre uma fonte e evidência explícitas.' : `${integrityLabel[integrityForSelected.status]} · ${integrityForSelected.provider} · ${new Date(integrityForSelected.checkedAt).toLocaleDateString('pt-BR')}`}</p>{integrityForSelected !== undefined && <a className="mt-1 block truncate text-xs text-indigo-700 underline" href={integrityForSelected.evidence} target="_blank" rel="noreferrer">{integrityForSelected.evidence}</a>}</div><button type="button" className="ml-auto rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800" onClick={() => void setIntegrity()}>{integrityForSelected === undefined ? 'Registrar' : 'Atualizar'}</button></div></div>;
   const relationControls = selectedId === undefined ? null : <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
     <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-600">Relações</h3>
     <ul className="mt-3 grid gap-2">{relationsForSelected.length === 0 ? <li className="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">Nenhuma relação registrada.</li> : relationsForSelected.map((relation) => {
@@ -1181,7 +1195,7 @@ function ReferenceLibraryDialog({ onClose, onOpenLiteratureNote }: { readonly on
         <div className="flex items-center gap-2"><span className="rounded-full bg-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-700">{attachmentRoleLabel[item.role]}</span><span className="min-w-0 flex-1 truncate font-medium text-slate-700">{label}</span><span className="whitespace-nowrap text-slate-500">{item.versions.length} versão(ões)</span></div>
         {item.suggestedFilename !== undefined && currentFileName !== item.suggestedFilename && <button type="button" className="mt-1 block text-indigo-300 hover:text-indigo-200" onClick={() => void applyRenameSuggestion(item.id, item.suggestedFilename!)}>Renomear para “{item.suggestedFilename}”</button>}
         <div className="mt-2 flex flex-wrap gap-2">
-          {item.role === 'primary' && item.mediaType === 'application/pdf' && <button type="button" className="rounded bg-cyan-800 px-2 py-1" onClick={() => setPdfReaderReferenceId(selectedId)}>Ler no Folio</button>}
+          {item.role === 'primary' && item.mediaType === 'application/pdf' && <button type="button" className="rounded bg-cyan-800 px-2 py-1" onClick={() => { void window.academic.library.pdf({ referenceId: selectedId }).then((result) => { if (result.ok) onOpenPdf(result.value.attachment.file.fileId, result.value.attachment.file.path); else setPreview(result.error.message); }); }}>Ler no Folio</button>}
           {item.kind === 'file' && <button type="button" className="rounded bg-slate-700 px-2 py-1" onClick={() => void openAttachmentFile(item.id)}>Abrir externo</button>}
           {item.kind === 'file' && <button type="button" className="rounded bg-slate-700 px-2 py-1" onClick={() => void revealAttachmentFile(item.id)}>Revelar</button>}
           {item.kind === 'file' && <button type="button" className="rounded bg-slate-700 px-2 py-1" onClick={() => void addAttachmentVersion(item.id)}>Nova versão</button>}
@@ -1214,14 +1228,13 @@ function ReferenceLibraryDialog({ onClose, onOpenLiteratureNote }: { readonly on
           </header>
           <div className="mx-auto max-w-4xl p-5 md:p-7">
             <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:p-5"><div className="grid gap-4 sm:grid-cols-2">{field('id', 'Chave de citação', 'silva2024')}<label className="grid gap-1.5 text-sm font-medium text-slate-700"><span>Tipo</span><select value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as ReferenceDraft['type'] })} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100">{REFERENCE_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>{field('title', 'Título')}{field('authors', 'Autores (um por linha: Sobrenome, Nome)')}{field('containerTitle', draft.type === 'article-journal' ? 'Periódico' : 'Obra / evento')}{field('publisher', 'Editora')}{field('year', 'Ano', '2024')}{field('doi', 'DOI')}{field('url', 'URL')}</div><div className="mt-4 flex justify-end"><button type="button" disabled={draft.doi.trim() === ''} onClick={() => void importDoi()} className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40">Resolver DOI e revisar</button></div></section>
-            {fullTextControls}{attachmentControls}{relationControls}
+            {fullTextControls}{integrityControls}{attachmentControls}{relationControls}
             <section className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4"><h3 className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-700">Preview ABNT</h3><p className="mt-2 text-sm leading-6 text-slate-700">{preview}</p></section>
             <footer className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 pt-5"><button type="button" disabled={selectedId === undefined} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40" onClick={duplicate}>Duplicar</button><button type="button" disabled={selectedId === undefined} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 disabled:opacity-40" onClick={() => void remove()}>Excluir</button><button type="button" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100" onClick={onClose}>Cancelar</button><button type="button" disabled={draft.id.trim() === ''} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40" onClick={() => void save()}>Salvar referência</button></footer>
           </div>
         </div>
       </section>
     </div>
-    {pdfReaderReferenceId !== undefined && <PdfReaderDialog referenceId={pdfReaderReferenceId} onClose={() => setPdfReaderReferenceId(undefined)} onOpenLiteratureNote={onOpenLiteratureNote} />}
   </>;
 }
 
@@ -1544,7 +1557,7 @@ export function App(): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<readonly WorkspaceSearchResultDto[]>([]);
   const [searchViewOpen, setSearchViewOpen] = useState(false);
-  const [openingVault, setOpeningVault] = useState(false);
+  const [vaultManagerOpen, setVaultManagerOpen] = useState(false);
   const [splitPreview, setSplitPreview] = useState(false);
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const [editorSplit, setEditorSplit] = useState<{ readonly primaryId: ViewId; readonly secondaryId: ViewId } | undefined>(undefined);
@@ -1596,12 +1609,15 @@ export function App(): JSX.Element {
   const [researchProjectsOpen, setResearchProjectsOpen] = useState(false);
   const [submissionIntegrationsOpen, setSubmissionIntegrationsOpen] = useState(false);
   const [researchIntakeOpen, setResearchIntakeOpen] = useState(false);
+  const [researchIntakeFormat, setResearchIntakeFormat] = useState<'bibtex' | 'ris' | 'csl-json' | undefined>(undefined);
   const [captureInboxOpen, setCaptureInboxOpen] = useState(false);
   const [researchCanvasOpen, setResearchCanvasOpen] = useState(false);
   const [academicFormsOpen, setAcademicFormsOpen] = useState(false);
   const [pendingCapture, setPendingCapture] = useState<WorkspaceCaptureInboxItemDto | undefined>(undefined);
   const [academicViewsOpen, setAcademicViewsOpen] = useState(false);
   const [structuredResearchOpen, setStructuredResearchOpen] = useState(false);
+  const [evidenceAnnotationDraft, setEvidenceAnnotationDraft] = useState<WorkspacePdfAnnotationDto | undefined>(undefined);
+  const [researchContext, setResearchContext] = useState<ResearchContext>(createResearchContext());
   const [workspaceNavigationOpen, setWorkspaceNavigationOpen] = useState(false);
   const [automationOpen, setAutomationOpen] = useState(false);
   const [customKeybindings, setCustomKeybindings] = useState<CustomKeybindings>({});
@@ -1615,6 +1631,7 @@ export function App(): JSX.Element {
   const [performanceOpen, setPerformanceOpen] = useState(false);
   const [documentComparisonOpen, setDocumentComparisonOpen] = useState(false);
   const [pluginManagerOpen, setPluginManagerOpen] = useState(false);
+  const [pluginView, setPluginView] = useState<{ readonly pluginId: string; readonly viewId: string } | undefined>(undefined);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [syncOpen, setSyncOpen] = useState(false);
   const [collaborationOpen, setCollaborationOpen] = useState(false);
@@ -1667,13 +1684,16 @@ export function App(): JSX.Element {
         )
       : undefined;
   const activePanel = panelRegistry.list().find((panel) => panel.id === activePanelId);
-  const sidebarWidth = sidebarCollapsed ? '56px' : '220px';
+  // Explorador e Busca são painéis independentes do trilho: podem continuar
+  // ativos enquanto a sidebar fica comprimida, como no workspace do Obsidian.
+  const sidebarCompact = sidebarCollapsed;
+  const sidebarWidth = sidebarCompact ? '56px' : '220px';
   const explorerColumnWidth = `${panelWidths.explorer}px`;
   const contextWidth = contextCollapsed ? '56px' : `${panelWidths.context}px`;
   // O trilho e o explorador são áreas independentes: comprimir o trilho não
   // deve esconder a árvore do vault.
   const explorerExpandedVisible = activeLayout.showNavigation && fileExplorerExpanded;
-  const searchSidebarVisible = activeLayout.showNavigation && searchSidebarOpen && !sidebarCollapsed;
+  const searchSidebarVisible = activeLayout.showNavigation && searchSidebarOpen;
   const shellGridColumns = [
     ...(activeLayout.showNavigation ? [sidebarWidth] : []),
     ...(explorerExpandedVisible || searchSidebarVisible ? [explorerColumnWidth, '4px'] : []),
@@ -2011,12 +2031,18 @@ export function App(): JSX.Element {
     }
     const request = (searchRequest.current += 1);
     const timer = setTimeout(() => {
-      void timePerformance('search', () => window.academic.workspace.search({ query })).then((result) => {
-        if (request === searchRequest.current && result.ok) setSearchResults(result.value);
+      void Promise.all([
+        timePerformance('search', () => window.academic.workspace.search({ query })),
+        Promise.all(files.filter((file) => file.path.toLowerCase().endsWith('.pdf')).map(async (file) => {
+          const result = await window.academic.library.pdfAnnotations({ fileId: file.fileId });
+          return result.ok ? result.value.filter((annotation) => `${annotation.quote} ${annotation.comment ?? ''}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())).map((annotation) => ({ fileId: file.fileId, path: file.path, title: `Annotation · p. ${annotation.page}`, snippet: annotation.quote, score: 1 })) : [];
+        })),
+      ]).then(([result, annotationGroups]) => {
+        if (request === searchRequest.current && result.ok) setSearchResults([...result.value, ...annotationGroups.flat()]);
       });
     }, 200);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [files, searchQuery]);
 
   /**
    * HTML "rápido" sob demanda; nunca aplica uma resposta mais velha que a
@@ -2106,6 +2132,8 @@ export function App(): JSX.Element {
 
   const openWorkspaceFile = async (file: WorkspaceFileDto): Promise<void> => {
     const isImage = file.mediaType?.startsWith('image/') === true || /\.(png|jpe?g|gif|webp|svg)$/iu.test(file.path);
+    const isPdf = file.mediaType === 'application/pdf' || /\.pdf$/iu.test(file.path);
+    if (isPdf) { viewsModel.openPdf({ fileId: file.fileId, path: file.path }); markFileAsRecent(file.fileId); setMessage(file.path); return; }
     if (!isImage) { await openDocument(file.fileId, file.path); return; }
     const preview = await window.academic.editor.assetPreview({ fileId: file.fileId });
     if (!preview.ok) { setMessage(preview.error.message); return; }
@@ -2136,6 +2164,12 @@ export function App(): JSX.Element {
   };
 
   const navigateToLocation = async (location: LanguageLocation): Promise<void> => {
+    const targetFile = workspaceFiles.find((file) => String(file.fileId) === String(location.fileId));
+    if (targetFile?.mediaType === 'application/pdf' || String(location.path).toLowerCase().endsWith('.pdf')) {
+      viewsModel.openPdf({ fileId: String(location.fileId), path: String(location.path), ...(location.page === undefined ? {} : { page: location.page }) });
+      setReferenceLocations(undefined);
+      return;
+    }
     const controller = await openDocument(String(location.fileId), String(location.path), { remember: false });
     if (controller === undefined) return;
     controller.dispatch({ selection: { anchor: location.range.start, head: location.range.end } });
@@ -2182,7 +2216,7 @@ export function App(): JSX.Element {
   /** Funciona tanto com a aba de edição quanto com a de preview — as duas guardam o mesmo `fileId`. */
   const exportActiveDocument = async (format: 'pdf' | 'docx'): Promise<void> => {
     const active = viewsModel.active();
-    if (active === undefined) return;
+    if (active === undefined || active.type === 'browser') return;
     // A duração inclui o diálogo nativo de salvar (tempo de resposta do
     // usuário), não só compilação/render — não há hoje uma fronteira de IPC
     // que separe as duas coisas. Ver rótulo em performance-observatory-dialog.tsx.
@@ -2462,6 +2496,22 @@ export function App(): JSX.Element {
         run() { setResearchIntakeOpen(true); },
       }),
       commandRegistry.register({
+        id: 'reference.addByIdentifier',
+        title: 'Adicionar referência por identificador',
+        category: 'Biblioteca',
+        aliases: ['doi', 'isbn', 'pmid', 'arxiv', 'ads'],
+        isEnabled: () => workspaceId !== undefined,
+        run() { setResearchIntakeOpen(true); },
+      }),
+      commandRegistry.register({
+        id: 'reference.addIdentifiersBatch',
+        title: 'Adicionar identificadores em lote',
+        category: 'Biblioteca',
+        aliases: ['lote doi', 'lote isbn', 'importar identificadores'],
+        isEnabled: () => workspaceId !== undefined,
+        run() { setResearchIntakeOpen(true); setMessage('No campo DOI ou URL, separe os identificadores por vírgula ou ponto e vírgula para revisar o lote.'); },
+      }),
+      commandRegistry.register({
         id: 'capture.inbox',
         title: 'Abrir inbox de capturas',
         category: 'Pesquisa',
@@ -2622,7 +2672,7 @@ export function App(): JSX.Element {
       commandRegistry.register({ id: 'workspace.sync', title: 'Configurar pasta espelho local', category: 'Workspace', isEnabled: () => workspaceId !== undefined, run() { setSyncOpen(true); } }),
       commandRegistry.register({ id: 'collaboration.manage', title: 'Gerenciar colaboradores', category: 'Workspace', isEnabled: () => workspaceId !== undefined, run() { setCollaborationOpen(true); } }),
       commandRegistry.register({ id: 'performance.open', title: 'Abrir Performance Observatory', category: 'Workspace', aliases: ['perf', 'desempenho', 'benchmark'], run() { setPerformanceOpen(true); } }),
-      ...pluginContributions.flatMap((plugin) => plugin.commands.map((command) => commandRegistry.register({ id: `plugin.${plugin.id}.${command.id}`, title: `${plugin.id}: ${command.title}`, isEnabled: () => plugin.enabled, async run() { const active = viewsModel.active(); const result = await window.academic.workspace.runPluginCommand({ pluginId: plugin.id, commandId: command.id, ...(active?.type === 'editor' ? { activeFileId: active.fileId, activeRevision: active.snapshot.session.revision } : {}) }); if (!result.ok) { setMessage(result.error.message); return; } setMessage(result.value.message ?? `Comando ${command.title} executado.`); if (result.value.kind === 'open-view') setPluginManagerOpen(true); } }))),
+      ...pluginContributions.flatMap((plugin) => plugin.commands.map((command) => commandRegistry.register({ id: `plugin.${plugin.id}.${command.id}`, title: `${plugin.id}: ${command.title}`, isEnabled: () => plugin.enabled, async run() { const active = viewsModel.active(); const result = await window.academic.workspace.runPluginCommand({ pluginId: plugin.id, commandId: command.id, ...(active?.type === 'editor' ? { activeFileId: active.fileId, activeRevision: active.snapshot.session.revision } : {}) }); if (!result.ok) { setMessage(result.error.message); return; } setMessage(result.value.message ?? `Comando ${command.title} executado.`); if (result.value.kind === 'open-view') { setPluginView(result.value.viewId === undefined ? undefined : { pluginId: plugin.id, viewId: result.value.viewId }); setPluginManagerOpen(true); } if (result.value.kind === 'open-intake') { setResearchIntakeFormat(result.value.intakeFormat); setResearchIntakeOpen(true); } if (result.value.kind === 'open-template' && result.value.templateKind !== undefined) setDocumentCreator(result.value.templateKind); if (result.value.kind === 'open-structured-research') setStructuredResearchOpen(true); } }))),
       ...pluginContributions.flatMap((plugin) => plugin.exports.map((output) => commandRegistry.register({ id: `plugin.${plugin.id}.export.${output.id}`, title: `${plugin.id}: Exportar ${output.title}`, isEnabled: () => plugin.enabled && viewsModel.active()?.type === 'editor', async run() { const active = viewsModel.active(); if (active?.type !== 'editor') return; const result = await window.academic.editor.exportPlugin({ fileId: active.fileId, expectedRevision: active.snapshot.session.revision, pluginId: plugin.id, exportId: output.id }); setMessage(result.ok ? `Exportado em ${result.value.path}.` : result.error.message); } }))),
       commandRegistry.register({
         id: 'library.manage',
@@ -2644,21 +2694,7 @@ export function App(): JSX.Element {
         title: 'Monitoramento de literatura (feeds)',
         run() { setLiteratureMonitoringOpen(true); },
       }),
-      commandRegistry.register({
-        id: 'workspace.open',
-        title: 'Abrir vault',
-        async run() {
-          setOpeningVault(true);
-          setMessage('Escolha a pasta do vault no diálogo do sistema…');
-          try {
-            acceptOpenedWorkspace(await withTimeout(window.academic.workspace.chooseAndOpen(), 15_000));
-          } catch {
-            setMessage('O seletor não respondeu. Informe o caminho do vault abaixo.');
-          } finally {
-            setOpeningVault(false);
-          }
-        },
-      }),
+      commandRegistry.register({ id: 'workspace.manageVaults', title: 'Gerenciar vaults', category: 'Workspace', aliases: ['abrir vault', 'novo vault', 'trocar vault'], run() { setVaultManagerOpen(true); } }),
       commandRegistry.register({
         id: 'application.newWindow',
         title: 'Abrir nova janela',
@@ -2897,7 +2933,7 @@ export function App(): JSX.Element {
       }),
       commandRegistry.register({
         id: 'review.nextComment', title: 'Próximo comentário', isEnabled: () => workspaceId !== undefined,
-        async run() { if(workspaceId===undefined) return; const comments=[...readReviewComments(workspaceId)].sort((a,b)=>a.path.localeCompare(b.path)||a.range.start-b.range.start); const active=viewsModel.active(); const next=comments.find((comment)=>comment.fileId===active?.fileId&&comment.range.start>(active?.type==='editor'?active.snapshot.selection.head:-1)) ?? comments[0]; if(next===undefined)return; const controller=await openDocument(next.fileId,next.path); if(controller!==undefined)controller.dispatch({selection:{anchor:next.range.start,head:next.range.end}}); },
+        async run() { if(workspaceId===undefined) return; const comments=[...readReviewComments(workspaceId)].sort((a,b)=>a.path.localeCompare(b.path)||a.range.start-b.range.start); const active=viewsModel.active(); const activeFileId=active===undefined||active.type==='browser'?undefined:active.fileId; const next=comments.find((comment)=>comment.fileId===activeFileId&&comment.range.start>(active?.type==='editor'?active.snapshot.selection.head:-1)) ?? comments[0]; if(next===undefined)return; const controller=await openDocument(next.fileId,next.path); if(controller!==undefined)controller.dispatch({selection:{anchor:next.range.start,head:next.range.end}}); },
       }),
       commandRegistry.register({
         id: 'figure.insert', title: 'Inserir figura', isEnabled: () => viewsModel.active()?.type === 'editor',
@@ -3031,14 +3067,14 @@ export function App(): JSX.Element {
   };
 
   return (
-    <main className="folio-shell grid h-screen overflow-hidden text-[14px]" style={{ gridTemplateColumns: shellGridColumns }}>
-      {activeLayout.showNavigation && <aside className={`folio-sidebar flex min-h-0 flex-col border-r ${sidebarCollapsed ? 'items-center gap-3 px-2 py-4' : 'p-4'}`}>
-        {sidebarCollapsed ? <>
+    <main className="folio-shell grid h-screen min-w-0 items-stretch overflow-hidden text-[14px]" style={{ gridTemplateColumns: shellGridColumns, gridTemplateRows: 'minmax(0, 1fr)', gridAutoFlow: 'column', alignItems: 'stretch' }}>
+      {activeLayout.showNavigation && <aside className={`folio-sidebar flex min-h-0 flex-col border-r ${sidebarCompact ? 'items-center gap-3 px-2 py-4' : 'p-4'}`}>
+        {sidebarCompact ? <>
           <button type="button" aria-label="Expandir sidebar" title="Expandir sidebar" className="folio-control grid h-9 w-9 place-items-center rounded-xl" onClick={() => setSidebarCollapsed(false)}><FolioIcon name="forward" /></button>
           <button type="button" disabled={workspaceId === undefined} aria-label="Abrir Home" title="Home" className="folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => setHomeOpen(true)}><FolioIcon name="home" /></button>
           <button type="button" disabled={workspaceId === undefined} aria-label="Criar documento" title="Criar documento" className="folio-primary grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => void commandRegistry.execute('template.createDocument', {})}><FolioIcon name="add" /></button>
-          <button type="button" disabled={workspaceId === undefined} aria-label="Expandir explorador de arquivos" title="Expandir explorador de arquivos" className="folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => void commandRegistry.execute('explorer.toggleExpanded', {})}><FolioIcon name="folder" /></button>
-          <button type="button" disabled={workspaceId === undefined} aria-label="Buscar no vault" title="Buscar no vault" className={`folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40 ${searchSidebarOpen ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : ''}`} onClick={() => void commandRegistry.execute('search.openSidebar', {})}><FolioIcon name="search" /></button>
+          <button type="button" disabled={workspaceId === undefined} aria-label="Abrir explorador de arquivos" title="Explorador de arquivos" className={`folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40 ${fileExplorerExpanded ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : ''}`} onClick={() => { setSearchSidebarOpen(false); setFileExplorerExpanded((current) => !current); }}><FolioIcon name="folder" /></button>
+          <button type="button" disabled={workspaceId === undefined} aria-label="Buscar no vault" title="Buscar no vault" className={`folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40 ${searchSidebarOpen ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : ''}`} onClick={() => { setFileExplorerExpanded(false); setSearchSidebarOpen((current) => !current); }}><FolioIcon name="search" /></button>
           <button type="button" disabled={workspaceId === undefined} aria-label="Importar pesquisa" title="Importar pesquisa" className="folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => void commandRegistry.execute('research.intake', {})}><FolioIcon name="add" /></button>
           <button type="button" disabled={workspaceId === undefined} aria-label="Abrir biblioteca de referências" title="Biblioteca" className="folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => void commandRegistry.execute('library.manage', {})}><FolioIcon name="citation" /></button>
           <button type="button" disabled={workspaceId === undefined} aria-label="Abrir projetos de pesquisa" title="Projetos" className="folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => void commandRegistry.execute('projects.open', {})}><FolioIcon name="review" /></button>
@@ -3047,12 +3083,12 @@ export function App(): JSX.Element {
           <button type="button" disabled={workspaceId === undefined} aria-label="Abrir integrações de submissão" title="Submissão" className="folio-control grid h-9 w-9 place-items-center rounded-xl disabled:opacity-40" onClick={() => void commandRegistry.execute('submission.integrations', {})}><FolioIcon name="download" /></button>
           <div className="mt-auto grid gap-3">
             <button type="button" aria-label="Abrir configurações" title="Configurações" className="folio-control grid h-9 w-9 place-items-center rounded-xl" onClick={() => setSettingsOpen(true)}><FolioIcon name="settings" /></button>
-            <button type="button" aria-label="Abrir vault" title="Abrir vault" className="folio-control grid h-9 w-9 place-items-center rounded-xl" onClick={() => void commandRegistry.execute('workspace.open', {})}><FolioIcon name="folder" /></button>
+            <button type="button" aria-label="Gerenciar vaults" title="Gerenciar vaults" className="folio-control grid h-9 w-9 place-items-center rounded-xl" onClick={() => void commandRegistry.execute('workspace.manageVaults', {})}><FolioIcon name="folder" /></button>
           </div>
         </> : <>
         <div className="mb-7 flex items-center gap-3 px-1">
           <div className="min-w-0 flex-1"><FolioLogo size={40} /></div>
-          <button type="button" aria-label="Comprimir sidebar" title="Comprimir sidebar" className="folio-control grid h-8 w-8 place-items-center rounded-lg" onClick={() => { setFileExplorerExpanded(false); setSearchSidebarOpen(false); setSidebarCollapsed(true); }}><FolioIcon name="back" /></button>
+          <button type="button" aria-label="Comprimir sidebar" title="Comprimir sidebar" className="folio-control grid h-8 w-8 place-items-center rounded-lg" onClick={() => setSidebarCollapsed(true)}><FolioIcon name="back" /></button>
         </div>
         <button
           type="button"
@@ -3080,7 +3116,7 @@ export function App(): JSX.Element {
         </div>
         <div className="mt-auto grid gap-2 border-t border-slate-200 pt-4">
           <button type="button" className="folio-control flex h-10 w-full items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold" onClick={() => setSettingsOpen(true)}><FolioIcon name="settings" className="h-4 w-4 text-indigo-600" />Configurações</button>
-          <button type="button" className="folio-control flex h-10 w-full items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold disabled:cursor-wait disabled:opacity-60" disabled={openingVault} onClick={() => void commandRegistry.execute('workspace.open', {}).catch(() => setMessage('O comando de abrir vault ainda não está disponível.'))}><FolioIcon name="folder" className="h-4 w-4 text-indigo-600" />{openingVault ? 'Abrindo seletor…' : 'Abrir vault'}</button>
+          <button type="button" className="folio-control flex h-10 w-full items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold" onClick={() => void commandRegistry.execute('workspace.manageVaults', {}).catch(() => setMessage('O gerenciador de vaults não está disponível.'))}><FolioIcon name="folder" className="h-4 w-4 text-indigo-600" />Gerenciar vaults</button>
         </div>
       </>}</aside>}
       {explorerExpandedVisible && (
@@ -3110,13 +3146,16 @@ export function App(): JSX.Element {
           onClose={() => setSearchSidebarOpen(false)}
           onOpenFile={(result) => {
             setSearchSidebarOpen(false);
-            void commandRegistry.execute('document.open', { targetFile: { fileId: result.fileId, path: result.path } });
+            const annotationPage = /^Annotation · p\. (\d+)$/u.exec(result.title)?.[1];
+            if (annotationPage !== undefined && result.path.toLowerCase().endsWith('.pdf')) {
+              viewsModel.openPdf({ fileId: result.fileId, path: result.path, page: Number(annotationPage) });
+            } else void commandRegistry.execute('document.open', { targetFile: { fileId: result.fileId, path: result.path } });
           }}
         />
       )}
       {(explorerExpandedVisible || searchSidebarVisible) && <div role="separator" aria-orientation="vertical" aria-label="Redimensionar explorador" tabIndex={0} className="folio-panel-resizer" onPointerDown={(event) => beginPanelResize('explorer', event)} />}
-      <section className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-white/50">
-        <div className="folio-contextbar flex min-h-14 items-center gap-2 overflow-hidden border-b px-3" role="tablist" aria-label="Documentos abertos">
+      <section className="grid h-full min-h-0 min-w-0 flex-1 self-stretch grid-rows-[auto_minmax(0,1fr)] bg-white/50" style={{ alignSelf: 'stretch' }}>
+        <div className="folio-contextbar flex min-h-14 min-w-0 items-center gap-2 overflow-hidden border-b px-3" role="tablist" aria-label="Documentos abertos">
           <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-2">
           {views.map((view) => (
             <div
@@ -3125,21 +3164,22 @@ export function App(): JSX.Element {
               onDragEnd={() => setDraggedTabId(undefined)}
               onDragOver={(event) => { if (draggedTabId !== undefined && draggedTabId !== view.id) event.preventDefault(); }}
               onDrop={(event) => { event.preventDefault(); if (draggedTabId !== undefined) viewsModel.reorder(draggedTabId, view.id); setDraggedTabId(undefined); }}
-              className={`flex shrink-0 items-center rounded-lg ${draggedTabId === view.id ? 'opacity-45' : ''} ${view.id === activeId ? 'folio-tab-active' : 'text-slate-500 hover:bg-slate-100'}`}
+              className={`flex min-w-0 max-w-[15rem] shrink-0 items-center rounded-lg ${draggedTabId === view.id ? 'opacity-45' : ''} ${view.id === activeId ? 'folio-tab-active' : 'text-slate-500 hover:bg-slate-100'}`}
               key={view.id}
             >
               <button
                 type="button"
-                className="rounded-none bg-transparent px-2.5 py-2 text-sm whitespace-nowrap"
-                onClick={() => { setHomeOpen(false); viewsModel.activate(view.id); if (view.type === 'editor') markFileAsRecent(view.fileId); }}
+                className="min-w-0 flex-1 truncate rounded-none bg-transparent px-2.5 py-2 text-left text-sm"
+      title={view.type === 'browser' ? view.url : view.path}
+              onClick={() => { setHomeOpen(false); viewsModel.activate(view.id); if (view.type === 'editor') markFileAsRecent(view.fileId); }}
               >
-                {view.type === 'preview' ? `◎ ${view.path}` : view.path}
+                {view.type === 'browser' ? view.title : view.type === 'preview' ? `◎ ${view.path.split('/').filter(Boolean).at(-1) ?? view.path}` : view.path.split('/').filter(Boolean).at(-1) ?? view.path}
                 {view.type === 'editor' && view.snapshot.session.dirty ? ' •' : ''}
               </button>
               <button
                 type="button"
                 className="rounded-r-lg bg-transparent px-2 py-2 text-slate-400 hover:bg-slate-100 hover:text-slate-900"
-                aria-label={`Fechar ${view.path}`}
+       aria-label={`Fechar ${view.type === 'browser' ? 'navegador' : view.path}`}
                 onClick={() => void closeTab(view.id)}
               >
                 ×
@@ -3215,6 +3255,10 @@ export function App(): JSX.Element {
           <div className="grid place-items-center bg-[radial-gradient(circle_at_center,_#eef2ff,_transparent_55%)] px-8 text-center">
             <div className="max-w-md"><div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"><FolioIcon name="command" className="h-6 w-6" /></div><h1 className="text-lg font-bold tracking-tight text-slate-900">Pronto para escrever</h1><p className="mt-2 text-sm leading-6 text-slate-500">Abra um documento do vault ou use a Command Palette para começar.</p></div>
           </div>
+        ) : activeView.type === 'browser' ? (
+          <ResearchBrowserPane key={activeView.id} initialUrl={activeView.url} researchContext={researchContext} onResearchContextChange={(next) => setResearchContext((current) => ({ ...current, ...next }))} onMessage={setMessage} onPageChange={(page) => viewsModel.updateBrowser(activeView.id, page)} onOpenDestination={(destination) => { if (destination === 'captures') setCaptureInboxOpen(true); else if (destination === 'library') setReferenceLibraryEditor(true); else if (destination === 'projects') setResearchProjectsOpen(true); else if (destination === 'review') setStructuredResearchOpen(true); else { setCaptureInboxOpen(true); setMessage('Envie o candidato para a Capture Inbox para adicioná-lo à fila de leitura.'); } }} onCite={(referenceId) => { void commandRegistry.execute('citation.insert', { targetReference: { id: referenceId } }); }} onCapture={(capture) => { setPendingCapture({ id: crypto.randomUUID(), capturedAt: new Date().toISOString(), ...capture }); setCaptureInboxOpen(true); }} />
+        ) : activeView.type === 'pdf' ? (
+          <PdfWorkspacePane {...(activeView.researchContext === undefined ? {} : { researchContext: activeView.researchContext })} fileId={activeView.fileId} path={activeView.path} {...(activeView.page === undefined ? {} : { initialPage: activeView.page })} onOpenNote={(fileId, path, citation) => { void openDocument(fileId, path).then(() => { if (citation !== undefined) void commandRegistry.execute('citation.insert', { targetCitation: { range: { start: 0, end: 0 }, text: citation + ' ' } }); }); }} onOpenLibrary={() => setReferenceLibraryEditor(true)} onUseInEvidence={(annotation) => { setEvidenceAnnotationDraft(annotation); setStructuredResearchOpen(true); }} />
         ) : activeView.type === 'editor' ? (
           <div className="flex min-h-0 min-w-0 flex-1">
             {splitEditorViews.length === 2 ? (
@@ -3464,7 +3508,8 @@ export function App(): JSX.Element {
       {historyOpen && activeEditorView !== undefined && <HistoryDialog fileId={activeEditorView.fileId} path={activeEditorView.path} onClose={() => setHistoryOpen(false)} />}
       {performanceOpen && <PerformanceObservatoryDialog onClose={() => setPerformanceOpen(false)} />}
       {documentComparisonOpen && <DocumentComparisonDialog files={files} {...(activeEditorView === undefined ? {} : { initialFileId: activeEditorView.fileId })} onClose={() => setDocumentComparisonOpen(false)} />}
-      {pluginManagerOpen && <PluginManagerDialog onClose={() => setPluginManagerOpen(false)} onChanged={setPluginContributions} />}
+      {pluginManagerOpen && <PluginManagerDialog {...(pluginView === undefined ? {} : { initialView: pluginView })} onClose={() => { setPluginManagerOpen(false); setPluginView(undefined); }} onChanged={setPluginContributions} onRunCommand={(pluginId, commandId) => { setPluginManagerOpen(false); void commandRegistry.execute(`plugin.${pluginId}.${commandId}`, paletteContext).catch(() => setMessage('Não foi possível abrir a função do plugin.')); }} />}
+      {vaultManagerOpen && <VaultManagerDialog onClose={() => setVaultManagerOpen(false)} onOpened={(value) => acceptOpenedWorkspace({ ok: true, value })} onMessage={setMessage} />}
       {automationOpen && workspaceId !== undefined && <AutomationDialog
         registry={commandRegistry}
         context={paletteContext}
@@ -3491,14 +3536,14 @@ export function App(): JSX.Element {
         onAddReference={(collectionId, referenceId) => setKnowledgeWorkspace((current) => ({ ...current, collections: current.collections.map((collection) => collection.id !== collectionId || collection.referenceIds.includes(referenceId) ? collection : { ...collection, referenceIds: [...collection.referenceIds, referenceId] }) }))}
         onRemoveCollection={(id) => setKnowledgeWorkspace((current) => ({ ...current, collections: current.collections.filter((collection) => collection.id !== id) }))}
       />}
-      {researchWorkflowOpen && workspaceId !== undefined && <ResearchWorkflowDialog workspaceId={workspaceId} onClose={() => setResearchWorkflowOpen(false)} onOpenDocument={(fileId, path) => { setResearchWorkflowOpen(false); void openDocument(fileId, path); }} />}
-      {researchIntakeOpen && workspaceId !== undefined && <ResearchIntakeDialog workspaceId={workspaceId} onClose={() => setResearchIntakeOpen(false)} onMessage={setMessage} />}
+      {researchWorkflowOpen && workspaceId !== undefined && <ResearchWorkflowDialog workspaceId={workspaceId} onClose={() => setResearchWorkflowOpen(false)} onOpenDocument={(fileId, path) => { setResearchWorkflowOpen(false); void openDocument(fileId, path); }} onOpenPdf={(fileId, path, referenceId) => { setResearchWorkflowOpen(false); void window.academic.workspace.readingQueue().then((result) => result.ok ? window.academic.workspace.setReadingQueue({ version: 1, entries: { ...result.value.entries, [referenceId]: { state: 'reading', updatedAt: new Date().toISOString() } } }) : result).then(() => { viewsModel.openPdf({ fileId, path, researchContext: { referenceId } }); }); }} />}
+      {researchIntakeOpen && workspaceId !== undefined && <ResearchIntakeDialog workspaceId={workspaceId} {...(researchIntakeFormat === undefined ? {} : { initialFormat: researchIntakeFormat })} onClose={() => { setResearchIntakeOpen(false); setResearchIntakeFormat(undefined); }} onMessage={setMessage} />}
       {captureInboxOpen && workspaceId !== undefined && <CaptureInboxDialog workspaceId={workspaceId} {...(pendingCapture === undefined ? {} : { pendingCapture })} onClose={() => { setCaptureInboxOpen(false); setPendingCapture(undefined); }} onOpenDocument={(fileId, path) => { setCaptureInboxOpen(false); setPendingCapture(undefined); void openDocument(fileId, path); }} onMessage={setMessage} />}
       {researchCanvasOpen && <ResearchCanvasDialog files={workspaceFiles} onClose={() => setResearchCanvasOpen(false)} onMessage={setMessage} onInsertWriting={(text) => { if (activeEditorView === undefined) { setMessage('Abra um documento para inserir a prévia do canvas.'); return; } const offset = activeEditorView.snapshot.selection.head; activeEditorView.controller.dispatch({ edits: [{ range: { start: offset, end: offset }, text: `\n${text}\n` }], selection: { anchor: offset + text.length + 2, head: offset + text.length + 2 } }); setResearchCanvasOpen(false); setMessage('Prévia do canvas inserida; revise o texto autoral.'); }} />}
       {academicFormsOpen && <AcademicFormsDialog onClose={() => setAcademicFormsOpen(false)} onMessage={setMessage} onBatchReferenceType={(ids, type) => commandRegistry.execute('forms.applyReferenceType', paletteContext, { ids, type })} />}
       {researchProjectsOpen && workspaceId !== undefined && <ResearchProjectsDialog workspaceId={workspaceId} files={files} knowledge={knowledgeWorkspace} {...(activeEditorView === undefined ? {} : { activeFile: { fileId: activeEditorView.fileId, path: activeEditorView.path, revision: activeEditorView.snapshot.session.revision, contentHash: activeEditorView.snapshot.session.contentHash ?? '', mediaType: 'text/markdown' } })} onClose={() => setResearchProjectsOpen(false)} />}
       {academicViewsOpen && workspaceId !== undefined && <AcademicViewsDialog files={workspaceFiles} workspaceId={workspaceId} onClose={() => setAcademicViewsOpen(false)} onMessage={setMessage} />}
-      {structuredResearchOpen && <StructuredResearchDialog onClose={() => setStructuredResearchOpen(false)} onMessage={setMessage} onApplySuggestion={async (suggestion) => {
+      {structuredResearchOpen && <StructuredResearchDialog {...(evidenceAnnotationDraft === undefined ? {} : { annotationDraft: evidenceAnnotationDraft })} onClose={() => { setStructuredResearchOpen(false); setEvidenceAnnotationDraft(undefined); }} onMessage={setMessage} onOpenPdf={(fileId, page) => { const file = workspaceFiles.find((entry) => entry.fileId === fileId); if (file === undefined) { setMessage('O PDF da anotação não está mais disponível no vault.'); return; } setStructuredResearchOpen(false); setEvidenceAnnotationDraft(undefined); viewsModel.openPdf({ fileId, path: file.path, page }); }} onApplySuggestion={async (suggestion) => {
         const active = viewsModel.active();
         if (active?.type !== 'editor') { setMessage('Abra um documento para inserir a sugestão.'); return; }
         if (!await requestConfirmation({ title: 'Inserir sugestão?', description: 'A sugestão será acrescentada ao fim do documento ativo e continuará editável.', confirmLabel: 'Inserir sugestão', destructive: false })) return;
@@ -3511,7 +3556,7 @@ export function App(): JSX.Element {
       {writingWorkflowOpen && workspaceId !== undefined && activeEditorView !== undefined && writingStatistics !== undefined && <WritingWorkflowDialog workspaceId={workspaceId} fileId={activeEditorView.fileId} profileId={metadataFromSource(activeEditorView.snapshot.session.content).profile || 'abnt-artigo'} outline={activeEditorView.snapshot.outline} diagnostics={activeEditorView.snapshot.diagnostics} statistics={writingStatistics} onClose={() => setWritingWorkflowOpen(false)} onNavigate={(offset) => activeEditorView.controller.dispatch({ selection: { anchor: offset, head: offset } })} />}
       {referenceMaintenanceOpen && <ReferenceMaintenanceDialog onClose={() => setReferenceMaintenanceOpen(false)} />}
       {libraryMaintenanceCenterOpen && <LibraryMaintenanceCenterDialog onClose={() => setLibraryMaintenanceCenterOpen(false)} onMessage={setMessage} />}
-      {referenceLibraryEditor && <ReferenceLibraryDialog onClose={() => setReferenceLibraryEditor(false)} onOpenLiteratureNote={(fileId, path) => { setReferenceLibraryEditor(false); void openDocument(fileId, path); }} />}
+      {referenceLibraryEditor && <ReferenceLibraryDialog onClose={() => setReferenceLibraryEditor(false)} onOpenPdf={(fileId, path) => { setReferenceLibraryEditor(false); viewsModel.openPdf({ fileId, path }); }} />}
       {referenceHealth && <ReferenceHealthDialog onClose={() => setReferenceHealth(false)} />}
       {annotationSynthesisOpen && <AnnotationSynthesisDialog {...(activeEditorView === undefined ? {} : { activeFileId: activeEditorView.fileId })} onClose={() => setAnnotationSynthesisOpen(false)} onOpenDocument={(fileId, path) => void openDocument(fileId, path)} />}
       {literatureMonitoringOpen && workspaceId !== undefined && <LiteratureMonitoringDialog onClose={() => setLiteratureMonitoringOpen(false)} onMessage={setMessage} />}

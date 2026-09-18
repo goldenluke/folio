@@ -216,6 +216,22 @@ await Promise.all([
   }),
 ]);
 
+// PDFs digitalizados podem usar JBIG2/OpenJPEG. O worker do PDF.js não pode
+// resolver esses módulos a partir do node_modules no bundle file://; copie-os
+// para perto do chunk do renderer e passe wasmUrl explicitamente no reader.
+await cp(
+  resolve(require.resolve('pdfjs-dist/package.json'), '..', 'wasm'),
+  resolve(output, 'renderer/assets/wasm'),
+  { recursive: true, force: true },
+);
+
+// A coleção oficial viaja com o Workspace Service. No package ela é copiada
+// para `resources/workspace-runtime`, fora do ASAR, e é instalada no vault só
+// se aquele plugin ainda não existir.
+const officialPluginsOutput = resolve(output, 'workspace', 'official-plugins');
+await rm(officialPluginsOutput, { recursive: true, force: true });
+await cp(resolve(repositoryRoot, 'examples', 'plugins'), officialPluginsOutput, { recursive: true });
+
 await writeFile(resolve(output, BUILD_INFORMATION_FILE), `${JSON.stringify(buildInformation, null, 2)}\n`);
 
 if (!skipNativeBuild && manifest !== undefined) {

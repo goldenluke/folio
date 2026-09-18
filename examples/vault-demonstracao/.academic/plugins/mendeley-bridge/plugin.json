@@ -1,0 +1,10 @@
+{
+  "id": "folio.mendeley-bridge",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "entry": "index.mjs",
+  "capabilities": ["commands", "views", "read-library"],
+  "bibliographyAdapters": [{ "id": "mendeley-ris", "title": "Mendeley RIS" }, { "id": "mendeley-bibtex", "title": "Mendeley BibTeX" }],
+  "commands": [{ "id": "import-ris", "title": "Importar exportação RIS do Mendeley" }, { "id": "import-bibtex", "title": "Importar exportação BibTeX do Mendeley" }],
+  "views": [{ "id": "help", "title": "Importar do Mendeley", "body": "Exporte a biblioteca ou uma pasta do Mendeley como RIS ou BibTeX. O Folio usa a inbox de pesquisa para converter para CSL-JSON canônico, apontar possíveis duplicatas e exigir confirmação antes de alterar a biblioteca." }]
+}

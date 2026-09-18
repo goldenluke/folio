@@ -1,0 +1,10 @@
+{
+  "id": "folio.zotero-bridge",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "entry": "index.mjs",
+  "capabilities": ["commands", "views", "read-library"],
+  "bibliographyAdapters": [{ "id": "zotero-csl-json", "title": "Zotero CSL-JSON" }],
+  "commands": [{ "id": "import-csl-json", "title": "Importar exportação do Zotero" }],
+  "views": [{ "id": "help", "title": "Importar do Zotero", "body": "No Zotero, selecione a coleção e exporte como CSL JSON. O Folio abre a inbox de pesquisa com CSL-JSON selecionado. Cole o conteúdo ou escolha o arquivo; revise duplicatas antes de confirmar cada referência." }]
+}

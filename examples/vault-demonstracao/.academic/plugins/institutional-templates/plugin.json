@@ -1,0 +1,10 @@
+{
+  "id": "folio.institutional-templates",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "entry": "index.mjs",
+  "capabilities": ["commands", "views"],
+  "templates": [{ "id": "institutional-tcc", "title": "TCC institucional" }, { "id": "institutional-article", "title": "Artigo institucional" }],
+  "commands": [{ "id": "create-institutional-tcc", "title": "Criar TCC institucional" }, { "id": "create-institutional-article", "title": "Criar artigo institucional" }],
+  "views": [{ "id": "catalog", "title": "Templates institucionais", "body": "Use este plugin como ponto de distribuição de templates da sua instituição. Um template deve declarar o profile de publicação, os metadados necessários e o Markdown inicial. O conteúdo do aluno continua em Markdown e o profile continua uma decisão explícita de publicação." }]
+}

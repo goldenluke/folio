@@ -62,9 +62,15 @@ const createWindow = async (): Promise<void> => {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      webviewTag: true,
     },
   });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  window.webContents.on('console-message', ({ level, message, lineNumber, sourceId }) => {
+    if (message.includes('[Folio PDF]') || level === 'warning' || level === 'error') {
+      console.error(`[renderer:${level}] ${message} (${sourceId}:${lineNumber})`);
+    }
+  });
   window.webContents.on('will-navigate', (event, url) => {
     if (!url.startsWith('file:')) event.preventDefault();
   });
