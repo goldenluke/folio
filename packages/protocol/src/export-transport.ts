@@ -98,7 +98,15 @@ interface PendingRequest {
 }
 
 export interface MessagePortExportClient extends ExportService {
-  dispose(): void;
+  /**
+   * Resolve os pedidos pendentes com `reason` (padrão: cancelamento). Um
+   * encerramento inesperado do processo filho deve passar um erro INTERNAL
+   * aqui — do contrário o pedido pendente herda o código CANCELLED, e a UI
+   * trata isso como "usuário cancelou" e esconde a mensagem de propósito
+   * (ver `exportActiveDocument` em app.tsx), fazendo a falha real desaparecer
+   * em silêncio.
+   */
+  dispose(reason?: ProtocolResult<unknown>): void;
 }
 
 /** Cliente MessagePort com descarte de respostas velhas e propagação de cancelamento. */
@@ -147,11 +155,11 @@ export function createExportMessagePortClient(port: MessagePortLike): MessagePor
         port.postMessage({ version: PROTOCOL_VERSION, kind: 'request', id, method: 'export/run', payload: input.value });
       });
     },
-    dispose: () => {
+    dispose: (reason) => {
       unsubscribe();
       for (const [id, entry] of pending) {
         entry.cleanupAbort();
-        entry.resolve(cancellation());
+        entry.resolve(reason ?? cancellation());
         pending.delete(id);
       }
     },

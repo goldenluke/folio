@@ -2,6 +2,7 @@ import { utilityProcess, type UtilityProcess } from 'electron';
 
 import {
   createExportMessagePortClient,
+  protocolError,
   type MessagePortExportClient,
   type MessagePortLike,
 } from '@abnt/protocol';
@@ -48,7 +49,15 @@ export class ExportSupervisor {
     child.on('exit', (code: number) => {
       if (this.#child !== child) return;
       this.#child = undefined;
-      this.#client?.dispose();
+      // Encerramento inesperado (não veio de dispose()): quem estiver
+      // aguardando uma exportação precisa de um erro de verdade, não do
+      // cancelamento genérico — esse último some da UI de propósito (ver
+      // comentário em MessagePortExportClient.dispose).
+      this.#client?.dispose(
+        this.#stopping
+          ? undefined
+          : protocolError('INTERNAL', 'O serviço de exportação encerrou inesperadamente.'),
+      );
       this.#client = undefined;
       if (!this.#stopping) this.#emit({ type: 'export:exited', code });
     });
