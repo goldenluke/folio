@@ -397,6 +397,8 @@ importers:
 
   packages/block-composition: {}
 
+  packages/citation-intents: {}
+
   packages/collaboration: {}
 
   packages/compiler:
