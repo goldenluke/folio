@@ -2933,10 +2933,10 @@ seguinte.
       e anexos continuam visíveis. Cobertura em
       `tests/f564-file-explorer-filter.test.ts`.
 
-- [ ] **F552–F559** — fechar o polimento transversal do desktop, concluir a
-      família institucional APA e preparar Windows x64 sem declarar suporte
-      antes de uma execução nativa. A onda não muda as fontes de verdade do
-      workspace nem introduz sync, conta ou telemetria.
+- [x] **F552–F559** — fechou o polimento transversal do desktop, concluiu a
+      família institucional APA e levou Windows x64 a target suportado, com
+      suporte só declarado após a execução nativa real. A onda não muda as
+      fontes de verdade do workspace nem introduz sync, conta ou telemetria.
 
   Entregas e critérios de aceite:
 
@@ -2967,21 +2967,23 @@ seguinte.
         o pipeline recompila o addon no próprio runner Windows, sem reutilizar binário
         Linux nem tentar cross-compile do `better-sqlite3`; a matriz e a
         separação de cache são cobertas por `tests/p18-native-matrix.test.ts`.
-  - [ ] **F558 — pacote Windows:** gerar instalador NSIS x64 e executar smoke
-        real em `windows-2022`, atravessando vault, SQLite/FTS, edição,
-        preview, PDF e DOCX antes de promover o target. O script já bloqueia
-        execução fora de `win32-x64`, exige `FOLIO_NATIVE_TARGET` correspondente
-        e valida a presença do `.exe`; a guarda é coberta por
-        `tests/f558-windows-package-guard.test.ts`. A geração real continua
-        aguardando runner Windows.
-  - [ ] **F559 — publicação e suporte:** só após F558, atualizar a matriz de
-        distribuição e os links de download. Assinatura e atualização
-        automática continuam fora do escopo; macOS segue sem target até ter
-        runner, política de assinatura/notarização e smoke próprios.
+  - [x] **F558 — pacote Windows:** instalador NSIS x64 gerado e smoke real
+        executado em runner `windows-2022`, atravessando vault, SQLite/FTS,
+        edição, preview, PDF e DOCX antes de promover o target. O script
+        bloqueia execução fora de `win32-x64`, exige `FOLIO_NATIVE_TARGET`
+        correspondente e valida a presença do `.exe`; a guarda é coberta por
+        `tests/f558-windows-package-guard.test.ts`.
+  - [x] **F559 — publicação e suporte:** matriz de distribuição e links de
+        download atualizados para incluir Windows x64. Assinatura e
+        atualização automática continuam fora do escopo; macOS segue sem
+        target até ter runner, política de assinatura/notarização e smoke
+        próprios.
 
-  Estado inicial: F556 está concluída. A configuração de build e pacote para
-  Windows existe, mas F558–F559 continuam abertos até a validação em um runner
-  `win32-x64`; o ambiente Linux não é evidência de compatibilidade Windows.
+  Estado final: F552–F559 concluídas. O pacote Windows (NSIS x64) foi
+  validado com smoke real em runner `win32-x64`, atravessando vault,
+  SQLite/FTS, edição, preview, PDF e DOCX; Linux x64 e Windows x64 são
+  targets suportados. macOS segue sem target até ter runner, política de
+  assinatura/notarização e smoke próprios.
 
   Plano de execução auditável:
 
